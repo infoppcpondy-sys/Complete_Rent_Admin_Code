@@ -82,12 +82,12 @@ const UserForm = ({ user, onSave, onDelete }) => {
         }
     }, [user]);
 
-    // If offices load after selecting a user for edit, convert stored office name to office._id for the select control
+    // If offices load after selecting a user for edit, ensure office is set to officeName for the select control
     useEffect(() => {
         if (offices.length && user && user.office) {
             const found = offices.find(o => o.officeName === user.office || o._id === user.office);
             if (found) {
-                setFormData(prev => ({ ...prev, office: found._id }));
+                setFormData(prev => ({ ...prev, office: found.officeName }));
             }
         }
     }, [offices, user]);
@@ -140,14 +140,9 @@ const UserForm = ({ user, onSave, onDelete }) => {
         }
 
         try {
-                // Transform office value to a stable identifier before sending
+                // Send office as officeName (the backend expects the office name string, not _id)
                 const payload = { ...formData };
-                const selectedOffice = offices.find(o => o._id === formData.office || o.officeName === formData.office);
-                if (selectedOffice) {
-                    // send office as _id and include officeName to help backend mapping if needed
-                    payload.office = selectedOffice._id;
-                    payload.officeName = selectedOffice.officeName;
-                }
+                // office is already the officeName from the select dropdown
 
                 if (user && user._id) {
                     await axios.post(`${process.env.REACT_APP_API_URL}/admin-updates/${user._id}`, payload);
@@ -242,7 +237,7 @@ const UserForm = ({ user, onSave, onDelete }) => {
                         >
                             <option value="">Select Office</option>
                             {offices.map((office) => (
-                                <option key={office._id} value={office._id}>
+                                <option key={office._id} value={office.officeName}>
                                     {office.officeName}
                                 </option>
                             ))}

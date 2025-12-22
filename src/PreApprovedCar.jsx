@@ -406,7 +406,7 @@ const handleUndo = async (rentId) => {
             <th>Feature Status</th>
             <th>Status</th>
             <th>Action</th>
-            <th>Change Status</th>
+            {/* <th>Change Status</th> */}
             <th>Create FollowUp</th>
             <th>Create Bill</th>
           </tr>
@@ -536,7 +536,7 @@ const handleUndo = async (rentId) => {
                   )}
                 </td>
 
-                <td>
+                {/* <td>
                   {prop.status !== "delete" && (
                     <Button
                       variant=""
@@ -551,7 +551,7 @@ const handleUndo = async (rentId) => {
                       {prop.status === "active" ? "Set Pending" : "Set Active"}
                     </Button>
                   )}
-                </td>
+                </td> */}
 
                 <td>
                   {followUpMap[prop.rentId] ? (

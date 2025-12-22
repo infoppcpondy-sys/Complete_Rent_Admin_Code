@@ -368,10 +368,14 @@ const exportToExcel = () => {
     </tr>
   </thead>
   <tbody>
-    {filteredData.map((item, index) =>
-      item.properties.map((property, propertyIndex) => (
-        <tr key={`${index}-${propertyIndex}`}>
-          <td>{propertyIndex + 1}</td>
+    {(() => {
+      let serialNo = 0;
+      return filteredData.map((item, index) =>
+        item.properties.map((property, propertyIndex) => {
+          serialNo++;
+          return (
+            <tr key={`${index}-${propertyIndex}`}>
+              <td>{serialNo}</td>
           <td>
                           <img
                             src={
@@ -428,9 +432,11 @@ const exportToExcel = () => {
 
 </td>
 
-        </tr>
-      ))
-    )}
+            </tr>
+          );
+        })
+      );
+    })()}
   </tbody>
 </Table>
 </div>

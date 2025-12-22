@@ -124,6 +124,10 @@ const [photoloading, setPhotoUploading] = useState(false); // ⬅️ add this at
 const [uploadSuccess, setUploadSuccess] = useState(false);
 const [photoUploadSuccess, setPhotoUploadSuccess] = useState(false);
 const [videoError, setVideoError] = useState(""); // ⬅️ new state
+const [fileTypeError, setFileTypeError] = useState({ show: false, message: '', type: '' }); // For animated file type validation toast
+const [isCompressing, setIsCompressing] = useState(false);
+const [compressionProgress, setCompressionProgress] = useState(0);
+const [compressionStatus, setCompressionStatus] = useState('');
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
@@ -235,6 +239,150 @@ const [videoError, setVideoError] = useState(""); // ⬅️ new state
     rentType:"", 
     wheelChairAvailable:"",
   });
+
+  // Area to Pincode mapping for Pondicherry
+  const areaPincodeMap = {
+    "Abishegapakkam": "605007",
+    "Ariyankuppam": "605007",
+    "Arumbarthapuram" : "605110",
+    "Bahour": "605101",
+    "Bommaiyarpalayam": "605106",
+    "Cathedral": "605001",
+    "Chinna Kalapet": "605014",
+    "Chinna Veerampatinam": "605007",
+    "Dharmapuri": "605003",
+    "Dupleix Nagar": "605001",
+    "Embalam": "605106",
+    "Heritage Town": "605001",
+    "Iyyanar Koil": "605013",
+    "Jipmer Campus": "605006",
+    "Kadirkamam": "605009",
+    "Kalapet": "605014",
+    "Kanniakoil": "605010",
+    "Karayamputhur": "605106",
+    "Karuvadikuppam": "605008",
+    "Katterikuppam": "605009",
+    "Kirumampakkam": "605502",
+    "Koodapakkam": "605502",
+    "Korkadu": "605501",
+    "Kottakuppam": "605104",
+    "Kottakuppam Puduthurai": "605007",
+    "Kunichempet": "605006",
+    "Kuruvinatham": "605007",
+    "Kurusukuppam": "605012",
+    "Lawspet": "605008",
+    "Madukarai": "605107",
+    "Madagadipet": "605107",
+    "Manalipet": "605010",
+    "Manapattu": "605105",
+    "Mangalam": "605004",
+    "Mannadipet": "605501",
+    "Mettupalayam": "605009",
+    "MG Road": "605001",
+    "Mission Street": "605001",
+    "Moolakulam": "605010",
+    "Mudaliarpet": "605004",
+    "Murungapakkam": "605004",
+    "Nallambal": "605006",
+    "Natesan Nagar": "605005",
+    "Nellithope": "605005",
+    "Olandai Keerapalayam": "605010",
+    "Orleanpet": "605001",
+    "Osudu": "605110",
+    "Ousteri": "605009",
+    "Pillaiyarkuppam (Ariyankuppam)": "605007",
+    "Pillaiyarkuppam (Bahour)": "605101",
+    "Pondicherry University": "605014",
+    "Pudhu Nagar": "605010",
+    "Rainbow Nagar": "605011",
+    "Reddiarpalayam": "605010",
+    "Sanjay Gandhi Nagar": "605005",
+    "Saram": "605013",
+    "Seedhankuppam": "605005",
+    "Seliamedu": "605106",
+    "Sita Nagar": "605013",
+    "Solai Nagar": "605010",
+    "Sri Aurobindo Ashram": "605002",
+    "Subbaiah Salai": "605001",
+    "Sultanpet": "605003",
+    "Thavalakuppam": "605009",
+    "Thengaithittu": "605004",
+    "Thondamanatham": "605502",
+    "Thirubuvanai": "605107",
+    "Thirukanchi": "605009",
+    "Thiruthani": "605006",
+    "Vaithikuppam": "605012",
+    "Vadhanur": "605111",
+    "Veerampattinam": "605007",
+    "Velrampet": "605004",
+    "Villianur": "605110",
+    "White Town": "605001"
+  };
+
+  // Area dropdown states
+  const [areaSuggestions, setAreaSuggestions] = useState([]);
+  const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
+
+  // Handle area input change with smart sorting (starting letters first)
+  const handleAreaInputChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({ ...prev, area: value }));
+
+    if (value.trim().length > 0) {
+      const allAreas = Object.keys(areaPincodeMap);
+      const lowerValue = value.toLowerCase();
+      
+      // Areas that START with the typed letter (priority)
+      const startsWithFilter = allAreas.filter(a => 
+        a.toLowerCase().startsWith(lowerValue)
+      );
+      
+      // Areas that CONTAIN but don't start with the typed letter
+      const containsFilter = allAreas.filter(a => 
+        !a.toLowerCase().startsWith(lowerValue) && 
+        a.toLowerCase().includes(lowerValue)
+      );
+      
+      // Combine: starting first, then containing
+      const sortedSuggestions = [...startsWithFilter, ...containsFilter];
+      
+      setAreaSuggestions(sortedSuggestions);
+      setShowAreaSuggestions(sortedSuggestions.length > 0);
+    } else {
+      // Show all areas when input is empty but focused
+      setAreaSuggestions(Object.keys(areaPincodeMap));
+      setShowAreaSuggestions(true);
+    }
+  };
+
+  // Handle area selection from dropdown
+  const handleAreaSelect = (selectedArea) => {
+    setFormData(prev => ({
+      ...prev,
+      area: selectedArea,
+      pinCode: areaPincodeMap[selectedArea] || prev.pinCode
+    }));
+    setShowAreaSuggestions(false);
+    setAreaSuggestions([]);
+  };
+
+  // Handle area input focus
+  const handleAreaFocus = () => {
+    if (formData.area.trim().length === 0) {
+      setAreaSuggestions(Object.keys(areaPincodeMap));
+      setShowAreaSuggestions(true);
+    } else {
+      handleAreaInputChange({ target: { value: formData.area } });
+    }
+  };
+
+  // Handle area input blur
+  const handleAreaBlur = () => {
+    // Delay to allow click on suggestion
+    setTimeout(() => {
+      setShowAreaSuggestions(false);
+    }, 200);
+  };
 
         const swiperRef = useRef(null);
     const navigate = useNavigate();
@@ -623,7 +771,6 @@ const handleClear = () => {
     state: useRef(null),
     city: useRef(null),
     area: useRef(null),
-    phoneNumber: useRef(null),
   };
   
    
@@ -643,10 +790,21 @@ const formattedCreatedAt = Date.now
    const handlePreview = () => {
      const requiredFields = Object.keys(formRefs);
    
-     const missingFields = requiredFields.filter(field => !formData[field]);
+     // Property types that don't require bedrooms and floorNo
+     const landPropertyTypes = ['plot', 'land', 'agricultural land'];
+     const currentPropertyType = (formData.propertyType || "").toLowerCase();
+     const isLandType = landPropertyTypes.includes(currentPropertyType);
+   
+     const missingFields = requiredFields.filter(field => {
+       // Skip bedrooms and floorNo validation for land/plot types
+       if (isLandType && (field === 'bedrooms' || field === 'floorNo')) {
+         return false;
+       }
+       return !formData[field];
+     });
    
      if (missingFields.length > 0) {
-       setPopupMessage(`Please fill in the following fields before previewing: ${missingFields.join(", ")}`);
+       setPopupMessage(missingFields);
        setShowPopup(true);
    
        // Focus and scroll to the first missing field
@@ -960,10 +1118,32 @@ const handlePhotoUpload = async (e) => {
 
   if (!files.length) return;
 
+  // MIME type validation - only allow images
+  const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+  const invalidFiles = files.filter(file => !allowedImageTypes.includes(file.type));
+  
+  if (invalidFiles.length > 0) {
+    const invalidNames = invalidFiles.map(f => f.name).join(', ');
+    setFileTypeError({
+      show: true,
+      message: `Invalid file type detected: "${invalidNames}". Only JPEG, JPG, PNG, WebP, and GIF images are allowed.`,
+      type: 'image'
+    });
+    // Auto-hide after 5 seconds
+    setTimeout(() => setFileTypeError({ show: false, message: '', type: '' }), 5000);
+    e.target.value = ''; // Reset input
+    return;
+  }
+
   // Check size
   for (let file of files) {
     if (file.size > maxSize) {
-      alert("File size exceeds the 10MB limit");
+      setFileTypeError({
+        show: true,
+        message: `File "${file.name}" exceeds the 10MB size limit.`,
+        type: 'size'
+      });
+      setTimeout(() => setFileTypeError({ show: false, message: '', type: '' }), 5000);
       return;
     }
   }
@@ -1160,30 +1340,41 @@ const handlePhotoUpload = async (e) => {
 // };
 const handleVideoChange = async (e) => {
   const selectedFiles = Array.from(e.target.files);
-  const maxSize = 50 * 1024 * 1024; // 50MB
-  const intimationSize = 10 * 1024 * 1024; // 10MB
   const validFiles = [];
 
   setVideoError(""); // reset previous error
 
+  // MIME type validation - only allow videos
+  const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/avi', 'video/mov'];
+  const invalidFiles = selectedFiles.filter(file => !allowedVideoTypes.includes(file.type));
+  
+  if (invalidFiles.length > 0) {
+    const invalidNames = invalidFiles.map(f => f.name).join(', ');
+    setFileTypeError({
+      show: true,
+      message: `Invalid file type detected: "${invalidNames}". Only video files (MP4, WebM, MOV, AVI) are allowed.`,
+      type: 'video'
+    });
+    setTimeout(() => setFileTypeError({ show: false, message: '', type: '' }), 5000);
+    e.target.value = ''; // Reset input
+    return;
+  }
+
   for (let file of selectedFiles) {
-    // ⚡ Intimation if >10MB
-    if (file.size > intimationSize && file.size <= maxSize) {
-      alert(`${file.name} is above 10MB. Large files may take longer to upload.`);
-    }
-
-    // ❌ Reject if >50MB
-    if (file.size > maxSize) {
-      setVideoError(`${file.name} exceeds the 50MB size limit.`);
-      continue;
-    }
-
-    // ✅ Compress before pushing
+    // ✅ Compress all videos to ~100KB
     let compressedFile = file;
     try {
+      setIsCompressing(true);
+      setCompressionProgress(0);
+      setCompressionStatus(`Compressing ${file.name}...`);
       compressedFile = await compressVideo(file);
+      setCompressionStatus(`Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024).toFixed(0)}KB`);
     } catch (err) {
       console.warn("Compression failed, using original file", err);
+      setCompressionStatus('Compression failed, using original');
+    } finally {
+      setIsCompressing(false);
+      setTimeout(() => setCompressionStatus(''), 2000);
     }
 
     validFiles.push(compressedFile);
@@ -1205,7 +1396,7 @@ const handleVideoChange = async (e) => {
     if (percent >= 100) {
       clearInterval(interval);
 
-      setVideos((prev) => [...prev, ...validFiles].slice(0, 3));
+      setVideos((prev) => [...prev, ...validFiles].slice(0, 5));
       setvideoUploading(false);
       setUploadSuccess(true);
 
@@ -1214,28 +1405,116 @@ const handleVideoChange = async (e) => {
   }, 300);
 };
 
-// ⚡ Compress video using ffmpeg.wasm
+// ⚡ Compress video to ~200KB using canvas-based compression
 const compressVideo = async (file) => {
-  const { createFFmpeg, fetchFile } = await import("@ffmpeg/ffmpeg");
-  const ffmpeg = createFFmpeg({ log: false });
-  if (!ffmpeg.isLoaded()) await ffmpeg.load();
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
 
-  const inputName = "input.mp4";
-  const outputName = "output.mp4";
+    video.onloadedmetadata = async () => {
+      try {
+        // Target ~200KB output
+        const targetSizeKB = 200;
+        const duration = video.duration;
+        
+        // Calculate target bitrate (in bits per second)
+        // targetSize (bytes) = (bitrate / 8) * duration
+        // bitrate = (targetSize * 8) / duration
+        const targetBitrate = Math.floor((targetSizeKB * 1024 * 8) / duration);
+        
+        // Determine scale factor based on original resolution
+        const originalWidth = video.videoWidth;
+        const originalHeight = video.videoHeight;
+        
+        // Scale down significantly to achieve small file size
+        let targetWidth = Math.min(320, originalWidth);
+        let targetHeight = Math.round((targetWidth / originalWidth) * originalHeight);
+        
+        // Ensure even dimensions for encoding
+        targetWidth = Math.floor(targetWidth / 2) * 2;
+        targetHeight = Math.floor(targetHeight / 2) * 2;
 
-  ffmpeg.FS("writeFile", inputName, await fetchFile(file));
-  // Adjust bitrate/resolution for compression
-  await ffmpeg.run(
-    "-i", inputName,
-    "-vcodec", "libx264",
-    "-crf", "28",
-    "-preset", "veryfast",
-    "-vf", "scale=640:-1",
-    outputName
-  );
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
 
-  const data = ffmpeg.FS("readFile", outputName);
-  return new File([data.buffer], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: "video/mp4" });
+        // Use MediaRecorder for compression
+        const stream = canvas.captureStream(10); // 10 FPS for smaller file
+        
+        // Try to use VP8 or H264 codec with low bitrate
+        let mimeType = 'video/webm;codecs=vp8';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'video/webm';
+        }
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'video/mp4';
+        }
+
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: mimeType,
+          videoBitsPerSecond: Math.min(targetBitrate, 50000) // Cap at 50kbps for very small output
+        });
+
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: mimeType });
+          const compressedFile = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, '') + '_compressed.webm',
+            { type: mimeType }
+          );
+          
+          setCompressionProgress(100);
+          resolve(compressedFile);
+        };
+
+        mediaRecorder.onerror = (e) => reject(e);
+
+        // Start recording
+        mediaRecorder.start();
+        video.currentTime = 0;
+        video.play();
+
+        let lastProgress = 0;
+        const drawFrame = () => {
+          if (video.ended || video.paused) {
+            mediaRecorder.stop();
+            return;
+          }
+
+          ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+          
+          // Update progress
+          const currentProgress = Math.round((video.currentTime / duration) * 100);
+          if (currentProgress !== lastProgress) {
+            lastProgress = currentProgress;
+            setCompressionProgress(currentProgress);
+          }
+
+          requestAnimationFrame(drawFrame);
+        };
+
+        video.onended = () => {
+          mediaRecorder.stop();
+        };
+
+        drawFrame();
+
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    video.onerror = () => reject(new Error('Failed to load video'));
+    video.src = URL.createObjectURL(file);
+  });
 };
  const removeVideo = (indexToRemove) => {
   setVideos(prev => prev.filter((_, index) => index !== indexToRemove));
@@ -1528,7 +1807,7 @@ const fieldsToHideForPlot = [
 ];
 
 const shouldHideField = (fieldName) =>
-  hiddenPropertyTypes.includes(formData.propertyType) &&
+  hiddenPropertyTypes.includes((formData.propertyType || "").toLowerCase()) &&
   fieldsToHideForPlot.includes(fieldName);
 
   const filteredDropdownFieldOrder = dropdownFieldOrder.filter(
@@ -1585,6 +1864,17 @@ const handleSubmit = async (e) => {
 
     // Append Rent ID
     formDataToSend.append("rentId", newRentId);
+
+    // 🔹 Determine status based on property mode and type
+    // Commercial + Plot/Land/Agricultural Land → Pre-Approved (complete)
+    // Otherwise → Pending
+    const commercialLandTypes = ["plot", "land", "agricultural land"];
+    const isCommercialLand = 
+      formData.propertyMode?.toLowerCase() === "commercial" && 
+      commercialLandTypes.includes(formData.propertyType?.toLowerCase());
+    
+    const propertyStatus = isCommercialLand ? "complete" : "pending";
+    formDataToSend.append("status", propertyStatus);
 
     // Append form fields (excluding null/undefined)
     Object.keys(formData).forEach((key) => {
@@ -1699,6 +1989,8 @@ const fieldLabels = {
   alternatePhone: "Alternate Phone",
   alternatePhoneCountryCode: "Alternate Phone Country Code",
   bestTimeToCall: "Best Time to Call",
+  pinCode: "Pin Code",
+  locationCoordinates: "Location Coordinates",
 };
 
  const renderDropdown = (field) => {
@@ -2064,6 +2356,94 @@ const handleEdit = () => {
 
 )}
 
+{/* Animated File Type Error Toast */}
+{fileTypeError.show && (
+  <div style={{
+    position: 'fixed',
+    top: 20,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 9999,
+    animation: 'slideInDown 0.4s ease-out',
+    maxWidth: '90%',
+    width: 420,
+  }}>
+    <div style={{
+      background: fileTypeError.type === 'warning' ? 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)' : 
+                  fileTypeError.type === 'size' ? 'linear-gradient(135deg, #ff5722 0%, #e64a19 100%)' :
+                  'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+      color: 'white',
+      padding: '16px 20px',
+      borderRadius: 12,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: 12,
+    }}>
+      <div style={{
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        background: 'rgba(255,255,255,0.2)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        {fileTypeError.type === 'warning' ? (
+          <span style={{ fontSize: 20 }}>⚠️</span>
+        ) : fileTypeError.type === 'image' ? (
+          <MdAddPhotoAlternate size={22} />
+        ) : fileTypeError.type === 'video' ? (
+          <FaFileVideo size={20} />
+        ) : (
+          <span style={{ fontSize: 20 }}>❌</span>
+        )}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+          {fileTypeError.type === 'warning' ? 'Warning' : 
+           fileTypeError.type === 'image' ? 'Invalid Image File' :
+           fileTypeError.type === 'video' ? 'Invalid Video File' : 'File Error'}
+        </div>
+        <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.4 }}>
+          {fileTypeError.message}
+        </div>
+      </div>
+      <button 
+        onClick={() => setFileTypeError({ show: false, message: '', type: '' })}
+        style={{
+          background: 'rgba(255,255,255,0.2)',
+          border: 'none',
+          borderRadius: '50%',
+          width: 28,
+          height: 28,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          color: 'white',
+          flexShrink: 0,
+        }}
+      >
+        <MdOutlineClose size={18} />
+      </button>
+    </div>
+    <style>{`
+      @keyframes slideInDown {
+        0% {
+          transform: translateX(-50%) translateY(-100%);
+          opacity: 0;
+        }
+        100% {
+          transform: translateX(-50%) translateY(0);
+          opacity: 1;
+        }
+      }
+    `}</style>
+  </div>
+)}
+
 {showPopup && (
   <div style={{
     position: "fixed",
@@ -2075,33 +2455,71 @@ const handleEdit = () => {
     borderRadius: "12px",
     boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
     zIndex: 2000,
-    maxWidth: "400px",
-    textAlign: "center",
+    maxWidth: "450px",
+    textAlign: "left",
     fontFamily: "Inter, sans-serif"
   }}>
-    <p style={{
-      color: "#4F4B7E",
-      fontSize: "16px",
-      fontWeight: "500",
-      margin: "0 0 16px 0"
-    }}>
-      {popupMessage}
-    </p>
-    <button
-      onClick={() => setShowPopup(false)}
-      style={{
-        background: "#4F4B7E",
-        color: "white",
-        border: "none",
-        padding: "10px 24px",
-        borderRadius: "8px",
-        cursor: "pointer",
-        fontSize: "14px",
-        fontWeight: "500"
-      }}
-    >
-      OK
-    </button>
+    {Array.isArray(popupMessage) ? (
+      <>
+        <p style={{
+          color: "#dc3545",
+          fontSize: "18px",
+          fontWeight: "600",
+          margin: "0 0 12px 0",
+          textAlign: "center"
+        }}>
+          ⚠️ Please fill all mandatory fields
+        </p>
+        <p style={{
+          color: "#666",
+          fontSize: "14px",
+          margin: "0 0 10px 0"
+        }}>
+          The following fields are required:
+        </p>
+        <ul style={{
+          color: "#dc3545",
+          fontSize: "14px",
+          margin: "0 0 16px 0",
+          paddingLeft: "20px",
+          maxHeight: "200px",
+          overflowY: "auto"
+        }}>
+          {popupMessage.map((field, index) => (
+            <li key={index} style={{ marginBottom: "6px" }}>
+              {fieldLabels[field] || field}
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : (
+      <p style={{
+        color: "#dc3545",
+        fontSize: "16px",
+        fontWeight: "500",
+        margin: "0 0 16px 0",
+        textAlign: "center"
+      }}>
+        {popupMessage}
+      </p>
+    )}
+    <div style={{ textAlign: "center" }}>
+      <button
+        onClick={() => setShowPopup(false)}
+        style={{
+          background: "#4F4B7E",
+          color: "white",
+          border: "none",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontSize: "14px",
+          fontWeight: "500"
+        }}
+      >
+        OK
+      </button>
+    </div>
   </div>
 )}
 
@@ -2180,7 +2598,7 @@ const handleEdit = () => {
                         ) : photoUploadSuccess ? (
                           <span style={{ color: 'green' }}>✅ Successfully uploaded</span>
                         ) : (
-                          'Upload Your Property Images'
+                          'Upload Your Property Images (auto-compressed to ~200KB)'
                         )}
                         <style>{`
                           @keyframes spin {
@@ -2196,6 +2614,24 @@ const handleEdit = () => {
        {photos.length > 0 && (
   <div className="uploaded-photos">
     <h4>Uploaded Photos</h4>
+    <style>
+      {`
+        @keyframes defaultPhotoGlow {
+          0% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.3), 0 4px 15px rgba(40, 167, 69, 0.2); }
+          50% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.5), 0 4px 20px rgba(40, 167, 69, 0.35); }
+          100% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.3), 0 4px 15px rgba(40, 167, 69, 0.2); }
+        }
+        @keyframes badgePop {
+          0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+          50% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes checkmarkDraw {
+          0% { stroke-dashoffset: 24; }
+          100% { stroke-dashoffset: 0; }
+        }
+      `}
+    </style>
     <div className="uploaded-photos-grid"
        style={{
         display: 'grid',
@@ -2205,37 +2641,126 @@ const handleEdit = () => {
       }}>
       {photos.map((photo, index) => {
         let photoUrl = "";
+        const isDefault = selectedPhotoIndex === index;
 
         if (photo instanceof File || photo instanceof Blob) {
           photoUrl = URL.createObjectURL(photo);
         } else if (typeof photo === "string") {
-          // photoUrl = photo; // Direct URL from the backend
           photoUrl = `https://rentpondy.com/RENT/${photo}`;
-
         } else {
           return null;
         }
 
         return (
-          <div key={index} className="uploaded-photo-item  position-relative">
-            <input
-              type="radio"
-              name="selectedPhoto"
-              className="position-absolute"
-              style={{ top: '-10px' }}
-        checked={selectedPhotoIndex === index}
-              onChange={() => handlePhotoSelect(index)}
-            />
+          <div 
+            key={index} 
+            className="uploaded-photo-item position-relative"
+            onClick={() => handlePhotoSelect(index)}
+            title={isDefault ? "Default Property Image" : "Click to set as default"}
+            style={{
+              cursor: 'pointer',
+              borderRadius: '12px',
+              padding: '8px',
+              transition: 'all 0.4s ease-in-out',
+              background: isDefault 
+                ? 'linear-gradient(135deg, rgba(40, 167, 69, 0.08) 0%, rgba(34, 197, 94, 0.12) 100%)' 
+                : '#f8f9fa',
+              border: isDefault 
+                ? '2px solid transparent' 
+                : '2px solid #e9ecef',
+              borderImage: isDefault 
+                ? 'linear-gradient(135deg, #28a745 0%, #22c55e 50%, #10b981 100%) 1' 
+                : 'none',
+              boxShadow: isDefault 
+                ? '0 0 10px rgba(40, 167, 69, 0.3), 0 4px 15px rgba(40, 167, 69, 0.2)' 
+                : '0 2px 8px rgba(0,0,0,0.06)',
+              animation: isDefault ? 'defaultPhotoGlow 2.5s ease-in-out infinite' : 'none',
+              transform: isDefault ? 'scale(1.02)' : 'scale(1)',
+            }}
+          >
+            {/* Default Badge */}
+            {isDefault && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  left: '-8px',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #28a745 0%, #22c55e 50%, #10b981 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 3px 10px rgba(40, 167, 69, 0.4)',
+                  zIndex: 10,
+                  animation: 'badgePop 0.4s ease-out forwards',
+                }}
+              >
+                <svg 
+                  width="14" 
+                  height="14" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="white" 
+                  strokeWidth="3" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  style={{
+                    strokeDasharray: 24,
+                    strokeDashoffset: 0,
+                    animation: 'checkmarkDraw 0.3s ease-out 0.2s forwards',
+                  }}
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+            )}
+
+            {/* Default Label */}
+            {isDefault && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '4px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'linear-gradient(135deg, #28a745 0%, #22c55e 100%)',
+                  color: 'white',
+                  fontSize: '9px',
+                  fontWeight: '600',
+                  padding: '3px 8px',
+                  borderRadius: '10px',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 2px 6px rgba(40, 167, 69, 0.3)',
+                  whiteSpace: 'nowrap',
+                  zIndex: 10,
+                }}
+              >
+                ✓ Default
+              </div>
+            )}
+
             <img
               src={photoUrl}
-              alt="Uploaded"
+              alt={isDefault ? "Default Property Image" : "Uploaded"}
               className="uploaded-photo m-2"
-              style={{ width: "100px", height: "100px", objectFit: "cover" }}
+              style={{ 
+                width: "100px", 
+                height: "100px", 
+                objectFit: "cover",
+                borderRadius: '8px',
+                transition: 'all 0.3s ease-in-out',
+                filter: isDefault ? 'brightness(1.02)' : 'brightness(0.98)',
+              }}
             />
-            <button    style={{border:"none"}}
-            className="position-absolute top-0 end-0 btn m-0 p-1"
-onClick={() => removePhoto(index)}>
-                    <IoCloseCircle size={20} color="#F22952"/>
+            <button 
+              style={{ border: "none", background: 'transparent', zIndex: 15 }}
+              className="position-absolute top-0 end-0 btn m-0 p-1"
+              onClick={(e) => { e.stopPropagation(); removePhoto(index); }}
+            >
+              <IoCloseCircle size={20} color="#F22952"/>
             </button>
           </div>
         );
@@ -2280,18 +2805,60 @@ onClick={() => removePhoto(index)}>
                 <FaFileVideo style={{ color: '#0B57CF', fontSize: 28 }} />
               </div>
 
-              <div style={{ color: '#4F4B7E', fontSize: 15, fontWeight: 500 }}>
-                {videoloading ? (
-                  <>
-                    <Spinner animation="border" size="sm" style={{ color: '#2e86e4', marginRight: 8 }} />
-                    Uploading... {progress}%
-                  </>
+              <div style={{ color: '#4F4B7E', fontSize: 15, fontWeight: 500, flex: 1 }}>
+                {isCompressing ? (
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                      <Spinner animation="border" size="sm" style={{ color: '#ff6b35', marginRight: 8 }} />
+                      <span style={{ color: '#ff6b35' }}>{compressionStatus || 'Compressing video...'}</span>
+                    </div>
+                    <div style={{
+                      width: '100%',
+                      height: 8,
+                      background: '#e0e0e0',
+                      borderRadius: 4,
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${compressionProgress}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #ff6b35, #f7931e)',
+                        borderRadius: 4,
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 12, color: '#666', marginTop: 4, display: 'block' }}>
+                      {compressionProgress}% compressed
+                    </span>
+                  </div>
+                ) : videoloading ? (
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                      <Spinner animation="border" size="sm" style={{ color: '#2e86e4', marginRight: 8 }} />
+                      <span>Uploading... {progress}%</span>
+                    </div>
+                    <div style={{
+                      width: '100%',
+                      height: 8,
+                      background: '#e0e0e0',
+                      borderRadius: 4,
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${progress}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #2e86e4, #0B57CF)',
+                        borderRadius: 4,
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
                 ) : uploadSuccess ? (
                   <span style={{ color: 'green' }}>✅ Successfully uploaded</span>
                 ) : videoError ? (
                   <span style={{ color: 'red', fontSize: 12 }}>{videoError}</span>
                 ) : (
-                  'Upload Property Videos'
+                  'Upload Property Videos (auto-compressed to ~200KB)'
                 )}
               </div>
             </div>
@@ -2590,7 +3157,7 @@ onClick={() => removePhoto(index)}>
             className="form-control"
             style={{ display: "none" }} // Hide the default <select> dropdown
           >
-            <option value="">Select negotiation</option>
+            <option value="">Select Negotiation</option>
             {dataList.negotiation?.map((option, index) => (
               <option key={index} value={option}>
                 {option}
@@ -2723,7 +3290,7 @@ onClick={() => removePhoto(index)}>
       value={formData.securityDeposit}
       onChange={handleFieldChange}
       className="form-input m-0"
-      placeholder="security Deposit"
+      placeholder="Security Deposit"
         style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
     />
   </div>
@@ -2775,7 +3342,7 @@ onClick={() => removePhoto(index)}>
       value={formData.totalArea}
       onChange={handleFieldChange}
       className="form-input m-0"
-      placeholder="TotalArea"
+      placeholder="Total Area"
       ref={formRefs.totalArea}
         style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
     />
@@ -3860,23 +4427,117 @@ onClick={() => removePhoto(index)}>
 <div className="form-group">
     <div className="input-card p-0 rounded-2 mb-2" style={{ 
     display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
+    flexDirection: 'column',
     width: '100%',  
     boxShadow: '0 4px 10px rgba(38, 104, 190, 0.1)',
     background: "#fff",
-    paddingRight: "10px"
+    position: 'relative',
+    overflow: 'hidden'
   }}>
-  <textarea
-    name="description"
-    value={formData.description}
-    onChange={handleFieldChange}
-    className="form-control"
-    placeholder="what makes your ad unique (maximum 250 characters)"
-    maxLength={250} // Limits input to 250 characters
-    style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
-
-  ></textarea>
+  
+  {/* Textarea for input */}
+  <div style={{ position: 'relative', width: '100%' }}>
+    <textarea
+      name="description"
+      value={formData.description}
+      onChange={handleFieldChange}
+      className="form-control"
+      placeholder="What makes your ad unique (maximum 250 characters)"
+      style={{ 
+        width: '100%',
+        padding: '12px', 
+        fontSize: '14px', 
+        border: 'none', 
+        outline: 'none', 
+        boxShadow: 'none', 
+        color: 'grey',
+        resize: 'vertical', 
+        minHeight: '80px',
+        background: '#fff'
+      }}
+    ></textarea>
+  </div>
+  
+  {/* Overflow preview - shows only when text exceeds 250 */}
+  {(formData.description?.length || 0) > 250 && (
+    <div style={{
+      padding: '8px 12px',
+      backgroundColor: '#fff5f5',
+      borderTop: '1px dashed #dc3545',
+      fontSize: '13px',
+      lineHeight: '1.4'
+    }}>
+      <div style={{ 
+        marginBottom: '4px', 
+        color: '#dc3545', 
+        fontWeight: '600', 
+        fontSize: '11px',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px'
+      }}>
+        ⚠️ Overflow Preview (text beyond 250 characters):
+      </div>
+      <div style={{
+        color: '#dc3545',
+        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+        padding: '6px 8px',
+        borderRadius: '4px',
+        wordBreak: 'break-word',
+        whiteSpace: 'pre-wrap'
+      }}>
+        {(formData.description || '').slice(250)}
+      </div>
+    </div>
+  )}
+  
+  {/* Character limit indicator bar */}
+  <div style={{
+    position: 'relative',
+    height: '4px',
+    backgroundColor: '#e9ecef',
+    borderRadius: '0 0 8px 8px',
+    overflow: 'hidden'
+  }}>
+    <div style={{
+      height: '100%',
+      width: `${Math.min((formData.description?.length || 0) / 250 * 100, 100)}%`,
+      backgroundColor: 
+        (formData.description?.length || 0) <= 62 ? '#28a745' :
+        (formData.description?.length || 0) <= 125 ? '#7cb342' :
+        (formData.description?.length || 0) <= 187 ? '#ffc107' :
+        (formData.description?.length || 0) <= 220 ? '#ff9800' : '#dc3545',
+      transition: 'width 0.3s ease-in-out, background-color 0.3s ease-in-out',
+      borderRadius: '0 0 8px 8px'
+    }}></div>
+  </div>
+  
+  {/* Character count and warning */}
+  <div style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    padding: '4px 12px 6px',
+    gap: '8px'
+  }}>
+    <span style={{
+      fontSize: '12px',
+      color: (formData.description?.length || 0) > 250 ? '#dc3545' : '#888',
+      fontWeight: (formData.description?.length || 0) > 250 ? '600' : '400',
+      transition: 'color 0.2s ease-in-out'
+    }}>
+      {formData.description?.length || 0}/250
+      {(formData.description?.length || 0) > 250 && (
+        <span style={{
+          marginLeft: '8px',
+          color: '#dc3545',
+          fontSize: '11px',
+          animation: 'fadeIn 0.3s ease-in-out'
+        }}>
+          {(formData.description?.length || 0) - 250} characters over limit
+        </span>
+      )}
+    </span>
+  </div>
 </div>
 </div>
 {/* familyMembers */}
@@ -4474,7 +5135,7 @@ onClick={() => removePhoto(index)}>
     </div>
 
   {/* area */}
-  <div className="form-group">
+  <div className="form-group" style={{ position: 'relative' }}>
   {/* <label>Area:</label> */}
   <div className="input-card p-0 rounded-2 mb-2" style={{ 
     display: 'flex', 
@@ -4490,7 +5151,7 @@ onClick={() => removePhoto(index)}>
     <div
   style={{
     display: "flex",
-    alignItems: "stretch", // <- Stretch children vertically
+    alignItems: "stretch",
     width: "100%",
   }}
 > 
@@ -4501,7 +5162,7 @@ onClick={() => removePhoto(index)}>
       justifyContent: "center",
       padding: "0 14px",
       borderRight: "1px solid #4F4B7E",
-      background: "#fff", // optional
+      background: "#fff",
     }}
   >
  {fieldIcons.area}  <sup style={{ color: 'red' }}>*</sup></span>
@@ -4510,7 +5171,10 @@ onClick={() => removePhoto(index)}>
       name="area"
        ref={formRefs.area}
       value={formData.area}
-      onChange={handleFieldChange}
+      onChange={handleAreaInputChange}
+      onFocus={handleAreaFocus}
+      onBlur={handleAreaBlur}
+      autoComplete="off"
       className="form-input m-0"
       placeholder="Area"
         style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
@@ -4519,7 +5183,46 @@ onClick={() => removePhoto(index)}>
    {formData.area && (
       <GoCheckCircleFill style={{ color: "green", margin: "5px" }} />
     )}
-</div></div>
+</div>
+  {/* Area Suggestions Dropdown */}
+  {showAreaSuggestions && areaSuggestions.length > 0 && (
+    <div style={{
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      right: 0,
+      maxHeight: '200px',
+      overflowY: 'auto',
+      backgroundColor: '#fff',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+      zIndex: 1000
+    }}>
+      {areaSuggestions.map((areaItem, index) => (
+        <div
+          key={index}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            handleAreaSelect(areaItem);
+          }}
+          style={{
+            padding: '10px 15px',
+            cursor: 'pointer',
+            borderBottom: index < areaSuggestions.length - 1 ? '1px solid #eee' : 'none',
+            fontSize: '14px',
+            color: '#333',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
+        >
+          {areaItem} - {areaPincodeMap[areaItem]}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
   {/* Nagar */}
   <div className="form-group">
   {/* <label>Nagar:</label> */}
@@ -4694,7 +5397,7 @@ onClick={() => removePhoto(index)}>
       background: "#fff", // optional
     }}
   >
-     <TbMapPinCode  className="input-icon" style={{color: '#4F4B7E',}} />
+     <TbMapPinCode  className="input-icon" style={{color: '#4F4B7E',}} /><sup style={{ color: 'red' }}>*</sup>
   </span>
   <input
       type="text"
@@ -4893,7 +5596,8 @@ onClick={() => removePhoto(index)}>
         background: '#fff',
       }}
     >
-      <img src={phone} alt="" style={{ width: 20, height: 20 }} />
+      <img src={phone} alt="" style={{ width: 15, height: 20 }} />
+      <sup style={{ color: 'red' }}>*</sup>
     </span>
 
     <div style={{ flex: '0 0 10%', display: 'flex', alignItems: 'center' }}>
@@ -4923,7 +5627,6 @@ onClick={() => removePhoto(index)}>
         onChange={handleFieldChange}
         className="form-input m-0"
         placeholder="Phone Number"
-        ref={formRefs.phoneNumber}
         style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
       />
     </div>
@@ -5293,15 +5996,12 @@ return (
             padding: "10px",
             borderRadius: "5px",
             width: "100%", // Ensure the value takes full width
+            wordBreak: "break-word",
+            whiteSpace: "normal"
           }}
         >
-{detail.value
-  ? ["Country", "State", "City", "District", "Nagar", "Area", "Street Name", "Door Number", "pinCode", "location Coordinates"].includes(detail.label)
-    ? typeof detail.value === "string"
-        ? `${detail.value.slice(0, 8)}...`
-        : JSON.stringify(detail.value)
-      : detail.value
-    : "N/A"}       </p>
+          {detail.value || "N/A"}
+        </p>
       </div>
     </div>
   </div>

@@ -591,10 +591,15 @@ const handleSearch = () => {
       {/* Search Filters */}
       <form
         onSubmit={(e) => e.preventDefault()}
-        className="d-flex flex-wrap gap-3 align-items-end"
+        className="d-flex flex-row gap-2 align-items-center flex-nowrap"
+        style={{
+          boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+          padding: '20px',
+          backgroundColor: '#fff'
+        }}
       >
-        <div>
-          <label className="fw-bold">RENT ID / Phone</label>
+        <div className="mb-3">
+          <label className="form-label fw-bold">RENT ID / Phone</label>
           <input
             className="form-control"
             type="text"
@@ -604,8 +609,8 @@ const handleSearch = () => {
           />
         </div>
 
-        <div>
-          <label className="fw-bold">Bill No</label>
+        <div className="mb-3">
+          <label className="form-label fw-bold">Bill No</label>
           <input
             className="form-control"
             type="text"
@@ -615,8 +620,8 @@ const handleSearch = () => {
           />
         </div>
 
-        <div>
-          <label className="fw-bold">Start Date</label>
+        <div className="mb-3">
+          <label className="form-label fw-bold">Start Date</label>
           <input
             className="form-control"
             type="date"
@@ -625,8 +630,8 @@ const handleSearch = () => {
           />
         </div>
 
-        <div>
-          <label className="fw-bold">End Date</label>
+        <div className="mb-3">
+          <label className="form-label fw-bold">End Date</label>
           <input
             className="form-control"
             type="date"
@@ -635,12 +640,14 @@ const handleSearch = () => {
           />
         </div>
 
-        <button className="btn btn-primary" onClick={handleSearch}>
-          Search
-        </button>
-        <button className="btn btn-secondary" onClick={handleReset}>
-          Reset
-        </button>
+        <div className="d-flex justify-content-end">
+          <button className="btn btn-primary" onClick={handleSearch}>
+            Search
+          </button>
+          <button className="btn btn-secondary ms-2" onClick={handleReset}>
+            Reset
+          </button>
+        </div>
       </form>
 
       <button className="btn btn-danger my-3" onClick={handlePrint}>
@@ -669,10 +676,14 @@ const handleSearch = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.flatMap((item, i) =>
-              item.properties.map((p, j) => (
-                <tr key={`${i}-${j}`}>
-                  <td>{j + 1}</td>
+            {(() => {
+              let serialNo = 0;
+              return filteredData.flatMap((item, i) =>
+                item.properties.map((p, j) => {
+                  serialNo++;
+                  return (
+                    <tr key={`${i}-${j}`}>
+                      <td>{serialNo}</td>
                   <td>
                     <img
                       src={
@@ -728,8 +739,10 @@ const handleSearch = () => {
                     )}
                   </td>
                 </tr>
-              ))
-            )}
+                  );
+                })
+              );
+            })()}
           </tbody>
         </Table>
       </div>

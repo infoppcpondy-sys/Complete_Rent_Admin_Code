@@ -20,7 +20,7 @@ import {
   FaCamera,
   
 } from "react-icons/fa";
-import { TbArrowLeftRight, TbChecklist } from "react-icons/tb";
+import { TbArrowLeftRight, TbChecklist, TbMapPinCode } from "react-icons/tb";
 import { AiOutlineColumnWidth, AiOutlineColumnHeight } from "react-icons/ai";
 import { BsBank } from "react-icons/bs";
 import { useNavigate } from 'react-router-dom';
@@ -41,8 +41,148 @@ const SearchProperty = () => {
     negotiation: '', length: '', breadth: '', totalArea: '', ownership: '', bedrooms: '',
     kitchen: '', kitchenType: '', balconies: '', floorNo: '', areaUnit: '', propertyApproved: '',
     facing: '', salesMode: '', salesType: '', furnished: '', lift: '', attachedBathrooms: '',
-    western: '', numberOfFloors: '', carParking: '', city: '' , status:''
+    western: '', numberOfFloors: '', carParking: '', city: '' , status:'', pinCode: '', area: ''
   });
+
+  // Area to Pincode mapping for Pondicherry
+  const areaPincodeMap = {
+    "Abishegapakkam": "605007",
+    "Ariyankuppam": "605007",
+    "Arumbarthapuram": "605110",
+    "Bahoor": "607402",
+    "Bommayarpalayam": "605104",
+    "Botanical Garden": "605001",
+    "Calapet": "605014",
+    "Courivinatham": "607402",
+    "Dhanvantry Nagar": "605006",
+    "Embalam": "605106",
+    "Irumbai": "605111",
+    "Karayamputhur": "605106",
+    "Karikalambakkam": "605007",
+    "Kariyamanikam": "605106",
+    "Kijour": "605106",
+    "Kilpudupattu": "605014",
+    "Kilsirivi": "604301",
+    "Kirumambakkam": "607402",
+    "Korkadu": "605110",
+    "Kottakuppam": "605104",
+    "Kuilapalayam": "605101",
+    "Lawspet": "605008",
+    "Maducore": "605105",
+    "Manamedu": "607402",
+    "Manapeth": "607402",
+    "Mandagapet": "605106",
+    "Mangalam": "605110",
+    "Mannadipattu": "605501",
+    "Morattandi": "605101",
+    "Mottoupalayam": "605009",
+    "Mouroungapakkam": "605004",
+    "Moutrepaleam": "605009",
+    "Mudaliarpet": "605004",
+    "Muthialpet": "605003",
+    "Mutrampattu": "605501",
+    "Nallavadu": "605007",
+    "Nellithoppe": "605005",
+    "Nettapakkam": "605106",
+    "Odiensalai": "605001",
+    "Ozhugarai": "605010",
+    "Padmin nagar": "605012",
+    "Pakkam": "605106",
+    "Pandakkal": "673310",
+    "Pillaichavady": "605014",
+    "Pillayarkuppam": "607402",
+    "Pondicherry": "605001",
+    "Pondicherry Bazaar": "605001",
+    "Pondicherry Courts": "605001",
+    "Pondicherry North": "605001",
+    "Pondicherry University": "605014",
+    "Pooranankuppam": "605007",
+    "Poothurai": "605111",
+    "Rayapudupakkam": "605111",
+    "Reddiyarpalayam": "605010",
+    "Saram(py)": "605013",
+    "Sedarapet": "605111",
+    "Seliamedu": "607402",
+    "Sellipet": "605501",
+    "Sri Aurobindo ashram": "605002",
+    "Sulthanpet": "605110",
+    "Thattanchavady": "605009",
+    "Thengaithittu": "605004",
+    "Thimmanaickenpalayam": "605007",
+    "Tirukkanur": "605501",
+    "Vadhanur": "605501",
+    "Veerampattinam": "605007",
+    "Venkata Nagar": "605011",
+    "Villiyanur": "605110",
+    "Vimacoundinpaleam": "605009",
+    "Viranam": "605106",
+    "Yanam": "533464",
+  };
+
+  // Area dropdown states
+  const [areaSuggestions, setAreaSuggestions] = useState([]);
+  const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
+
+  // Handle area input change with smart sorting (starting letters first)
+  const handleAreaInputChange = (e) => {
+    const value = e.target.value;
+    setAdvancedFilters(prev => ({ ...prev, area: value }));
+
+    if (value.trim().length > 0) {
+      const allAreas = Object.keys(areaPincodeMap);
+      const lowerValue = value.toLowerCase();
+      
+      // Areas that START with the typed letter (priority)
+      const startsWithFilter = allAreas.filter(a => 
+        a.toLowerCase().startsWith(lowerValue)
+      );
+      
+      // Areas that CONTAIN but don't start with the typed letter
+      const containsFilter = allAreas.filter(a => 
+        !a.toLowerCase().startsWith(lowerValue) && 
+        a.toLowerCase().includes(lowerValue)
+      );
+      
+      // Combine: starting first, then containing
+      const sortedSuggestions = [...startsWithFilter, ...containsFilter];
+      
+      setAreaSuggestions(sortedSuggestions);
+      setShowAreaSuggestions(sortedSuggestions.length > 0);
+    } else {
+      // Show all areas when input is empty but focused
+      setAreaSuggestions(Object.keys(areaPincodeMap));
+      setShowAreaSuggestions(true);
+    }
+  };
+
+  // Handle area selection from dropdown
+  const handleAreaSelect = (selectedArea) => {
+    setAdvancedFilters(prev => ({
+      ...prev,
+      area: selectedArea,
+      pinCode: areaPincodeMap[selectedArea] || prev.pinCode
+    }));
+    setShowAreaSuggestions(false);
+    setAreaSuggestions([]);
+  };
+
+  // Handle area input focus
+  const handleAreaFocus = () => {
+    if (advancedFilters.area?.trim().length === 0 || !advancedFilters.area) {
+      setAreaSuggestions(Object.keys(areaPincodeMap));
+      setShowAreaSuggestions(true);
+    } else {
+      handleAreaInputChange({ target: { value: advancedFilters.area } });
+    }
+  };
+
+  // Handle area input blur
+  const handleAreaBlur = () => {
+    // Delay to allow click on suggestion
+    setTimeout(() => {
+      setShowAreaSuggestions(false);
+    }, 200);
+  };
  
 useEffect(() => {
   const fetchProperties = async () => {
@@ -1576,7 +1716,7 @@ useEffect(() => {
         </div>
       </div>
         {/* area */}
-        <div className="form-group ">
+        <div className="form-group " style={{ position: 'relative' }}>
         <label>Area:</label>
         <div className="input-card p-0 rounded-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',  border: '1px solid #2F747F', background:"#fff" }}>
           <MdLocationOn className="input-icon" style={{color: '#2F747F', marginLeft:"10px"}} />
@@ -1584,9 +1724,66 @@ useEffect(() => {
             type="text"
             name="area"
             value={advancedFilters.area}
-            onChange={handleAdvancedFilterChange}
+            onChange={handleAreaInputChange}
+            onFocus={handleAreaFocus}
+            onBlur={handleAreaBlur}
+            autoComplete="off"
             className="form-input m-0"
             placeholder="Area"
+            style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
+          />
+        </div>
+        {/* Area Suggestions Dropdown */}
+        {showAreaSuggestions && areaSuggestions.length > 0 && (
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            maxHeight: '200px',
+            overflowY: 'auto',
+            backgroundColor: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+            zIndex: 1000
+          }}>
+            {areaSuggestions.map((areaItem, index) => (
+              <div
+                key={index}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleAreaSelect(areaItem);
+                }}
+                style={{
+                  padding: '10px 15px',
+                  cursor: 'pointer',
+                  borderBottom: index < areaSuggestions.length - 1 ? '1px solid #eee' : 'none',
+                  fontSize: '14px',
+                  color: '#333',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
+              >
+                {areaItem} - {areaPincodeMap[areaItem]}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+        {/* pinCode */}
+        <div className="form-group ">
+        <label>Pincode:</label>
+        <div className="input-card p-0 rounded-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',  border: '1px solid #2F747F', background:"#fff" }}>
+          <TbMapPinCode className="input-icon" style={{color: '#2F747F', marginLeft:"10px"}} />
+          <input
+            type="text"
+            name="pinCode"
+            value={advancedFilters.pinCode}
+            onChange={handleAdvancedFilterChange}
+            className="form-input m-0"
+            placeholder="Pincode"
             style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
           />
         </div>

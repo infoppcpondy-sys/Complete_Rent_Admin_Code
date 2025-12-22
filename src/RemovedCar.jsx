@@ -25,6 +25,7 @@ const DeletedPropertiesTable = () => {
   const [previousStatuses, setPreviousStatuses] = useState({});
 const [phoneNumberSearch, setPhoneNumberSearch] = useState('');
 const [statusFilter, setStatusFilter] = useState('');
+const [deletingId, setDeletingId] = useState(null);
 
   const navigate = useNavigate();
 
@@ -34,11 +35,16 @@ const [statusFilter, setStatusFilter] = useState('');
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/properties/deleted-rent`);
         const deleted = res.data.data.filter((prop) => prop.status === "delete");
 
-        setProperties(deleted);
-        setFiltered(deleted);
+        // Sort by createdAt (latest first)
+        const sortedDeleted = deleted.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        setProperties(sortedDeleted);
+        setFiltered(sortedDeleted);
 
         const statusMap = {};
-        deleted.forEach((prop) => {
+        sortedDeleted.forEach((prop) => {
           statusMap[prop.rentId] = prop.status;
         });
         setStatusProperties(statusMap);
@@ -162,11 +168,53 @@ const handleReset = () => {
     }
   };
 
+  const reduxAdminName = useSelector((state) => state.admin.name);
+  const adminName = reduxAdminName || localStorage.getItem("adminName");
 
+  const handlePermanentDelete = async (rentId) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to PERMANENTLY delete RENT ID ${rentId}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
 
-  
+    setDeletingId(rentId);
 
-  
+    try {
+      const response = await axios.delete(
+        `${process.env.REACT_APP_API_URL}/delete-rentId-data?rentId=${rentId}`,
+        {
+          data: { deletedBy: adminName },
+        }
+      );
+
+      if (response.status === 200) {
+        // Remove from UI immediately
+        setFiltered((prev) => prev.filter((prop) => prop.rentId !== rentId));
+        setProperties((prev) => prev.filter((prop) => prop.rentId !== rentId));
+
+        // Clean up status tracking
+        setStatusProperties((prev) => {
+          const updated = { ...prev };
+          delete updated[rentId];
+          return updated;
+        });
+
+        setPreviousStatuses((prev) => {
+          const updated = { ...prev };
+          delete updated[rentId];
+          return updated;
+        });
+
+        alert(`RENT ID ${rentId} has been permanently deleted and moved to Permanent Deleted page.`);
+      } else {
+        alert(response.data?.message || "Failed to permanently delete property.");
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to permanently delete property.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="p-3">
@@ -277,13 +325,13 @@ const handleReset = () => {
             <th>Remarks</th>
             <th>Deleted Date</th>
             <th>Undo</th>
- 
+            <th>Permanent Delete</th>
           </tr>
         </thead>
         <tbody>
           {filtered.length === 0 ? (
             <tr>
-              <td colSpan="16" className="text-center">
+              <td colSpan="17" className="text-center">
                 No properties found.
               </td>
             </tr>
@@ -334,7 +382,16 @@ const handleReset = () => {
                     Undo
                   </Button>
                 </td>
-           
+                <td>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handlePermanentDelete(prop.rentId)}
+                    disabled={deletingId === prop.rentId}
+                  >
+                    {deletingId === prop.rentId ? "Deleting..." : "Permanent Delete"}
+                  </Button>
+                </td>
               </tr>
             ))
           )}

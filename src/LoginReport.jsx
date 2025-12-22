@@ -21,6 +21,7 @@ const LoginReportTable = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [loading, setLoading] = useState(false);
 const [otpStatusFilter, setOtpStatusFilter] = useState('all');
+const [remarksFilter, setRemarksFilter] = useState('all');
 
 
   const fetchUsers = async () => {
@@ -47,12 +48,11 @@ const [otpStatusFilter, setOtpStatusFilter] = useState('all');
   useEffect(() => {
     fetchUsers(); // fetch once on mount
 
-    const interval = setInterval(() => {
-      fetchUsers(); // fetch again every 10 seconds
-    }, 10000);
+    // const interval = setInterval(() => {
+    //   fetchUsers(); // fetch again when user click refresh 10 seconds
+    // }, 10000);
 
-    return () => clearInterval(interval); // cleanup on unmount
-  }, []);
+   }, []);
 
  
 const handleSetActiveStatus = async (user) => {
@@ -159,6 +159,8 @@ const handleSetActiveStatus = async (user) => {
       statusFilter === 'all' || user.status === statusFilter;
   const matchesOtpStatus =
     otpStatusFilter === 'all' || user.otpStatus === otpStatusFilter;
+  const matchesRemarks =
+    remarksFilter === 'all' || user.remarks === remarksFilter;
     const matchesPhone =
       phoneFilter.trim() === '' || user.phone?.includes(phoneFilter.trim());
 
@@ -173,7 +175,7 @@ const handleSetActiveStatus = async (user) => {
       (!start && end && loginMoment.isSameOrBefore(end)) ||
       (start && end && loginMoment.isBetween(start, end, null, '[]'));
 
-    return matchesStatus && matchesOtpStatus && matchesPhone && matchesDate;
+    return matchesStatus && matchesOtpStatus && matchesRemarks && matchesPhone && matchesDate;
   });
 
   const reduxAdminName = useSelector((state) => state.admin.name);
@@ -341,6 +343,15 @@ const handleSetActiveStatus = async (user) => {
             <option value="unDeleted">UnDeleted</option>
           </select>
         </div>
+        <div className="mb-4">
+          <label className="mr-2 font-medium">Filter by Remarks:</label>
+          <select value={remarksFilter} onChange={e => setRemarksFilter(e.target.value)} className="border p-2 rounded">
+            <option value="all">All</option>
+            <option value="seller">Seller</option>
+            <option value="buyer">Buyer</option>
+            <option value="visitor">Visitor</option>
+          </select>
+        </div>
         <button
           className="btn btn-secondary"
           onClick={() => {
@@ -348,6 +359,8 @@ const handleSetActiveStatus = async (user) => {
             setStartDate('');
             setEndDate('');
             setStatusFilter('all');
+            setOtpStatusFilter('all');
+            setRemarksFilter('all');
           }}
         >
           Reset

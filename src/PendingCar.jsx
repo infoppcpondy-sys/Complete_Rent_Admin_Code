@@ -292,7 +292,7 @@ const handleUndo = async (rentId) => {
             <th>Payment ID</th>
             <th>Transaction ID</th>
             <th>Action</th>
-            <th>Perment Delete</th>
+            {/* <th>Perment Delete</th> */}
             <th>Create FollowUp</th>
           </tr>
         </thead>
@@ -384,7 +384,7 @@ const handleUndo = async (rentId) => {
                     </>
                   )}
                 </td>
-                <td>
+                {/* <td>
           
                 <Button className="mt-1"
                         variant="warning"
@@ -393,7 +393,7 @@ const handleUndo = async (rentId) => {
                       >
                       <MdDeleteForever /> Permenent 
                       </Button>
-                </td>
+                </td> */}
 
                 <td>
                   {followUpMap[prop.rentId] ? (
