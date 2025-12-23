@@ -7,6 +7,10 @@ import moment from 'moment';
 import { FaFlag, FaBan, FaTrash, FaUndo, FaCheck } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import { Table, Modal, Button, Badge } from 'react-bootstrap';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const LoginReportTable = () => {
   const [users, setUsers] = useState([]);
@@ -153,6 +157,78 @@ const handleSetActiveStatus = async (user) => {
     `);
     printWindow.document.close();
     printWindow.print();
+  };
+
+  // Export to Excel
+  const handleExportExcel = () => {
+    const exportData = filteredUsers.map((item, index) => ({
+      '#': index + 1,
+      'Phone': item.phone,
+      'OTP': item.otp || 'N/A',
+      'Login Date': moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
+      'OTP Status': item.otpStatus,
+      'Country Code': item.countryCode,
+      'Login Mode': item.loginMode,
+      'Status': item.status || 'active',
+      'Active Status UpdatedBy': item.updatedBy ? `${item.updatedBy} (${moment(item.updateDate).format('DD-MM-YYYY')})` : 'N/A',
+      'Remarks': item.remarks || 'N/A',
+      'Banned Reason': item.bannedReason || 'N/A',
+      'Deleted Reason': item.deleteReason || 'N/A',
+      'Reported By': item.reportedBy ? `${item.reportedBy} (${moment(item.reportDate).format('DD-MM-YYYY')})` : 'N/A',
+      'Banned By': item.bannedBy ? `${item.bannedBy} (${moment(item.bannedDate).format('DD-MM-YYYY')})` : 'N/A',
+      'Deleted By': item.deletedBy ? `${item.deletedBy} (${moment(item.deletedDate).format('DD-MM-YYYY')})` : 'N/A',
+      'Un Reported By': item.unReportedBy ? `${item.unReportedBy} (${moment(item.unReportedDate).format('DD-MM-YYYY')})` : 'N/A',
+      'Un Banned By': item.unBannedBy ? `${item.unBannedBy} (${moment(item.unBannedDate).format('DD-MM-YYYY')})` : 'N/A',
+      'Un Deleted By': item.unDeletedBy ? `${item.unDeletedBy} (${moment(item.unDeletedDate).format('DD-MM-YYYY')})` : 'N/A',
+      'Permanently Logged Out': item.permanentlyLoggedOut ? 'Yes' : 'No'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Login Report');
+    
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(data, `Login_Report_${moment().format('DD-MM-YYYY')}.xlsx`);
+  };
+
+  // Export to PDF
+  const handleExportPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+    
+    doc.setFontSize(16);
+    doc.text('Login Report', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${moment().format('DD-MM-YYYY HH:mm')}`, 14, 22);
+
+    const tableColumns = [
+      '#', 'Phone', 'OTP', 'Login Date', 'OTP Status', 'Country Code', 
+      'Login Mode', 'Status', 'Remarks', 'Permanently Logged Out'
+    ];
+
+    const tableRows = filteredUsers.map((item, index) => [
+      index + 1,
+      item.phone,
+      item.otp || 'N/A',
+      moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
+      item.otpStatus,
+      item.countryCode,
+      item.loginMode,
+      item.status || 'active',
+      item.remarks || 'N/A',
+      item.permanentlyLoggedOut ? 'Yes' : 'No'
+    ]);
+
+    doc.autoTable({
+      head: [tableColumns],
+      body: tableRows,
+      startY: 28,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [66, 66, 66] },
+      alternateRowStyles: { fillColor: [245, 245, 245] }
+    });
+
+    doc.save(`Login_Report_${moment().format('DD-MM-YYYY')}.pdf`);
   };
   const filteredUsers = users.filter(user => {
     const matchesStatus =
@@ -367,6 +443,9 @@ const handleSetActiveStatus = async (user) => {
         </button>
                 <button className="btn btn-secondary ms-3" style={{background:"tomato"}} onClick={handlePrint}>
   Print
+</button>
+        <button className="btn btn-success ms-2" onClick={handleExportExcel}>
+  Excel
 </button>
       </div>
 
