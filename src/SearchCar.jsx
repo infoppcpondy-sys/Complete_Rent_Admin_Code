@@ -558,7 +558,7 @@ useEffect(() => {
 
        
           <div className="form-group ">
-        <label>rentId:  </label>
+        <label>RentId:  </label>
         <div className="input-card p-0 rounded-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',  border: '1px solid #2F747F', background:"#fff" }}>
           <FaIdCardAlt className="input-icon" style={{color: '#2F747F', marginLeft:"10px"}} />
           <input
@@ -567,13 +567,13 @@ useEffect(() => {
             value={advancedFilters.rentId}
             onChange={handleAdvancedFilterChange}
             className="form-input m-0"
-            placeholder="rentId"
+            placeholder="RentId"
             style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
           />
         </div>
         </div>
                 <div className="form-group ">
-        <label>phoneNumber:  </label>
+        <label>PhoneNumber:  </label>
         <div className="input-card p-0 rounded-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',  border: '1px solid #2F747F', background:"#fff" }}>
           <FaPhoneAlt className="input-icon" style={{color: '#2F747F', marginLeft:"10px"}} />
           <input
@@ -582,7 +582,7 @@ useEffect(() => {
             value={advancedFilters.phoneNumber}
             onChange={handleAdvancedFilterChange}
             className="form-input m-0"
-            placeholder="phoneNumber"
+            placeholder="PhoneNumber"
             style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
           />
         </div>
@@ -598,7 +598,7 @@ useEffect(() => {
             value={advancedFilters.totalArea}
             onChange={handleAdvancedFilterChange}
             className="form-input m-0"
-            placeholder="totalArea"
+            placeholder="Total Area"
             style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
           />
         </div>
@@ -678,7 +678,7 @@ useEffect(() => {
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  placeholder="Search options"
+                  placeholder="Search Options"
                   style={{
                     width: '80%',
                     padding: '5px',
@@ -814,7 +814,7 @@ useEffect(() => {
         {/* rentalAmount */}
        
         <div className="form-group ">
-        <label>rentalAmount  </label>
+        <label>Rental Amount  </label>
         <div className="input-card p-0 rounded-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',  border: '1px solid #2F747F', background:"#fff" }}>
           <FaRupeeSign className="input-icon" style={{color: '#2F747F', marginLeft:"10px"}} />
           <input
@@ -823,7 +823,7 @@ useEffect(() => {
             value={advancedFilters.rentalAmount}
             onChange={handleAdvancedFilterChange}
             className="form-input m-0"
-            placeholder="rentalAmount"
+            placeholder="Rental Amount"
             style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
           />
         </div>
@@ -897,7 +897,7 @@ useEffect(() => {
                   className="form-control"
                   style={{ display: "none" }} // Hide the default <select> dropdown
                 >
-                  <option value="">Select negotiation</option>
+                  <option value="">Select Negotiation</option>
                   {dataList.negotiation?.map((option, index) => (
                     <option key={index} value={option}>
                       {option}
@@ -923,7 +923,7 @@ useEffect(() => {
                   <span style={{ marginRight: "10px" }}>
            <FaHandshake />
                   </span>
-                  {advancedFilters.negotiation || "Selectnegotiation"}
+                  {advancedFilters.negotiation || "Select Negotiation"}
                 </button>
       
                 {renderDropdown("negotiation")}
@@ -945,7 +945,7 @@ useEffect(() => {
             value={advancedFilters.totalArea}
             onChange={handleAdvancedFilterChange}
             className="form-input m-0"
-            placeholder="totalArea"
+            placeholder="Total Area"
             style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
           />
         </div>
@@ -991,7 +991,7 @@ useEffect(() => {
                   <span style={{ marginRight: "10px" }}>
                    <FaChartArea />
                   </span>
-                  {advancedFilters.areaUnit || "Select areaUnit"}
+                  {advancedFilters.areaUnit || "Select Area Unit"}
                 </button>
       
                 {renderDropdown("areaUnit")}
@@ -1040,7 +1040,7 @@ useEffect(() => {
                   <span style={{ marginRight: "10px" }}>
              <HiUserGroup />
                   </span>
-                  {advancedFilters.ownership || "Select ownership"}
+                  {advancedFilters.ownership || "Select Ownership"}
                 </button>
       
                 {renderDropdown("ownership")}
@@ -1092,7 +1092,7 @@ useEffect(() => {
                   <span style={{ marginRight: "10px" }}>
           <FaBed />
                   </span>
-                  {advancedFilters.bedrooms || "Select bedrooms"}
+                  {advancedFilters.bedrooms || "Select Bedrooms"}
                 </button>
       
                 {renderDropdown("bedrooms")}
@@ -1152,7 +1152,7 @@ useEffect(() => {
           {/* balconies */}
           <div className="form-group ">
           <label style={{ width: '100%'}}>
-          <label>balconies </label>
+          <label>Balconies </label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1189,7 +1189,7 @@ useEffect(() => {
                   <span style={{ marginRight: "10px" }}>
               <MdOutlineMeetingRoom />
                   </span>
-                  {advancedFilters.balconies || "Select balconies"}
+                  {advancedFilters.balconies || "Select Balconies"}
                 </button>
       
                 {renderDropdown("balconies")}
@@ -1200,7 +1200,7 @@ useEffect(() => {
           {/* floorNo */}
           <div className="form-group ">
           <label style={{ width: '100%'}}>
-          <label>floorNo </label>
+          <label>FloorNo </label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1251,7 +1251,7 @@ useEffect(() => {
       
           <div className="form-group ">
           <label style={{ width: '100%'}}>
-          <label>property Approved</label>
+          <label>Property Approved</label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1300,7 +1300,7 @@ useEffect(() => {
           {/* postedBy */}
           <div className="form-group ">
           <label style={{ width: '100%'}}>
-          <label>postedBy  </label>
+          <label>PostedBy  </label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1349,7 +1349,7 @@ useEffect(() => {
           <div className="form-group ">
       
           <label style={{ width: '100%'}}>
-          <label>facing</label>
+          <label>Facing</label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1401,7 +1401,7 @@ useEffect(() => {
         {/* furnished */}
         <div className="form-group ">
           <label style={{width:"100%"}}>
-          <label>furnished</label>
+          <label>Furnished</label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1449,7 +1449,7 @@ useEffect(() => {
           {/*lift */}
           <div className="form-group ">
           <label style={{ width: '100%'}}>
-            <label>lift</label>
+            <label>Lift</label>
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
                 <select
@@ -1497,7 +1497,7 @@ useEffect(() => {
             {/*attachedBathrooms */}
             <div className="form-group ">
           <label style={{ width: '100%'}}>
-          <label>attached Bathrooms</label>
+          <label>Attached Bathrooms</label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1546,7 +1546,7 @@ useEffect(() => {
           <div className="form-group ">
       
           <label style={{ width: '100%'}}>
-          <label>western</label>
+          <label>Western</label>
       
             <div style={{ display: "flex", alignItems: "center"}}>
               <div style={{ flex: "1" }}>
@@ -1596,7 +1596,7 @@ useEffect(() => {
       
           <div className="form-group ">
           <label style={{ width: '100%'}}>
-          <label>car Parking</label>
+          <label>Car Parking</label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1649,7 +1649,7 @@ useEffect(() => {
         {/* country */}
       
         <div className="form-group ">
-        <label>country:</label>
+        <label>Country:</label>
         <div className="input-card p-0 rounded-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',  border: '1px solid #2F747F', background:"#fff" }}>
           <BiWorld className="input-icon" style={{color: '#2F747F', marginLeft:"10px"}} />
           <input
@@ -1658,7 +1658,7 @@ useEffect(() => {
             value={advancedFilters.country}
             onChange={handleAdvancedFilterChange}
             className="form-input m-0"
-            placeholder="country"
+            placeholder="Country"
             style={{ flex: '1 0 80%', padding: '8px', fontSize: '14px', border: 'none', outline: 'none' }}
           />
         </div>
@@ -1844,7 +1844,7 @@ useEffect(() => {
         {/* Best Time to Call */}
         <div className="form-group " >
           <label style={{width:'100%'}}>
-          <label>best Time To Call</label>
+          <label>Best Time To Call</label>
       
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: "1" }}>
@@ -1925,7 +1925,7 @@ useEffect(() => {
       <th>Property Type</th>
       <th>Mode</th>
       <th>CreateAt</th>
-      <th>rentalAmount</th>
+      <th>Rental Amount</th>
       <th>Ownership</th>
       <th>Actions</th>
     </tr>
