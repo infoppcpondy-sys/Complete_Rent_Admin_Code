@@ -414,6 +414,7 @@ import { useNavigate } from "react-router-dom";
 import { Table } from "react-bootstrap";
 import { MdDeleteForever } from "react-icons/md";
 import pic from "./Assets/Mask Group 3.png";
+import { getFirstPhotoUrl } from './utils/mediaHelper';
 
 const PaidPlansWithProperties = () => {
   const [data, setData] = useState([]);
@@ -686,11 +687,7 @@ const handleSearch = () => {
                       <td>{serialNo}</td>
                   <td>
                     <img
-                      src={
-                        p.photos?.length
-                          ? `https://RENTpondy.com/PPC/${p.photos[0]}`
-                          : pic
-                      }
+                      src={getFirstPhotoUrl(p.photos)}
                       alt="Property"
                       style={{ width: 50, height: 50, objectFit: "cover" }}
                     />

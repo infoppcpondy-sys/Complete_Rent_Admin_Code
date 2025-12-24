@@ -7,6 +7,7 @@ import { Table, Form, Button, Modal } from 'react-bootstrap';
 import { useNavigate } from "react-router-dom";
 import { FaEdit, FaEye, FaUndo } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
+import { getFirstPhotoUrl, DEFAULT_IMAGE } from './utils/mediaHelper';
 
 const PreApprovedCar = () => {
   const [properties, setProperties] = useState([]);
@@ -422,7 +423,7 @@ const handleUndo = async (rentId) => {
                 <td>{idx + 1}</td>
                 <td>
                   <img
-                    src={prop.photos?.[0] ? `https://rentpondy.com/PPC/${prop.photos[0].replace(/\\/g, '/')}` : 'https://d17r9yv50dox9q.cloudfront.net/car_gallery/default.jpg'}
+                    src={getFirstPhotoUrl(prop.photos)}
                     alt="Property"
                     style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                   />

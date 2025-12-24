@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Table } from "react-bootstrap";
 import { MdDeleteForever, MdUndo } from "react-icons/md";
 import pic from "./Assets/Mask Group 3.png";
+import { getFirstPhotoUrl } from './utils/mediaHelper';
 
 const PostedByProperty = () => {
   const [data, setData] = useState([]);
@@ -270,11 +271,7 @@ useEffect(() => {
         <td>{index + 1}</td>
         <td>
           <img
-            src={
-              property.photos && property.photos.length > 0
-                ? `https://rentpondy.com/PPC/${property.photos[0]}`
-                : pic
-            }
+            src={getFirstPhotoUrl(property.photos, pic)}
             alt="Property"
             style={{ width: "50px", height: "50px", objectFit: "cover" }}
           />

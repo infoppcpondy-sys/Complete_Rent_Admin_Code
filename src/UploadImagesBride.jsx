@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { FiEdit3 } from 'react-icons/fi';
 import { RiDeleteBinLine } from 'react-icons/ri';
+import { getPhotoUrl } from './utils/mediaHelper';
 
 const UpLoadImagesBride = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -170,7 +171,7 @@ if (combinedFiles.length > 50) {
                   {upload.images.map((img, i) => (
                     <img
                       key={i}
-                      src={`https://rentpondy.com/PPC/${img.replace(/\\/g, '/')}`}
+                      src={getPhotoUrl(img.replace(/\\/g, '/'))}
                       alt="upload"
                       style={{ width: '80px', height: '80px', objectFit: 'cover', margin: '3px' }}
                     />

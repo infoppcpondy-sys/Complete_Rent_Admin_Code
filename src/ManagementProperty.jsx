@@ -2,78 +2,52 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import moment from "moment";
-import { useSelector } from "react-redux";import { Card, Row, Col, Button, Container, Form } from "react-bootstrap";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { Card, Row, Col, Button, Container, Form, Spinner } from "react-bootstrap";
 import { FaBed, FaBath, FaRulerCombined } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
-
-const properties = [
-  {
-    id: 1,
-    title: "Boston Ave",
-    address: "23 Boston Ave, Medford, MA, 02155, US",
-    type: "SINGLE-FAMILY",
-    status: "OCCUPIED",
-    balance: "$13,500.00",
-    balanceColor: "text-danger",
-    image: "https://via.placeholder.com/150",
-  },
-  {
-    id: 2,
-    title: "Boylston Street",
-    address: "883-885 Boylston Street, Boston, MA, 02116, US",
-    type: "4 UNITS",
-    status: "3 OCCUPIED, 1 VACANT",
-    balance: "$57,150.00",
-    balanceColor: "text-danger",
-    image: "https://via.placeholder.com/150",
-  },
-  {
-    id: 3,
-    title: "Panorama Tower, Miami Downtown",
-    address: "2310 NW Overlook Dr, Hermiston, OR, 97838, US",
-    type: "SINGLE-FAMILY",
-    status: "OCCUPIED",
-    balance: "$11,480.00",
-    balanceColor: "text-danger",
-    image: "https://via.placeholder.com/150",
-  },
-  {
-    id: 4,
-    title: "Philly 900",
-    address: "900 Market Street, Philadelphia, PA, 19107, US",
-    type: "SINGLE-FAMILY",
-    status: "VACANT",
-    balance: "$0.00",
-    balanceColor: "text-success",
-    image: "https://via.placeholder.com/150",
-  },
-];
+import { getFirstPhotoUrl } from './utils/mediaHelper';
 
 const ManagementProperty = () => {
-  const [filters, setFilters] = useState({ number: "", address: "" });
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ rentId: "", address: "" });
+  const navigate = useNavigate();
             
   const adminName = useSelector((state) => state.admin.name);
   
+  // ✅ Fetch properties from API
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-active-users-datas-all-rent`);
+        setProperties(response.data.users || []);
+      } catch (err) {
+        console.error("Error fetching properties:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProperties();
+  }, []);
 
   // ✅ Record view on mount
-useEffect(() => {
- const recordDashboardView = async () => {
-   try {
-     await axios.post(`${process.env.REACT_APP_API_URL}/record-view`, {
-       userName: adminName,
-       viewedFile: "Management Property ",
-       viewTime: moment().format("YYYY-MM-DD HH:mm:ss"), // optional, backend already handles it
+  useEffect(() => {
+    const recordDashboardView = async () => {
+      try {
+        await axios.post(`${process.env.REACT_APP_API_URL}/record-view`, {
+          userName: adminName,
+          viewedFile: "Management Property",
+          viewTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+        });
+      } catch (err) {}
+    };
 
-
-     });
-   } catch (err) {
-   }
- };
-
- if (adminName) {
-   recordDashboardView();
- }
-}, [adminName]);
+    if (adminName) {
+      recordDashboardView();
+    }
+  }, [adminName]);
     
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -82,22 +56,32 @@ useEffect(() => {
 
   const filteredProperties = properties.filter(
     (property) =>
-      property.id.toString().includes(filters.number) &&
-      property.address.toLowerCase().includes(filters.address.toLowerCase())
+      (property.rentId?.toString() || "").toLowerCase().includes(filters.rentId.toLowerCase()) &&
+      (property.rentalPropertyAddress || property.area || "").toLowerCase().includes(filters.address.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <Container fluid className="py-4 text-center">
+        <Spinner animation="border" />
+        <p>Loading properties...</p>
+      </Container>
+    );
+  }
 
   return (
     <Container fluid className="py-4">
+      <h2 className="mb-4">Property Management</h2>
       <Form className="mb-4">
         <Row className="g-3">
           <Col xs={12} md={6} lg={4}>
-            <Form.Group controlId="filterNumber">
-              <Form.Label>Filter by Number</Form.Label>
+            <Form.Group controlId="filterRentId">
+              <Form.Label>Filter by Rent ID</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter property number"
-                name="number"
-                value={filters.number}
+                placeholder="Enter Rent ID"
+                name="rentId"
+                value={filters.rentId}
                 onChange={handleInputChange}
               />
             </Form.Group>
@@ -116,74 +100,77 @@ useEffect(() => {
           </Col>
         </Row>
       </Form>
-      <Row xs={1} sm={1} md={2} lg={2} className="g-4">
-        {filteredProperties.map((property) => (
-          <Col key={property.id}>
-            <Card className="mb-4 shadow-sm h-100">
-              <Card.Body className="d-flex flex-column">
-                <Row>
-                  <Col xs={12} md={4} className="d-flex">
-                    <Card.Img
-                      src={property.image}
-                      alt={property.title}
-                      className="w-100 object-fit-cover"
-                    />
-                  </Col>
-                  <Col xs={12} md={8} className="d-flex flex-column">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <Card.Title>{property.title}</Card.Title>
-                      <span className={`fw-bold ${property.balanceColor}`}>{property.balance}</span>
-                    </div>
-                    <Card.Text className="text-muted mb-2">{property.address}</Card.Text>
-                    <Card.Text className="fw-bold mb-2">{property.type}</Card.Text>
-                    <Card.Text className="text-success fw-bold mb-2">{property.status}</Card.Text>
-                  </Col>
-                </Row>
-                <Row className="mt-3">
-                  <Col>
-                    <div className="d-flex justify-content-around">
-                      <Button
-                        variant="light"
-                        className="text-primary d-flex align-items-center"
+      
+      {filteredProperties.length === 0 ? (
+        <p className="text-center text-muted">No properties found.</p>
+      ) : (
+        <Row xs={1} sm={1} md={2} lg={2} className="g-4">
+          {filteredProperties.slice(0, 20).map((property) => (
+            <Col key={property._id || property.rentId}>
+              <Card className="mb-4 shadow-sm h-100">
+                <Card.Body className="d-flex flex-column">
+                  <Row>
+                    <Col xs={12} md={4} className="d-flex">
+                      <Card.Img
+                        src={getFirstPhotoUrl(property.photos)}
+                        alt={property.rentId}
+                        className="w-100 object-fit-cover"
+                        style={{ height: '150px', objectFit: 'cover' }}
+                      />
+                    </Col>
+                    <Col xs={12} md={8} className="d-flex flex-column">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <Card.Title>Rent ID: {property.rentId}</Card.Title>
+                        <span className="fw-bold text-primary">₹{property.rentalAmount || 'N/A'}</span>
+                      </div>
+                      <Card.Text className="text-muted mb-2">
+                        {property.rentalPropertyAddress || property.area || 'No address'}
+                      </Card.Text>
+                      <Card.Text className="fw-bold mb-2">{property.propertyType || 'N/A'}</Card.Text>
+                      <Card.Text className={`fw-bold mb-2 ${property.status === 'active' ? 'text-success' : 'text-warning'}`}>
+                        {property.status?.toUpperCase() || 'PENDING'}
+                      </Card.Text>
+                    </Col>
+                  </Row>
+                  <Row className="mt-3">
+                    <Col>
+                      <div className="d-flex justify-content-around">
+                        <Button variant="light" className="text-primary d-flex align-items-center">
+                          <FaBed className="me-2" /> {property.bedrooms || 'N/A'}
+                        </Button>
+                        <Button variant="light" className="text-primary d-flex align-items-center">
+                          <FaBath className="me-2" /> {property.attachedBathrooms || 'N/A'}
+                        </Button>
+                        <Button variant="light" className="text-primary d-flex align-items-center">
+                          <FaRulerCombined className="me-2" /> {property.totalArea || 'N/A'} {property.areaUnit || ''}
+                        </Button>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row className="mt-3">
+                    <Col className="d-flex justify-content-between">
+                      <Button 
+                        variant="link" 
+                        className="text-decoration-none text-primary"
+                        onClick={() => navigate('/dashboard/detail', { state: { rentId: property.rentId, phoneNumber: property.phoneNumber } })}
                       >
-                        <FaBed className="me-2" /> Bedrooms
+                        View &gt;
                       </Button>
-                      <Button
-                        variant="light"
-                        className="text-primary d-flex align-items-center"
+                      <Button 
+                        variant="warning" 
+                        className="text-white"
+                        onClick={() => navigate('/dashboard/edit-property', { state: { rentId: property.rentId, phoneNumber: property.phoneNumber } })}
                       >
-                        <FaBath className="me-2" /> Bathrooms
+                        Edit
                       </Button>
-                      <Button
-                        variant="light"
-                        className="text-primary d-flex align-items-center"
-                      >
-                        <FaRulerCombined className="me-2" /> Area
-                      </Button>
-                    </div>
-                  </Col>
-                </Row>
-                <Row className="mt-3">
-                  <Col className="d-flex justify-content-between">
-                    <Button variant="link" className="text-decoration-none text-primary">
-                      View &gt;
-                    </Button>
-                    <Button variant="warning" className="text-white">
-                      Edit
-                    </Button>
-                    <Button variant="danger" className="text-white">
-                      Delete
-                    </Button>
-                    <Button variant="success" className="text-white">
-                      Update
-                    </Button>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
     </Container>
   );
 };

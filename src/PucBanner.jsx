@@ -9,6 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { getPhotoUrl } from './utils/mediaHelper';
 
 const UploadedImagesViewer = () => {
   const [uploads, setUploads] = useState([]);
@@ -45,7 +46,7 @@ const UploadedImagesViewer = () => {
           upload.images.map((imgPath, idx) => (
             <img
               key={upload._id + idx}
-              src={`https://rentpondy.com/PPC/${imgPath.replace(/\\/g, '/')}`}
+              src={getPhotoUrl(imgPath.replace(/\\/g, '/'))}
               alt="Uploaded"
               style={{
                 width: '120px',

@@ -13,6 +13,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import autoTable from "jspdf-autotable"; // <-- This is the critical missing part
 import pic from "./Assets/Mask Group 3.png";
+import { getFirstPhotoUrl } from './utils/mediaHelper';
 
 
 
@@ -378,11 +379,7 @@ const exportToExcel = () => {
               <td>{serialNo}</td>
           <td>
                           <img
-                            src={
-                              property.photos && property.photos.length > 0
-                                ? `https://RENTpondy.com/PPC/${property.photos[0]}`
-                                : pic
-                            }
+                            src={getFirstPhotoUrl(property.photos, pic)}
                             alt="Property"
                             style={{ width: "50px", height: "50px", objectFit: "cover" }}
                           />

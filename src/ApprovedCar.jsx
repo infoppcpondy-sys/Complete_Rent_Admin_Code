@@ -15,6 +15,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { useSelector } from 'react-redux';
+import { getFirstPhotoUrl, DEFAULT_IMAGE } from './utils/mediaHelper';
 
 const ApprovedCar = () => {
   const [properties, setProperties] = useState([]);
@@ -88,7 +89,6 @@ const navigate = useNavigate();
       printWindow.document.close();
       printWindow.print();
     };
-  const DEFAULT_IMAGE = 'https://d17r9yv50dox9q.cloudfront.net/car_gallery/default.jpg';
 
   // Search and filter functionality
 const handleSearch = () => {
@@ -136,14 +136,14 @@ const handleSearch = () => {
       (prop) =>
         prop.photos &&
         prop.photos.length > 0 &&
-        `https://rentpondy.com/PPC/${prop.photos[0]}` !== DEFAULT_IMAGE
+        getFirstPhotoUrl(prop.photos) !== DEFAULT_IMAGE
     );
   } else if (hasPhoto === 'no') {
     result = result.filter(
       (prop) =>
         !prop.photos ||
         prop.photos.length === 0 ||
-        `https://rentpondy.com/PPC/${prop.photos[0]}` === DEFAULT_IMAGE
+        getFirstPhotoUrl(prop.photos) === DEFAULT_IMAGE
     );
   }
 
@@ -705,11 +705,7 @@ const handlePrint = (prop) => {
                   <td>{idx + 1}</td>
                   <td>
                     <img
-                      src={
-                        prop.photos && prop.photos.length > 0
-                          ? `https://rentpondy.com/PPC/${prop.photos[0]}`
-                          : 'https://d17r9yv50dox9q.cloudfront.net/car_gallery/default.jpg'
-                      }
+                      src={getFirstPhotoUrl(prop.photos)}
                       alt="Property"
                       style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                     />

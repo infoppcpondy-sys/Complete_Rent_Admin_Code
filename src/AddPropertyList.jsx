@@ -11,6 +11,7 @@ import { useSelector } from "react-redux";
 import { FaEdit } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import pic from "./Assets/Mask Group 3.png";
+import { getFirstPhotoUrl } from './utils/mediaHelper';
 const AddPropertyList = () => {
   const [properties, setProperties] = useState([]);
   const [statusProperties, setStatusProperties] = useState({});
@@ -585,11 +586,7 @@ const handleDelete = async (rentId, phoneNumber) => {
                       <tr key={property._id}>
                         <td>
                           <img
-                            src={
-                              property.photos && property.photos.length > 0
-                                ? `https://rentpondy.com/PPC/${property.photos[0]}`
-                                : pic
-                            }
+                            src={getFirstPhotoUrl(property.photos, pic)}
                             alt="Property"
                             style={{ width: "50px", height: "50px", objectFit: "cover" }}
                           />

@@ -23,6 +23,7 @@ import Plans from './PricingPlans';
 import PricingPlans from "./PricingPlans";
 import { Spinner } from "react-bootstrap"; // Using Bootstrap for loading animation
 import Lottie from 'lottie-react';
+import { getPhotoUrl, getVideoUrl, separatePhotosByType } from './utils/mediaHelper';
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -2640,14 +2641,10 @@ const handleEdit = () => {
         marginTop: '10px',
       }}>
       {photos.map((photo, index) => {
-        let photoUrl = "";
+        const photoUrl = getPhotoUrl(photo);
         const isDefault = selectedPhotoIndex === index;
 
-        if (photo instanceof File || photo instanceof Blob) {
-          photoUrl = URL.createObjectURL(photo);
-        } else if (typeof photo === "string") {
-          photoUrl = `https://rentpondy.com/RENT/${photo}`;
-        } else {
+        if (!photoUrl) {
           return null;
         }
 
@@ -5823,16 +5820,9 @@ const handleEdit = () => {
     ref={swiperRef}
     modules={[Navigation]} className="swiper-container">
       {photos.map((photo, index) => {
-        let photoUrl = "";
+        const photoUrl = getPhotoUrl(photo);
   
-        // Check if the photo is a valid File or Blob
-        if (photo instanceof File || photo instanceof Blob) {
-          photoUrl = URL.createObjectURL(photo);
-        } else if (typeof photo === "string") {
-          // photoUrl = photo; // Direct URL from the backend
-          photoUrl = `https://rentpondy.com/PPC/${photo}`;
-  
-        } else {
+        if (!photoUrl) {
           return null; // Skip rendering if the format is invalid
         }
   
@@ -5874,7 +5864,7 @@ const handleEdit = () => {
                src = URL.createObjectURL(videoItem);
                type = videoItem.type || "video/mp4";
              } else if (typeof videoItem === "string") {
-               src = `https://rentpondy.com/RENT/${videoItem}`;
+               src = getVideoUrl(videoItem);
                type = getMimeType(videoItem);
              }
      

@@ -25,6 +25,7 @@ import { BiBuilding, BiStreetView } from "react-icons/bi";
 import { GiStairs, GiForkKnifeSpoon, GiWindow } from "react-icons/gi";
 import { AiOutlineEye, AiOutlineColumnWidth, AiOutlineColumnHeight } from "react-icons/ai";
 import { BiBed, BiBath, BiCar, BiCalendar, BiUser, BiCube } from "react-icons/bi";
+import { getPhotoUrl, getVideoUrl, separatePhotosByType } from './utils/mediaHelper';
 import './AddProperty.css';
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -2482,14 +2483,10 @@ const isReadOnly = true; // set true to make it readonly
         marginTop: '10px',
       }}>
       {photos.map((photo, index) => {
-        let photoUrl = "";
+        const photoUrl = getPhotoUrl(photo);
         const isDefault = selectedPhotoIndex === index;
 
-        if (photo instanceof File || photo instanceof Blob) {
-          photoUrl = URL.createObjectURL(photo);
-        } else if (typeof photo === "string") {
-          photoUrl = `https://rentpondy.com/PPC/${photo}`;
-        } else {
+        if (!photoUrl) {
           return null;
         }
 
@@ -2712,11 +2709,11 @@ const isReadOnly = true; // set true to make it readonly
          <div className="selected-video-container mt-3">
            <h4 className="text-start">Selected Videos:</h4>
            <div className="d-flex flex-wrap gap-3">
-             {videos.map((video, index) => (
+             {videos.map((videoItem, index) => (
                <div key={index} style={{ position: 'relative', display: 'inline-block' }}>
                  <video width="200" height="200" controls>
-                   <source  src={video instanceof File ? URL.createObjectURL(video) : video}
-               type={video instanceof File ? video.type : "video/mp4"} />
+                   <source src={videoItem instanceof File ? URL.createObjectURL(videoItem) : getVideoUrl(videoItem)}
+               type={videoItem instanceof File ? videoItem.type : "video/mp4"} />
                    Your browser does not support the video tag.
                  </video>
                  <Button
@@ -5639,16 +5636,9 @@ const isReadOnly = true; // set true to make it readonly
     ref={swiperRef}
     modules={[Navigation]} className="swiper-container">
       {photos.map((photo, index) => {
-        let photoUrl = "";
+        const photoUrl = getPhotoUrl(photo);
   
-        // Check if the photo is a valid File or Blob
-        if (photo instanceof File || photo instanceof Blob) {
-          photoUrl = URL.createObjectURL(photo);
-        } else if (typeof photo === "string") {
-          // photoUrl = photo; // Direct URL from the backend
-          photoUrl = `https://rentpondy.com/PPC/${photo}`;
-  
-        } else {
+        if (!photoUrl) {
           return null; // Skip rendering if the format is invalid
         }
   
@@ -5690,7 +5680,7 @@ const isReadOnly = true; // set true to make it readonly
                src = URL.createObjectURL(videoItem);
                type = videoItem.type || "video/mp4";
              } else if (typeof videoItem === "string") {
-               src = `https://rentpondy.com/PPC/${videoItem}`;
+               src = getVideoUrl(videoItem);
                type = getMimeType(videoItem);
              }
      

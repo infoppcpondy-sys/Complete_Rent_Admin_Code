@@ -118,6 +118,7 @@ import { LiaCitySolid } from "react-icons/lia";
 import { GoCheckCircleFill } from "react-icons/go";
 import { motion } from 'framer-motion';
 import pic from "./Assets/Mask Group 3.png";
+import { getVideoUrl, getAllPhotoUrls } from './utils/mediaHelper';
 
 
 
@@ -675,9 +676,9 @@ const handleSubmit = async ({ rentalAmount, rentId }) => {
   useEffect(() => {
     // Ensure propertyDetails is not null or undefined before accessing `video`
     if (propertyDetails?.video) {
-      setVideoUrl(`https://rentpondy.com/PPC/${propertyDetails.video}`);
+      setVideoUrl(getVideoUrl(propertyDetails.video));
     } else {
-      setVideoUrl("https://rentpondy.com/PPC/default-video-url.mp4"); // Fallback to a default video
+      setVideoUrl(""); // No video available
     }
   }, [propertyDetails?.video]); // Runs when `propertyDetails.video` changes
   const handleVideoPlay = () => {
@@ -737,10 +738,7 @@ const handleSubmit = async ({ rentalAmount, rentId }) => {
 
  
 
-const images = propertyDetails.photos && propertyDetails.photos.length > 0
-  ? [...new Set(propertyDetails.photos.map(photo => photo.trim().toLowerCase()))]
-      .map((photo) => `https://rentpondy.com/PPC/${photo}`)
-  : [];
+const images = getAllPhotoUrls(propertyDetails.photos);
 
    
 const formattedCreatedAt = Date.now

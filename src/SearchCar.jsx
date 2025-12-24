@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import moment from "moment";
+import { getFirstPhotoUrl } from './utils/mediaHelper';
 import { useSelector } from "react-redux";
 import {FaKitchenSet ,FaChartArea, FaMapPin, FaDoorClosed , FaRoad ,FaRegAddressCard } from 'react-icons/fa6';
 import { MdLocationOn, MdOutlineMeetingRoom, MdOutlineOtherHouses, MdSchedule , MdApproval, MdLocationCity } from "react-icons/md";
@@ -1936,10 +1937,7 @@ useEffect(() => {
         <td>{index + 1}</td>
         <td>
           <img
-            src={
-              property.photos && property.photos.length > 0
-                ? `https://rentpondy.com/PPC/${property.photos[0].replace(/\\/g, "/")}`
-                : pic }
+            src={getFirstPhotoUrl(property.photos, pic)}
             alt="Property"
             style={{ width: "100px", height: "70px", objectFit: "cover", borderRadius: "5px" }}
           />

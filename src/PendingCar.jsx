@@ -7,6 +7,7 @@ import { Table, Form, Button, Modal } from 'react-bootstrap';
 import { useNavigate } from "react-router-dom";
 import { FaEdit, FaEye } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
+import { getFirstPhotoUrl, DEFAULT_IMAGE } from './utils/mediaHelper';
 
 const PendingProperties = () => {
   const [properties, setProperties] = useState([]);
@@ -21,7 +22,6 @@ const PendingProperties = () => {
   const [phoneNumberSearch, setPhoneNumberSearch] = useState('');
   const [followUpMap, setFollowUpMap] = useState({});
     const [statusProperties, setStatusProperties] = useState({});
-
 
   const navigate = useNavigate();
 
@@ -307,9 +307,7 @@ const handleUndo = async (rentId) => {
                 <td>{idx + 1}</td>
                 <td>
                   <img
-                    src={prop.photos?.[0] ? 
-                      `https://RENTpondy.com/PPC/${prop.photos[0].replace(/\\/g, '/')}` : 
-                      'https://d17r9yv50dox9q.cloudfront.net/car_gallery/default.jpg'}
+                    src={getFirstPhotoUrl(prop.photos)}
                     alt="Property"
                     style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                   />

@@ -353,9 +353,21 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaClipboardList size={20}/>
-          Tentant Plan
+          Tenant Plan
         </NavLink>
       </li>
+
+      <li className="p-0 mt-2" > 
+        <NavLink
+          to="/dashboard/plan"
+          onClick={toggleSidebar}
+          className={({ isActive }) => (isActive ? "active-link rounded" : "")}
+        >
+          <FaClipboardList size={20}/>
+          Owners Plan
+        </NavLink>
+      </li>
+
       <li className="p-0 mt-2" >
         <NavLink
           to="/dashboard/paymenttype"
@@ -767,16 +779,17 @@ Upload Detail Ads Images
 Customer Care   
  </NavLink>
   </li>
-      <li className="p-0 mt-2" >
+      {/* <li className="p-0 mt-2" >
         <NavLink
           to="/dashboard/plan"
           onClick={toggleSidebar}
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaClipboardList size={20}/>
-          Plan
+          Owners Plan
         </NavLink>
-      </li>
+      </li> */}
+      
  <li className="p-0 mt-2" >
         <NavLink
           to="/dashboard/contact-form-datas"
@@ -872,27 +885,27 @@ Customer Care
   aria-controls="BuyerAssistantMenu"
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
       <FaUser style={{marginRight:'10px '}}/>
-      Tentant Assistant
+      Tenant Assistant
   </li>
   <ul className="collapse " id="BuyerAssistantMenu">
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/add-buyer-assistance"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Add Tentant Assistantce
+     Add Tenant Assistantce
     </NavLink>
   </li>
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/get-buyer-assistance"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Get Tentant Assistantce
+     Get Tenant Assistantce
     </NavLink>
   </li>
    <li className="p-0 mt-2">
     <NavLink to="/dashboard/active-buyer-assistant" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Tentant Active Assistant
+      Tenant Active Assistant
     </NavLink>
   </li>
 
@@ -906,7 +919,7 @@ Customer Care
    <li className="p-0 mt-2">
     <NavLink to="/dashboard/get-all-buyerlist-viewed"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Tentant Assistant Viewed User
+      Tenant Assistant Viewed User
     </NavLink>
   </li>
 
@@ -928,7 +941,7 @@ Customer Care
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
      
           <FaCar style={{marginRight:'10px '}}/>
-         Tentant PayU 
+         Tenant PayU 
       </li>
 <ul className="collapse " id="BuyerPayUMenu">
 
@@ -936,14 +949,14 @@ Customer Care
     <NavLink to="/dashboard/payment-success-buyer" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaFileInvoice />
-      Tentant Assistant Paid Success
+      Tenant Assistant Paid Success
     </NavLink>
   </li>
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/payment-failed-buyer" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaFileInvoice />
-      Tentant Assistant Paid Failed
+      Tenant Assistant Paid Failed
     </NavLink>
   </li>
 
@@ -951,14 +964,14 @@ Customer Care
     <NavLink to="/dashboard/payment-paynow-buyer" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaFileInvoice />
-      Tentant Assistant Pay Now
+      Tenant Assistant Pay Now
     </NavLink>
   </li>
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/payment-paylater-buyer" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaFileInvoice />
-Tentant Assistant Pay Later
+Tenant Assistant Pay Later
 </NavLink>
   </li>
 <li className="p-0 mt-2">
@@ -1008,7 +1021,7 @@ Tentant Assistant Pay Later
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/buyerlist-interest"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaListAlt />
-      Tentant List - Interest
+      Tenant List - Interest
     </NavLink>
   </li>
 
@@ -1225,7 +1238,7 @@ All Views Datas        </NavLink>
       <li className="p-0 mt-2">
         <NavLink to="/dashboard/buyers-statics"
          onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <RiGroupFill size={20} /> Tentant Statics
+          <RiGroupFill size={20} /> Tenant Statics
         </NavLink>
       </li>
       <li className="p-0 mt-2">
@@ -1299,7 +1312,7 @@ All Views Datas        </NavLink>
       <li className="p-0 mt-2">
         <NavLink to="/dashboard/buyers-follow-ups"
          onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <RiGroupFill size={20} /> Tentant Follow Ups
+          <RiGroupFill size={20} /> Tenant Follow Ups
         </NavLink>
       </li>
       <li className="p-0 mt-2">

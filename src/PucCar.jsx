@@ -16,6 +16,7 @@ import moment from "moment";
 import { useNavigate } from "react-router-dom";
 import { Table } from "react-bootstrap";
 import pic from "./Assets/Mask Group 3.png";
+import { getFirstPhotoUrl } from './utils/mediaHelper';
 
 const PropertyRENT = () => {
   const [data, setData] = useState([]);
@@ -387,11 +388,7 @@ const handleSearch = () => {
           <td>{propertyIndex + 1}</td>
           <td>
                           <img
-                            src={
-                              property.photos && property.photos.length > 0
-                                ? `https://RENTpondy.com/PPC/${property.photos[0]}`
-                                : pic
-                            }
+                            src={getFirstPhotoUrl(property.photos, pic)}
                             alt="Property"
                             style={{ width: "50px", height: "50px", objectFit: "cover" }}
                           />
