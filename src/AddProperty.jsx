@@ -1750,9 +1750,13 @@ const dropdownFieldOrder = [
       formDataToSend.append("photos", photo);
     });
   
-    // Append video if available
-    if (video) {
-      formDataToSend.append("video", video);
+    // Append videos if available
+    if (videos && videos.length > 0) {
+      videos.forEach((vid) => {
+        if (vid instanceof File) {
+          formDataToSend.append("video", vid);
+        }
+      });
     }
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/update-rent-property`, formDataToSend, {
@@ -1889,9 +1893,13 @@ const handleSubmit = async (e) => {
       formDataToSend.append("photos", photo);
     });
 
-    // Append video if available
-    if (video) {
-      formDataToSend.append("video", video);
+    // Append videos if available
+    if (videos && videos.length > 0) {
+      videos.forEach((vid) => {
+        if (vid instanceof File) {
+          formDataToSend.append("video", vid);
+        }
+      });
     }
 
     // 🔹 Submit the property update request

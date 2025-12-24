@@ -1812,8 +1812,23 @@ const handleCombinedClick = async (e) => {
       formDataToSend.append("photos", photo);
     });
   
-    if (video) {
-      formDataToSend.append("video", video);
+    // Append videos - handle both new File uploads and existing video paths
+    if (videos && videos.length > 0) {
+      videos.forEach((vid) => {
+        if (vid instanceof File) {
+          formDataToSend.append("video", vid);
+        } else if (typeof vid === "string") {
+          // Keep existing video path
+          formDataToSend.append("existingVideo", vid);
+        }
+      });
+    } else if (video) {
+      // Fallback to singular video state if videos array is empty
+      if (video instanceof File) {
+        formDataToSend.append("video", video);
+      } else if (typeof video === "string") {
+        formDataToSend.append("existingVideo", video);
+      }
     }
   
     try {
