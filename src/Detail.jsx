@@ -649,6 +649,8 @@ const handleSubmit = async ({ rentalAmount, rentId }) => {
     const fetchPropertyData = async () => {
       try {
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-data-on-demand-rent?rentId=${rentId}`);
+        console.log("Property data received:", response.data.user);
+        console.log("Video field:", response.data.user?.video);
         setPropertyDetails(response.data.user);
       } catch (err) {
         setError("Failed to fetch property details.");
@@ -678,7 +680,7 @@ const handleSubmit = async ({ rentalAmount, rentId }) => {
     if (propertyDetails?.video) {
       setVideoUrl(getVideoUrl(propertyDetails.video));
     } else {
-      setVideoUrl(null); // No video available
+      setVideoUrl(""); // No video available
     }
   }, [propertyDetails?.video]); // Runs when `propertyDetails.video` changes
   const handleVideoPlay = () => {

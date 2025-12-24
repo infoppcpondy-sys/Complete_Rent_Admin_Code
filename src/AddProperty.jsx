@@ -1341,7 +1341,6 @@ const handlePhotoUpload = async (e) => {
 // };
 const handleVideoChange = async (e) => {
   const selectedFiles = Array.from(e.target.files);
-  const validFiles = [];
 
   setVideoError(""); // reset previous error
 
@@ -1361,25 +1360,8 @@ const handleVideoChange = async (e) => {
     return;
   }
 
-  for (let file of selectedFiles) {
-    // ✅ Compress all videos to ~100KB
-    let compressedFile = file;
-    try {
-      setIsCompressing(true);
-      setCompressionProgress(0);
-      setCompressionStatus(`Compressing ${file.name}...`);
-      compressedFile = await compressVideo(file);
-      setCompressionStatus(`Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024).toFixed(0)}KB`);
-    } catch (err) {
-      console.warn("Compression failed, using original file", err);
-      setCompressionStatus('Compression failed, using original');
-    } finally {
-      setIsCompressing(false);
-      setTimeout(() => setCompressionStatus(''), 2000);
-    }
-
-    validFiles.push(compressedFile);
-  }
+  // Use original files directly (skip compression to avoid MIME type issues)
+  const validFiles = selectedFiles.filter(file => allowedVideoTypes.includes(file.type));
 
   if (!validFiles.length) return;
 
@@ -1406,7 +1388,7 @@ const handleVideoChange = async (e) => {
   }, 300);
 };
 
-// ⚡ Compress video to ~200KB using canvas-based compression
+// ⚡ Compress video to ~200KB using canvas-based compression (currently disabled)
 const compressVideo = async (file) => {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
@@ -1750,13 +1732,9 @@ const dropdownFieldOrder = [
       formDataToSend.append("photos", photo);
     });
   
-    // Append videos if available
-    if (videos && videos.length > 0) {
-      videos.forEach((vid) => {
-        if (vid instanceof File) {
-          formDataToSend.append("video", vid);
-        }
-      });
+    // Append video if available
+    if (video) {
+      formDataToSend.append("video", video);
     }
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/update-rent-property`, formDataToSend, {
@@ -1888,18 +1866,36 @@ const handleSubmit = async (e) => {
       }
     });
 
-    // Append photos
+    // Append photos - only append File objects
     photos.forEach((photo) => {
-      formDataToSend.append("photos", photo);
+      if (photo instanceof File) {
+        formDataToSend.append("photos", photo);
+      }
     });
 
-    // Append videos if available
-    if (videos && videos.length > 0) {
-      videos.forEach((vid) => {
-        if (vid instanceof File) {
-          formDataToSend.append("video", vid);
-        }
-      });
+    // Append video if available (use first video from videos array)
+    // Only send videos with simple MIME types (no codec info)
+    const allowedVideoMimes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    if (videos && videos.length > 0 && videos[0] instanceof File) {
+      const videoFile = videos[0];
+      const simpleMime = videoFile.type.split(';')[0]; // Remove codec info like "video/webm;codecs=vp8"
+      if (allowedVideoMimes.includes(simpleMime)) {
+        // Create a new File with clean MIME type
+        const cleanVideo = new File([videoFile], videoFile.name, { type: simpleMime });
+        formDataToSend.append("video", cleanVideo);
+      } else {
+        console.warn("Video skipped due to unsupported MIME type:", videoFile.type);
+      }
+    }
+
+    // Debug: Log what's being sent
+    console.log("Submitting FormData:");
+    for (let [key, value] of formDataToSend.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: File - ${value.name}, type: ${value.type}, size: ${value.size}`);
+      } else {
+        console.log(`${key}: ${value}`);
+      }
     }
 
     // 🔹 Submit the property update request
@@ -1910,11 +1906,13 @@ const handleSubmit = async (e) => {
     );
 
     alert(propertyResponse.data.message || "Property updated successfully.");
+    navigate('/dashboard/property-list');
   } catch (error) {
     console.error("Submit Error:", error);
-    alert("An error occurred while submitting the property data.");
+    console.error("Error Response:", error.response?.data);
+    const errorMessage = error.response?.data?.message || error.message || "An error occurred while submitting the property data.";
+    alert(errorMessage);
   }
-  navigate('/dashboard/property-list')
 };
 
 
@@ -2877,7 +2875,7 @@ const handleEdit = () => {
              {videos.map((video, index) => (
                <div key={index} style={{ position: 'relative', display: 'inline-block' }}>
                  <video width="200" height="200" controls>
-                   <source  src={video instanceof File ? URL.createObjectURL(video) : getVideoUrl(video)}
+                   <source  src={video instanceof File ? URL.createObjectURL(video) : video}
                type={video instanceof File ? video.type : "video/mp4"} />
                    Your browser does not support the video tag.
                  </video>

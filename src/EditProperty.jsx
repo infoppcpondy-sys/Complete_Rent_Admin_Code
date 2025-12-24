@@ -853,12 +853,7 @@ const formattedUpdatedAt = formData.updatedAt
 
             : []
         ); 
-        const videoPath = typeof data.video === "string" ? data.video : data.video?.url;
-        setVideo(videoPath);
-        // Add existing video to videos array for display
-        if (videoPath) {
-          setVideos([videoPath]);
-        }
+        setVideo(typeof data.video === "string" ? data.video : data.video?.url);
 
         // setVideo(data.video || null);
         setFormData({
@@ -922,12 +917,7 @@ const formattedUpdatedAt = formData.updatedAt
         });
         
         setPhotos(data.photos || []);
-        const existingVideo = data.video || null;
-        setVideo(existingVideo);
-        // Add existing video to videos array for display
-        if (existingVideo) {
-          setVideos([existingVideo]);
-        }
+        setVideo(data.video || null);
       } catch (error) {
       }
     };
@@ -1445,7 +1435,6 @@ const handlePhotoUpload = async (e) => {
   
 const handleVideoChange = async (e) => {
   const selectedFiles = Array.from(e.target.files);
-  const validFiles = [];
 
   setVideoError(""); // reset previous error
 
@@ -1465,25 +1454,8 @@ const handleVideoChange = async (e) => {
     return;
   }
 
-  for (let file of selectedFiles) {
-    // ✅ Compress all videos to ~200KB
-    let compressedFile = file;
-    try {
-      setIsCompressing(true);
-      setCompressionProgress(0);
-      setCompressionStatus(`Compressing ${file.name}...`);
-      compressedFile = await compressVideo(file);
-      setCompressionStatus(`Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024).toFixed(0)}KB`);
-    } catch (err) {
-      console.warn("Compression failed, using original file", err);
-      setCompressionStatus('Compression failed, using original');
-    } finally {
-      setIsCompressing(false);
-      setTimeout(() => setCompressionStatus(''), 2000);
-    }
-
-    validFiles.push(compressedFile);
-  }
+  // Use original files directly (skip compression to avoid MIME type issues)
+  const validFiles = selectedFiles.filter(file => allowedVideoTypes.includes(file.type));
 
   if (!validFiles.length) return;
 
@@ -1510,7 +1482,7 @@ const handleVideoChange = async (e) => {
   }, 300);
 };
 
-// ⚡ Compress video to ~200KB using canvas-based compression
+// ⚡ Compress video to ~200KB using canvas-based compression (currently disabled)
 const compressVideo = async (file) => {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
@@ -1812,23 +1784,19 @@ const handleCombinedClick = async (e) => {
       formDataToSend.append("photos", photo);
     });
   
-    // Append videos - handle both new File uploads and existing video paths
-    if (videos && videos.length > 0) {
-      videos.forEach((vid) => {
-        if (vid instanceof File) {
-          formDataToSend.append("video", vid);
-        } else if (typeof vid === "string") {
-          // Keep existing video path
-          formDataToSend.append("existingVideo", vid);
-        }
-      });
-    } else if (video) {
-      // Fallback to singular video state if videos array is empty
-      if (video instanceof File) {
-        formDataToSend.append("video", video);
-      } else if (typeof video === "string") {
-        formDataToSend.append("existingVideo", video);
+    // Append video - check if there's a new video in videos array first, otherwise use existing video
+    const allowedVideoMimes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    if (videos && videos.length > 0 && videos[0] instanceof File) {
+      // New video uploaded - clean MIME type
+      const videoFile = videos[0];
+      const simpleMime = videoFile.type.split(';')[0]; // Remove codec info
+      if (allowedVideoMimes.includes(simpleMime)) {
+        const cleanVideo = new File([videoFile], videoFile.name, { type: simpleMime });
+        formDataToSend.append("video", cleanVideo);
       }
+    } else if (video && typeof video === 'string') {
+      // Existing video path - send as existingVideo
+      formDataToSend.append("existingVideo", video);
     }
   
     try {
@@ -1844,7 +1812,10 @@ const handleCombinedClick = async (e) => {
       }, 2000);
   
     } catch (error) {
-      setMessage({ text: "Error saving property data.", type: "error" });
+      console.error("Submit Error:", error);
+      console.error("Error Response:", error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || "Error saving property data.";
+      setMessage({ text: errorMessage, type: "error" });
     }
   };
   
