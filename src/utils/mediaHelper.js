@@ -16,7 +16,7 @@ const DEFAULT_PROPERTY_IMAGE = 'https://d17r9yv50dox9q.cloudfront.net/car_galler
  * @returns {string} Full URL for the photo
  */
 export const getPhotoUrl = (photo) => {
-  if (!photo) {
+  if (photo == null) {
     return DEFAULT_PROPERTY_IMAGE;
   }
 
@@ -27,6 +27,9 @@ export const getPhotoUrl = (photo) => {
 
   // If it's already a full URL
   if (typeof photo === 'string') {
+    if (!photo.trim()) {
+      return DEFAULT_PROPERTY_IMAGE;
+    }
     if (photo.startsWith('http://') || photo.startsWith('https://')) {
       return photo;
     }
@@ -102,7 +105,10 @@ export const getAllPhotoUrls = (photos) => {
   if (!photos || !Array.isArray(photos)) {
     return [];
   }
-  return photos.map(photo => getPhotoUrl(photo));
+  // Filter out null/undefined values and then map to URLs
+  return photos
+    .filter(photo => photo != null)
+    .map(photo => getPhotoUrl(photo));
 };
 
 /**

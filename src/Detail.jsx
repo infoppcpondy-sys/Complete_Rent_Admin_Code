@@ -678,7 +678,7 @@ const handleSubmit = async ({ rentalAmount, rentId }) => {
     if (propertyDetails?.video) {
       setVideoUrl(getVideoUrl(propertyDetails.video));
     } else {
-      setVideoUrl(""); // No video available
+      setVideoUrl(null); // No video available
     }
   }, [propertyDetails?.video]); // Runs when `propertyDetails.video` changes
   const handleVideoPlay = () => {
@@ -1380,26 +1380,28 @@ const currentUrl = `${window.location.origin}${location.pathname}`; // <- Works 
       ]}
 
       {/* Video Slide */}
-      <SwiperSlide>
-        <div
-          className="d-flex justify-content-center align-items-center"
-          style={{
-            height: "200px",
-            width: "100%",
-            overflow: "hidden",
-            borderRadius: "8px",
-            margin: "auto",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-            cursor: "pointer",
-          }}
-        >
-          <video controls style={{ height: "100%", width: "100%", objectFit: "cover" }}>
-            <source src={videoUrl} type="video/mp4" />
-            <source src={videoUrl.replace(".mp4", ".webm")} type="video/webm" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      </SwiperSlide>
+      {videoUrl && (
+        <SwiperSlide>
+          <div
+            className="d-flex justify-content-center align-items-center"
+            style={{
+              height: "200px",
+              width: "100%",
+              overflow: "hidden",
+              borderRadius: "8px",
+              margin: "auto",
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+              cursor: "pointer",
+            }}
+          >
+            <video controls style={{ height: "100%", width: "100%", objectFit: "cover" }}>
+              <source src={videoUrl} type="video/mp4" />
+              <source src={videoUrl.replace(".mp4", ".webm")} type="video/webm" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </SwiperSlide>
+      )}
     </Swiper>
   <style>
     {`

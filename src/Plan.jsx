@@ -7,6 +7,7 @@ import { FaFileVideo } from "react-icons/fa";
 import { Button } from "react-bootstrap";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
+import { getVideoUrl } from './utils/mediaHelper';
 
 function Plan() {
   const location = useLocation();
@@ -326,7 +327,7 @@ useEffect(() => {
             <h4 className="text-start">Selected Video:</h4>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <video width="200" controls>
-                <source src={URL.createObjectURL(video)} type="video/mp4" />
+                <source src={video instanceof File ? URL.createObjectURL(video) : getVideoUrl(video)} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
               <Button variant="danger" onClick={() => setVideo(null)} style={{ height: "40px" }}>

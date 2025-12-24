@@ -2869,7 +2869,7 @@ const handleEdit = () => {
              {videos.map((video, index) => (
                <div key={index} style={{ position: 'relative', display: 'inline-block' }}>
                  <video width="200" height="200" controls>
-                   <source  src={video instanceof File ? URL.createObjectURL(video) : video}
+                   <source  src={video instanceof File ? URL.createObjectURL(video) : getVideoUrl(video)}
                type={video instanceof File ? video.type : "video/mp4"} />
                    Your browser does not support the video tag.
                  </video>

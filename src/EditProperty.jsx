@@ -853,7 +853,12 @@ const formattedUpdatedAt = formData.updatedAt
 
             : []
         ); 
-        setVideo(typeof data.video === "string" ? data.video : data.video?.url);
+        const videoPath = typeof data.video === "string" ? data.video : data.video?.url;
+        setVideo(videoPath);
+        // Add existing video to videos array for display
+        if (videoPath) {
+          setVideos([videoPath]);
+        }
 
         // setVideo(data.video || null);
         setFormData({
@@ -917,7 +922,12 @@ const formattedUpdatedAt = formData.updatedAt
         });
         
         setPhotos(data.photos || []);
-        setVideo(data.video || null);
+        const existingVideo = data.video || null;
+        setVideo(existingVideo);
+        // Add existing video to videos array for display
+        if (existingVideo) {
+          setVideos([existingVideo]);
+        }
       } catch (error) {
       }
     };
