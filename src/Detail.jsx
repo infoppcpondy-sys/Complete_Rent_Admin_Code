@@ -930,51 +930,52 @@ const scrollToContact = () => {
 
 
 const handleOwnerContactClick = async () => {
-  const storedPhoneNumber = localStorage.getItem("phoneNumber");
   setViewed(true);
   setTimeout(() => setViewed(false), 300);
 
-  try {
-    if (!storedPhoneNumber || !rentId) {
-      setMessage("Phone number and Rent ID are required.");
-      return;
+  // For admin panel, show contact details directly from propertyDetails
+  // Set the final contact number from the property phone number
+  const contactNumber = propertyDetails?.phoneNumber || phoneNumber || '';
+  setFinalContactNumber(contactNumber);
+  setShowContactDetails(true);
+  
+  setTimeout(scrollToContact, 100);
+
+  // Optionally also make the API call to track the contact view
+  const storedPhoneNumber = localStorage.getItem("phoneNumber");
+  if (storedPhoneNumber && rentId) {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/contact-rent`, {
+        phoneNumber: storedPhoneNumber,
+        rentId,
+      });
+
+      const {
+        success,
+        setRentId,
+        assignedPhoneNumber,
+        postedUserPhoneNumber,
+        rentId: returnedRentId,
+        rentalAmount,
+        ownerName,
+        area,
+        city,
+      } = response.data;
+
+      if (success) {
+        const finalNumber = setRentId ? assignedPhoneNumber : postedUserPhoneNumber;
+        if (finalNumber) {
+          setFinalContactNumber(finalNumber);
+        }
+        setSetrentId(setRentId);
+        setAssignedPhoneNumber(assignedPhoneNumber);
+        setPostedUserPhoneNumber(postedUserPhoneNumber);
+        setOwnerDetails({ ownerName, area, city, rentalAmount, rentId: returnedRentId });
+      }
+    } catch (error) {
+      console.log("Contact tracking error:", error.response?.data?.message || error.message);
+      // Don't block showing details - already shown above
     }
-
-    const response = await axios.post(`${process.env.REACT_APP_API_URL}/contact-rent`, {
-      phoneNumber: storedPhoneNumber,
-      rentId,
-    });
-
-    const {
-      success,
-      setRentId,
-      assignedPhoneNumber,
-      postedUserPhoneNumber,
-      rentId: returnedRentId,
-      rentalAmount,
-      views,
-      contactRequests,
-      createdAt,
-      updatedAt,
-      ownerName,
-      area,
-      city,
-      photos,
-    } = response.data;
-
-    if (success) {
-      const finalNumber = setRentId ? assignedPhoneNumber : postedUserPhoneNumber;
-      setSetrentId(setRentId);
-      setAssignedPhoneNumber(assignedPhoneNumber);
-      setPostedUserPhoneNumber(postedUserPhoneNumber);
-      setFinalContactNumber(finalNumber);
-      setOwnerDetails({ ownerName, area, city, rentalAmount, rentId: returnedRentId });
-      setShowContactDetails(true);
-
-      setTimeout(scrollToContact, 100);
-    }
-  } catch (error) {
-    setMessage(error.response?.data?.message || "Failed to contact owner. Please try again.");
   }
 };
 
