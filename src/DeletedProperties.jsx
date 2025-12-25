@@ -10,7 +10,6 @@ import { FaTrash } from 'react-icons/fa';  // Import delete icon from react-icon
 import { useNavigate } from "react-router-dom";
 
 const DeletedProperties = () => {
-
   const [filters, setFilters] = useState({
   rentId: '',
   phoneNumber: '',
@@ -86,7 +85,6 @@ const filteredProperties = deletedProperties.filter((property) => {
   
   const adminName = reduxAdminName || localStorage.getItem("adminName");
   const adminRole = reduxAdminRole || localStorage.getItem("adminRole");
-  
  
   return (
     <div className="container mt-4">
@@ -193,12 +191,11 @@ const filteredProperties = deletedProperties.filter((property) => {
               <th>Status</th>
               <th>Deleted At</th>
               <th>DeletedBy AdminName </th>
- 
             </tr>
           </thead>
           <tbody>
-            {filteredProperties.map((property) => (
-              <tr key={property.rentId}>
+            {filteredProperties.map((property, index) => (
+              <tr key={`${property.rentId}-${index}`}>
                 <td  style={{cursor: "pointer"}}  onClick={() =>
                                             navigate(`/dashboard/detail`, {
                                               state: { rentId: property.rentId, phoneNumber: property.phoneNumber },
@@ -211,7 +208,6 @@ const filteredProperties = deletedProperties.filter((property) => {
                 <td>{property.status || 'N/A'}</td>
                 <td>{property.deletedAt || '—'}</td>
                 <td>{property.permanentDeletedBy}</td>
-                 
               </tr>
             ))}
           </tbody>

@@ -1,7 +1,7 @@
  
 
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 import { FaFlag, FaBan, FaTrash, FaUndo, FaCheck } from 'react-icons/fa';
@@ -11,6 +11,130 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+
+// Memoized table row component for better performance
+const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatusBadge }) => {
+  const loginDate = useMemo(() => moment(item.loginDate).format('DD-MM-YYYY HH:mm'), [item.loginDate]);
+  const updateDate = useMemo(() => item.updatedBy ? moment(item.updateDate).format('DD-MM-YYYY') : null, [item.updateDate, item.updatedBy]);
+  const reportDate = useMemo(() => item.reportedBy ? moment(item.reportDate).format('DD-MM-YYYY') : null, [item.reportDate, item.reportedBy]);
+  const bannedDate = useMemo(() => item.bannedBy ? moment(item.bannedDate).format('DD-MM-YYYY') : null, [item.bannedDate, item.bannedBy]);
+  const deletedDate = useMemo(() => item.deletedBy ? moment(item.deletedDate).format('DD-MM-YYYY') : null, [item.deletedDate, item.deletedBy]);
+  const unReportedDate = useMemo(() => item.unReportedBy ? moment(item.unReportedDate).format('DD-MM-YYYY') : null, [item.unReportedDate, item.unReportedBy]);
+  const unBannedDate = useMemo(() => item.unBannedBy ? moment(item.unBannedDate).format('DD-MM-YYYY') : null, [item.unBannedDate, item.unBannedBy]);
+  const unDeletedDate = useMemo(() => item.unDeletedBy ? moment(item.unDeletedDate).format('DD-MM-YYYY') : null, [item.unDeletedDate, item.unDeletedBy]);
+
+  return (
+    <tr>
+      <td className="border px-4 py-2">{index + 1}</td>
+      <td className="border px-4 py-2">{item.phone}</td>
+      <td className="border px-4 py-2">{item.otp || 'N/A'}</td>
+      <td className="border px-4 py-2">{loginDate}</td>
+      <td className="border px-4 py-2">{item.otpStatus}</td>
+      <td className="border px-4 py-2">{item.countryCode}</td>
+      <td className="border px-4 py-2">{item.loginMode}</td>
+      <td className="border px-4 py-2">{getStatusBadge(item.status || 'active')}</td>
+      <td className="border px-4 py-2">
+        {item.updatedBy ? `${item.updatedBy} (${updateDate})` : 'N/A'}
+      </td>
+      <td className="border px-4 py-2">{item.remarks || 'N/A'}</td>
+      <td className="border px-4 py-2">{item.bannedReason || 'N/A'}</td>
+      <td className="border px-4 py-2">{item.deleteReason || 'N/A'}</td>
+      <td className="border px-4 py-2">
+        {item.reportedBy ? `${item.reportedBy} (${reportDate})` : 'N/A'}
+      </td>
+      <td className="border px-4 py-2">
+        {item.bannedBy ? `${item.bannedBy} (${bannedDate})` : 'N/A'}
+      </td>
+      <td className="border px-4 py-2">
+        {item.deletedBy ? `${item.deletedBy} (${deletedDate})` : 'N/A'}
+      </td>
+      <td className="border px-4 py-2">
+        {item.unReportedBy ? `${item.unReportedBy} (${unReportedDate})` : 'N/A'}
+      </td>
+      <td className="border px-4 py-2">
+        {item.unBannedBy ? `${item.unBannedBy} (${unBannedDate})` : 'N/A'}
+      </td>
+      <td className="border px-4 py-2">
+        {item.unDeletedBy ? `${item.unDeletedBy} (${unDeletedDate})` : 'N/A'}
+      </td>
+      <td className="border px-4 py-2">{item.permanentlyLoggedOut ? 'Yes' : 'No'}</td>
+      <td className="border px-4 py-2 text-center">
+        <div className="d-flex justify-content-center gap-2">
+          {(item.status !== 'active' && item.status) && (
+            <button 
+              className="btn btn-sm btn-primary"
+              title="Set Active"
+              onClick={() => showConfirmation(item, 'setActive')}
+              disabled={loading}
+            >
+              <FaCheck />
+            </button>
+          )}
+          
+          {item.status === 'reported' ? (
+            <button 
+              className="btn btn-sm btn-success"
+              title="Unreport"
+              onClick={() => showConfirmation(item, 'unreport')}
+              disabled={loading}
+            >
+              <FaUndo />
+            </button>
+          ) : (
+            <button 
+              className="btn btn-sm btn-warning"
+              title="Report"
+              onClick={() => showConfirmation(item, 'report')}
+              disabled={loading}
+            >
+              <FaFlag />
+            </button>
+          )}
+          
+          {item.status === 'banned' ? (
+            <button 
+              className="btn btn-sm btn-success"
+              title="Unban"
+              onClick={() => showConfirmation(item, 'unban')}
+              disabled={loading}
+            >
+              <FaUndo />
+            </button>
+          ) : (
+            <button 
+              className="btn btn-sm btn-danger"
+              title="Ban"
+              onClick={() => showConfirmation(item, 'ban')}
+              disabled={loading}
+            >
+              <FaBan />
+            </button>
+          )}
+          
+          {item.status === 'deleted' ? (
+            <button 
+              className="btn btn-sm btn-success"
+              title="Undelete"
+              onClick={() => showConfirmation(item, 'undelete')}
+              disabled={loading}
+            >
+              <FaUndo />
+            </button>
+          ) : (
+            <button 
+              className="btn btn-sm btn-dark"
+              title="Delete"
+              onClick={() => showConfirmation(item, 'delete')}
+              disabled={loading}
+            >
+              <FaTrash />
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 const LoginReportTable = () => {
   const [users, setUsers] = useState([]);
@@ -230,29 +354,31 @@ const handleSetActiveStatus = async (user) => {
 
     doc.save(`Login_Report_${moment().format('DD-MM-YYYY')}.pdf`);
   };
-  const filteredUsers = users.filter(user => {
-    const matchesStatus =
-      statusFilter === 'all' || user.status === statusFilter;
-  const matchesOtpStatus =
-    otpStatusFilter === 'all' || user.otpStatus === otpStatusFilter;
-  const matchesRemarks =
-    remarksFilter === 'all' || user.remarks === remarksFilter;
-    const matchesPhone =
-      phoneFilter.trim() === '' || user.phone?.includes(phoneFilter.trim());
 
-    const loginMoment = moment(user.loginDate, moment.ISO_8601, true);
+  // Memoized filtered users for performance - only recalculates when filters or users change
+  const filteredUsers = useMemo(() => {
+    const phoneFilterTrimmed = phoneFilter.trim().toLowerCase();
     const start = startDate ? moment(startDate, 'YYYY-MM-DD').startOf('day') : null;
     const end = endDate ? moment(endDate, 'YYYY-MM-DD').endOf('day') : null;
 
-    const matchesDate =
-      !loginMoment.isValid() ||
-      (!start && !end) ||
-      (start && !end && loginMoment.isSameOrAfter(start)) ||
-      (!start && end && loginMoment.isSameOrBefore(end)) ||
-      (start && end && loginMoment.isBetween(start, end, null, '[]'));
+    return users.filter(user => {
+      // Quick string comparisons first (fastest)
+      if (statusFilter !== 'all' && user.status !== statusFilter) return false;
+      if (otpStatusFilter !== 'all' && user.otpStatus !== otpStatusFilter) return false;
+      if (remarksFilter !== 'all' && user.remarks !== remarksFilter) return false;
+      if (phoneFilterTrimmed && !user.phone?.toLowerCase().includes(phoneFilterTrimmed)) return false;
 
-    return matchesStatus && matchesOtpStatus && matchesRemarks && matchesPhone && matchesDate;
-  });
+      // Date comparison (slower, do last)
+      if (start || end) {
+        const loginMoment = moment(user.loginDate);
+        if (!loginMoment.isValid()) return true;
+        if (start && loginMoment.isBefore(start)) return false;
+        if (end && loginMoment.isAfter(end)) return false;
+      }
+
+      return true;
+    });
+  }, [users, statusFilter, otpStatusFilter, remarksFilter, phoneFilter, startDate, endDate]);
 
   const reduxAdminName = useSelector((state) => state.admin.name);
   const reduxAdminRole = useSelector((state) => state.admin.role);
@@ -323,12 +449,12 @@ const handleSetActiveStatus = async (user) => {
     return messages[action] || `Are you sure you want to perform this action on user ${phone}?`;
   };
 
-  const showConfirmation = (user, action) => {
+  const showConfirmation = useCallback((user, action) => {
     setSelectedUser(user);
     setActionType(action);
     setConfirmAction(action);
     setShowConfirmModal(true);
-  };
+  }, []);
 
 
  
@@ -350,7 +476,7 @@ const handleSetActiveStatus = async (user) => {
 };
 
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = useCallback((status) => {
     const variants = {
       active: 'success',
       reported: 'warning',
@@ -358,7 +484,7 @@ const handleSetActiveStatus = async (user) => {
       deleted: 'dark'
     };
     return <Badge bg={variants[status] || 'primary'}>{status || 'active'}</Badge>;
-  };
+  }, []);
 
   if (!allowedRoles.includes(fileName)) {
     return (
@@ -572,139 +698,18 @@ const handleSetActiveStatus = async (user) => {
         Loading...
       </td>
     </tr>
-  ) :filteredUsers.length > 0 ? (
+  ) : filteredUsers.length > 0 ? (
           filteredUsers.map((item, index) => (
-            <tr key={item._id}>
-              <td className="border px-4 py-2">{index + 1}</td>
-              <td className="border px-4 py-2">{item.phone}</td>
-              <td className="border px-4 py-2">{item.otp || 'N/A'}</td>
-              <td className="border px-4 py-2">{moment(item.loginDate).format('DD-MM-YYYY HH:mm')}</td>
-              <td className="border px-4 py-2">{item.otpStatus}</td>
-              <td className="border px-4 py-2">{item.countryCode}</td>
-              <td className="border px-4 py-2">{item.loginMode}</td>
-              <td className="border px-4 py-2">{getStatusBadge(item.status || 'active')}</td>
-<td className="border px-4 py-2">
-                {item.updatedBy 
-                  ? `${item.updatedBy}
-                   (${moment(item.updateDate).format('DD-MM-YYYY')})` 
-                  : 'N/A'}
-              </td>
-              <td className="border px-4 py-2">{item.remarks || 'N/A'}</td>
-                            <td className="border px-4 py-2">{item.bannedReason || 'N/A'}</td>
-                                                        <td className="border px-4 py-2">{item.deleteReason || 'N/A'}</td>
-
- <td className="border px-4 py-2">
-                {item.reportedBy 
-                  ? `${item.reportedBy} (${moment(item.reportDate).format('DD-MM-YYYY')})` 
-                  : 'N/A'}
-              </td>
-              <td className="border px-4 py-2">
-                {item.bannedBy 
-                  ? `${item.bannedBy} (${moment(item.bannedDate).format('DD-MM-YYYY')})` 
-                  : 'N/A'}
-              </td>
-              <td className="border px-4 py-2">
-                {item.deletedBy 
-                  ? `${item.deletedBy} (${moment(item.deletedDate).format('DD-MM-YYYY')})` 
-                  : 'N/A'}
-              </td>
-
-              <td className="border px-4 py-2">
-                {item.unReportedBy 
-                  ? `${item.unReportedBy} (${moment(item.unReportedDate).format('DD-MM-YYYY')})` 
-                  : 'N/A'}
-              </td>
-              <td className="border px-4 py-2">
-                {item.unBannedBy 
-                  ? `${item.unBannedBy} (${moment(item.unBannedDate).format('DD-MM-YYYY')})` 
-                  : 'N/A'}
-              </td>
-              <td className="border px-4 py-2">
-                {item.unDeletedBy 
-                  ? `${item.unDeletedBy} (${moment(item.unDeletedDate).format('DD-MM-YYYY')})` 
-                  : 'N/A'}
-              </td>
-              <td className="border px-4 py-2">{item.permanentlyLoggedOut ? 'Yes' : 'No'}</td>
-              <td className="border px-4 py-2 text-center">
-                <div className="d-flex justify-content-center gap-2">
-                  {/* Set Active Button - shows for any non-active status */}
-                  {(item.status !== 'active' && item.status) && (
-                    <button 
-                      className="btn btn-sm btn-primary"
-                      title="Set Active"
-                      onClick={() => showConfirmation(item, 'setActive')}
-                      disabled={loading}
-                    >
-                      <FaCheck />
-                    </button>
-                  )}
-                  
-                  {/* Report/Unreport Button */}
-                  {item.status === 'reported' ? (
-                    <button 
-                      className="btn btn-sm btn-success"
-                      title="Unreport"
-                      onClick={() => showConfirmation(item, 'unreport')}
-                      disabled={loading}
-                    >
-                      <FaUndo />
-                    </button>
-                  ) : (
-                    <button 
-                      className="btn btn-sm btn-warning"
-                      title="Report"
-                      onClick={() => showConfirmation(item, 'report')}
-                      disabled={loading}
-                    >
-                      <FaFlag />
-                    </button>
-                  )}
-                  
-                  {/* Ban/Unban Button */}
-                  {item.status === 'banned' ? (
-                    <button 
-                      className="btn btn-sm btn-success"
-                      title="Unban"
-                      onClick={() => showConfirmation(item, 'unban')}
-                      disabled={loading}
-                    >
-                      <FaUndo />
-                    </button>
-                  ) : (
-                    <button 
-                      className="btn btn-sm btn-danger"
-                      title="Ban"
-                      onClick={() => showConfirmation(item, 'ban')}
-                      disabled={loading}
-                    >
-                      <FaBan />
-                    </button>
-                  )}
-                  
-                  {/* Delete/Undelete Button */}
-                  {item.status === 'deleted' ? (
-                    <button 
-                      className="btn btn-sm btn-success"
-                      title="Undelete"
-                      onClick={() => showConfirmation(item, 'undelete')}
-                      disabled={loading}
-                    >
-                      <FaUndo />
-                    </button>
-                  ) : (
-                    <button 
-                      className="btn btn-sm btn-dark"
-                      title="Delete"
-                      onClick={() => showConfirmation(item, 'delete')}
-                      disabled={loading}
-                    >
-                      <FaTrash />
-                    </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-         ))) : (
+            <TableRow
+              key={item._id}
+              item={item}
+              index={index}
+              loading={loading}
+              showConfirmation={showConfirmation}
+              getStatusBadge={getStatusBadge}
+            />
+          ))
+        ) : (
             <tr>
               <td className="border px-4 py-2 text-center" colSpan="21">
                 No records found.

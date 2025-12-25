@@ -1700,11 +1700,12 @@ const columnClass = isDescription ? "col-12" : "col-6";
 return (
   <div key={index} className={columnClass}>
     <div
-      className="d-flex align-items-center border-0 rounded p-1 mb-1"
+      className="d-flex align-items-start border-0 rounded p-1 mb-1"
       style={{
         // backgroundColor: "#F9F9F9", // Background for the item
         width: "100%",
-        height: isDescription ? "auto" : "55px",
+        minHeight: "55px",
+        height: "auto",
         wordBreak: "break-word",
         // height: detail.label === "Description" || detail.value === propertyDetails.description ? "auto" : "100px", // Full height for description
       }}
@@ -1727,9 +1728,8 @@ return (
     borderRadius: "5px",
     width: "100%",
     cursor: "pointer",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
+    whiteSpace: "normal",
+    wordBreak: "break-word",
   }}
   title={
     detail.value
@@ -1740,11 +1740,9 @@ return (
   }
 >
   {detail.value
-    ? ["Country", "State", "City", "District", "Nagar", "Area", "Street Name", "Door Number", "pinCode", "location Coordinates"].includes(detail.label)
-      ? typeof detail.value === "string"
-        ? `${detail.value.slice(0, 8)}...`
-        : JSON.stringify(detail.value)
-      : detail.value
+    ? typeof detail.value === "string"
+      ? detail.value
+      : JSON.stringify(detail.value)
     : "N/A"}
 </p>
 
