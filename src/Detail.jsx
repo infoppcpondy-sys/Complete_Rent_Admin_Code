@@ -1442,8 +1442,37 @@ const currentUrl = `${window.location.origin}${location.pathname}`; // <- Works 
   }}>❯</button>
     </div>
   {/* </div> */}
-<div className="position-absolute bottom-0 start-50 translate-middle-x text-center mt-2" style={{ zIndex: 1050 , color:"white"}}>
-    {Math.min(currentIndex, images.length)}/{maxImages}
+<div className="position-absolute bottom-0 start-50 translate-middle-x text-center mt-2" style={{ 
+    zIndex: 1050,
+    background: "rgba(0, 0, 0, 0.6)",
+    backdropFilter: "blur(4px)",
+    padding: "6px 14px",
+    borderRadius: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+  }}>
+    <span style={{ 
+      fontSize: "16px", 
+      fontWeight: "600", 
+      color: "#fff" 
+    }}>
+      {currentIndex > images.length ? images.length : currentIndex}
+    </span>
+    <span style={{ 
+      fontSize: "14px", 
+      color: "rgba(255,255,255,0.6)" 
+    }}>
+      /
+    </span>
+    <span style={{ 
+      fontSize: "14px", 
+      fontWeight: "400", 
+      color: "rgba(255,255,255,0.8)" 
+    }}>
+      {images.length}
+    </span>
   </div>
 </div>
        <span

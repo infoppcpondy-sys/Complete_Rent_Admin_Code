@@ -14,6 +14,8 @@ import { Button, Table } from "react-bootstrap";
 import moment from "moment/moment";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const DeletedPropertiesTable = () => {
   const [properties, setProperties] = useState([]);
@@ -76,6 +78,29 @@ const [deletingId, setDeletingId] = useState(null);
     printWindow.document.close();
     printWindow.print();
   };
+
+  const handleExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      filtered.map((property, idx) => ({
+        'S.No': idx + 1,
+        'Rent ID': property.rentId,
+        'Phone Number': property.phoneNumber,
+        'Property Type': property.propertyType,
+        'Property Mode': property.propertyMode,
+        'Rental Amount': property.rentalAmount,
+        'City': property.city,
+        'Status': property.status,
+        'Created At': moment(property.createdAt).format('YYYY-MM-DD'),
+        'Deleted At': property.deletedAt ? moment(property.deletedAt).format('YYYY-MM-DD') : 'N/A'
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'RemovedProperties');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, `RemovedProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
   const handleSearch = () => {
     let result = properties;
 
@@ -303,6 +328,9 @@ const handleReset = () => {
       </form>
                     <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
+</button>
+                    <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
+  Excel
 </button>
       <h4>Removed Properties</h4>
 <div ref={tableRef}>

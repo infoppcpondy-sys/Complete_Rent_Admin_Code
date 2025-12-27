@@ -415,6 +415,8 @@ import { Table } from "react-bootstrap";
 import { MdDeleteForever } from "react-icons/md";
 import pic from "./Assets/Mask Group 3.png";
 import { getFirstPhotoUrl } from './utils/mediaHelper';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const PaidPlansWithProperties = () => {
   const [data, setData] = useState([]);
@@ -493,6 +495,35 @@ const PaidPlansWithProperties = () => {
     `);
     printWindow.document.close();
     printWindow.print();
+  };
+
+  // ✅ Export to Excel
+  const handleExcel = () => {
+    const allProperties = [];
+    filteredData.forEach((item) => {
+      item.properties.forEach((property, idx) => {
+        allProperties.push({
+          'RENT ID': property.rentId,
+          'Phone': property.phoneNumber,
+          'City': property.city,
+          'Property Type': property.propertyType,
+          'Mode': property.propertyMode,
+          'Rent': property.rentalAmount,
+          'Plan': item.bill?.planName || 'N/A',
+          'Bill No': item.bill?.billNo || 'N/A',
+          'Admin': property.adminName || 'N/A',
+          'Created At': property.createdAt ? moment(property.createdAt).format('YYYY-MM-DD') : 'N/A',
+          'Updated At': property.updatedAt ? moment(property.updatedAt).format('YYYY-MM-DD') : 'N/A',
+          'Expiry': item.bill?.planExpiryDate ? moment(item.bill.planExpiryDate).format('YYYY-MM-DD') : 'N/A'
+        });
+      });
+    });
+    const worksheet = XLSX.utils.json_to_sheet(allProperties);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'PaidProperties');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, `PaidProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   // ✅ Search Filter
@@ -653,6 +684,9 @@ const handleSearch = () => {
 
       <button className="btn btn-danger my-3" onClick={handlePrint}>
         Print
+      </button>
+      <button className="btn btn-secondary my-3 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
+        Excel
       </button>
 
       <div ref={tableRef}>

@@ -8,6 +8,8 @@ import { useSelector } from "react-redux";
 import { Table, Button } from 'react-bootstrap';
 import { FaTrash } from 'react-icons/fa';  // Import delete icon from react-icons
 import { useNavigate } from "react-router-dom";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const DeletedProperties = () => {
   const [filters, setFilters] = useState({
@@ -66,6 +68,28 @@ const handleFilterChange = (e) => {
     printWindow.document.close();
     printWindow.print();
   };
+
+  const handleExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      filteredProperties.map((property, idx) => ({
+        'S.No': idx + 1,
+        'RENT ID': property.rentId,
+        'Phone Number': property.phoneNumber,
+        'Property Mode': property.propertyMode,
+        'Property Type': property.propertyType,
+        'Rental Amount': property.rentalAmount,
+        'Status': property.status,
+        'Deleted At': property.deletedAt ? moment(property.deletedAt).format('YYYY-MM-DD') : 'N/A',
+        'Deleted By': property.deletedByAdminName || 'N/A'
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'DeletedProperties');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, `DeletedProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
 const filteredProperties = deletedProperties.filter((property) => {
   const { rentId, phoneNumber, status, startDate, endDate } = filters;
 
@@ -176,6 +200,9 @@ const filteredProperties = deletedProperties.filter((property) => {
 </div>
               <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
+</button>
+              <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
+  Excel
 </button>
       {filteredProperties.length === 0 ? (
         <p>No deleted properties found.</p>

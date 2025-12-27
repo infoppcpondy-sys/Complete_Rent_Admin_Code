@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { useSelector } from 'react-redux';
 import { getFirstPhotoUrl, DEFAULT_IMAGE } from './utils/mediaHelper';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const ApprovedCar = () => {
   const [properties, setProperties] = useState([]);
@@ -88,6 +90,27 @@ const navigate = useNavigate();
       `);
       printWindow.document.close();
       printWindow.print();
+    };
+
+    const handleExcel = () => {
+      const worksheet = XLSX.utils.json_to_sheet(
+        filtered.map((property, idx) => ({
+          'S.No': idx + 1,
+          'Rent ID': property.rentId,
+          'Phone Number': property.phoneNumber,
+          'Property Type': property.propertyType,
+          'Property Mode': property.propertyMode,
+          'Rental Amount': property.rentalAmount,
+          'City': property.city,
+          'Status': statusProperties[property.rentId] || property.status,
+          'Created At': moment(property.createdAt).format('YYYY-MM-DD')
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'ApprovedProperties');
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      saveAs(blob, `ApprovedProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
 
   // Search and filter functionality
@@ -643,6 +666,9 @@ const handlePrint = (prop) => {
       </div>
               <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrintt}>
   Print
+</button>
+              <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
+  Excel
 </button>
       {/* Property Table */}
 <div ref={tableRef}>        <Table striped bordered hover responsive className="table-sm align-middle">

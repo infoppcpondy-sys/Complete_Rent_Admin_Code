@@ -366,6 +366,8 @@ import { useNavigate } from "react-router-dom";
 import { Table } from "react-bootstrap";
 import pic from "./Assets/Mask Group 3.png";
 import { getFirstPhotoUrl } from './utils/mediaHelper';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const FreePlansWithProperties = () => {
   const [data, setData] = useState([]);
@@ -493,6 +495,33 @@ const FreePlansWithProperties = () => {
     printWindow.print();
   };
 
+  const handleExcel = () => {
+    const allProperties = [];
+    filteredData.forEach((item) => {
+      item.properties.forEach((property) => {
+        allProperties.push({
+          'RENT ID': property.rentId,
+          'Phone Number': property.phoneNumber,
+          'Property Mode': property.propertyMode,
+          'Property Type': property.propertyType,
+          'Rent': property.rentalAmount,
+          'City': property.city,
+          'Created By': property.adminName || 'N/A',
+          'Created At': property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A',
+          'Updated At': property.updatedAt ? new Date(property.updatedAt).toLocaleDateString() : 'N/A',
+          'Plan': item.billInfo?.planName || 'N/A',
+          'Expiry': item.billInfo?.planExpiryDate ? new Date(item.billInfo.planExpiryDate).toLocaleDateString() : 'N/A'
+        });
+      });
+    });
+    const worksheet = XLSX.utils.json_to_sheet(allProperties);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'FreeProperties');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, `FreeProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
   const reduxAdminName = useSelector((state) => state.admin.name);
   const reduxAdminRole = useSelector((state) => state.admin.role);
 
@@ -549,6 +578,9 @@ const FreePlansWithProperties = () => {
 
       <button className="btn btn-secondary mb-3 mt-2" style={{ background: "tomato" }} onClick={handlePrint}>
         Print
+      </button>
+      <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{ background: "#217346" }} onClick={handleExcel}>
+        Excel
       </button>
 
       <h3 className="mt-4 mb-4">Free Properties Data</h3>

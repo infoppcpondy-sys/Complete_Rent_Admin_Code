@@ -8,6 +8,9 @@ import { useNavigate } from "react-router-dom";
 import { FaEdit, FaEye } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import { getFirstPhotoUrl, DEFAULT_IMAGE } from './utils/mediaHelper';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import moment from 'moment';
 
 const PendingProperties = () => {
   const [properties, setProperties] = useState([]);
@@ -103,6 +106,28 @@ const PendingProperties = () => {
     printWindow.document.close();
     printWindow.print();
   };
+
+  const handleExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      filtered.map((property, idx) => ({
+        'S.No': idx + 1,
+        'Rent ID': property.rentId,
+        'Phone Number': property.phoneNumber,
+        'Property Type': property.propertyType,
+        'Property Mode': property.propertyMode,
+        'Rental Amount': property.rentalAmount,
+        'City': property.city,
+        'Status': property.status,
+        'Created At': moment(property.createdAt).format('YYYY-MM-DD')
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'PendingProperties');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, `PendingProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
   const handleSearch = () => {
     let result = [...properties];
     if (rentIdSearch.trim()) {
@@ -265,6 +290,9 @@ const handleUndo = async (rentId) => {
       </form>
               <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
+</button>
+              <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
+  Excel
 </button>
 <div ref={tableRef}>
       <Table striped bordered hover responsive className="table-sm align-middle mt-3">

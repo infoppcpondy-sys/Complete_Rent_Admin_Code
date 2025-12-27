@@ -12,6 +12,8 @@ import { FaEdit } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import pic from "./Assets/Mask Group 3.png";
 import { getFirstPhotoUrl } from './utils/mediaHelper';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 const AddPropertyList = () => {
   const [properties, setProperties] = useState([]);
   const [statusProperties, setStatusProperties] = useState({});
@@ -137,6 +139,26 @@ const fetchProperties = async () => {
     printWindow.document.close();
     printWindow.print();
   };
+
+  const handleExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      filteredProperties.map((property, idx) => ({
+        'S.No': idx + 1,
+        'Rent ID': property.rentId,
+        'Phone Number': property.phoneNumber,
+        'Property Mode': property.propertyMode,
+        'Property Type': property.propertyType,
+        'Status': statusProperties[property.rentId] || property.status,
+        'Created At': moment(property.createdAt).format('YYYY-MM-DD')
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Properties');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, `Properties_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
 const filteredProperties = properties.filter((property) => {
   const matchesrentId = String(property.rentId || '')
     .toLowerCase()
@@ -520,6 +542,9 @@ const handleDelete = async (rentId, phoneNumber) => {
 </div>
               <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
+</button>
+              <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
+  Excel
 </button>
 
       <h2 className="mb-4 mt-5">User All Properties</h2>
