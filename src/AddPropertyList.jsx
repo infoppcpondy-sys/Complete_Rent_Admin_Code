@@ -591,7 +591,6 @@ const handleDelete = async (rentId, phoneNumber) => {
   const reduxAdminRole = useSelector((state) => state.admin.role);
   
   const adminName = reduxAdminName || localStorage.getItem("adminName");
-  const adminRole = reduxAdminRole || localStorage.getItem("adminRole");
 
      // Sync Redux to localStorage
    useEffect(() => {
@@ -763,7 +762,7 @@ const handleDelete = async (rentId, phoneNumber) => {
     fontWeight: 'bold',
     fontSize: '14px'
   }}>
-    Total: {properties.length}
+    Total: {properties.length} Records
   </div>
   <div style={{ 
     background: '#007bff', 
@@ -773,7 +772,7 @@ const handleDelete = async (rentId, phoneNumber) => {
     fontWeight: 'bold',
     fontSize: '14px'
   }}>
-    Showing: {filteredProperties.length} records
+    Showing: {filteredProperties.length} Records
   </div>
   <div style={{ display: 'flex', gap: '10px' }}>
     <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>

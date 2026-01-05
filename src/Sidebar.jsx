@@ -179,14 +179,14 @@ const menuItems = [
               className={({ isActive }) => (isActive ? "active-link rounded" : "")}
             >
               <FaUser size={20}/>
-              Login Users Datas
+              Login Users Data
             </NavLink>
           </li> 
 
                <li className="p-0 mt-2">
         <NavLink to="/dashboard/user-log" 
         onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <RiFileListFill size={20} /> User Views Datas
+          <RiFileListFill size={20} /> User Views Data
         </NavLink>
       </li>
 
@@ -198,7 +198,7 @@ const menuItems = [
               className={({ isActive }) => (isActive ? "active-link rounded" : "")}
             >
               <FaUser size={20}/>
-              Login datas Separate Users 
+              Login data Separate Users 
             </NavLink>
           </li>
 
@@ -639,7 +639,7 @@ const menuItems = [
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/get-all-property-datas"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUser />
-      Get All Property Datas 
+      Get All Property Data 
     </NavLink>
   </li>
 
@@ -711,7 +711,7 @@ Payment Pay Later
     <NavLink to="/dashboard/all-bills" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaFileInvoice />
-      All Bills Datas
+      All Bills Data
     </NavLink>
   </li>
       <li className="p-0 mt-2" >
@@ -797,7 +797,7 @@ Customer Care
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaMoneyBill size={20}/>
-         All Contact FormDatas
+         All Contact Form Data
         </NavLink>
       </li>
   <li className="p-0 mt-2">
@@ -1037,28 +1037,28 @@ Tenant Assistant Pay Later
  <li className="p-0 mt-2">
     <NavLink to="/dashboard/contact-table"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Contact Request Datas
+      Received Contact Request Data
     </NavLink>
   </li>
   
  <li className="p-0 mt-2">
     <NavLink to="/dashboard/called-list-datas"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Called List Datas
+     Called List Data
     </NavLink>
   </li>
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/favorite-table"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Favorite Datas
+      Received Favorite Data
     </NavLink>
   </li>
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/favorite-removed"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Favorite Removed datas
+      Received Favorite Removed data
     </NavLink>
   </li>
 
@@ -1073,7 +1073,7 @@ Tenant Assistant Pay Later
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/get-matched-properties" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUser />
-      Matched Proprties
+      Matched Properties
     </NavLink>
   </li>
 
@@ -1100,7 +1100,7 @@ Tenant Assistant Pay Later
    <li className="p-0 mt-2">
     <NavLink to="/dashboard/get-all-address-request"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUser />
-      Get Address Request Datas
+      Get Address Request Data
     </NavLink>
   </li>
          <li className="p-0" >
@@ -1110,7 +1110,7 @@ Tenant Assistant Pay Later
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaDownload />
-All Views Datas        </NavLink>
+All Views Data        </NavLink>
       </li>
 
 
@@ -1159,7 +1159,7 @@ All Views Datas        </NavLink>
   <span style={{ position: 'relative', display: 'inline-block', width: '20px', height: '20px' }}>
     <FaUser style={{ position: 'absolute', top: 0, left: 0, fontSize: '18px', color: 'white' }} />
     <FaPhotoFilm style={{ position: 'absolute', bottom: -2, right: -2, fontSize: '13px', color: 'white' }} />
-  </span>User Click Groom Datas
+  </span>User Click Groom Data
  </NavLink>
       </li>
 
@@ -1174,7 +1174,7 @@ All Views Datas        </NavLink>
     <FaUser style={{ position: 'absolute', top: 0, left: 0, fontSize: '18px', color: 'white' }} />
     <FaPhotoFilm style={{ position: 'absolute', bottom: -2, right: -2, fontSize: '13px', color: 'white' }} />
   </span>
-    User Click Bride Datas 
+    User Click Bride Data 
 </NavLink>
       </li>
 </ul>
@@ -1199,13 +1199,13 @@ All Views Datas        </NavLink>
 
  <li className="p-0 mt-2">
         <NavLink to="/dashboard/without-property-user" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <FaUser size={20} />  Per Day Datas 
+          <FaUser size={20} />  Per Day Data 
         </NavLink>
       </li>
 
        <li className="p-0 mt-2">
         <NavLink to="/dashboard/without-30-days-user" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <FaUser size={20} />  Get 30 Days Datas 
+          <FaUser size={20} />  Get 30 Days Data 
         </NavLink>
       </li>
 
@@ -1306,7 +1306,7 @@ All Views Datas        </NavLink>
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaFileInvoice />
-          All FollowUps Datas
+          All FollowUps Data
         </NavLink>
       </li> 
       <li className="p-0 mt-2">

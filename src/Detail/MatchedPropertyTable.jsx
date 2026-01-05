@@ -6,7 +6,7 @@
 
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Table, Badge, Button, Spinner } from 'react-bootstrap';
 import { 
   FaPhone, FaMapMarkerAlt, FaMoneyBillWave, FaHome, 
@@ -17,10 +17,32 @@ import {
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import moment from 'moment';
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { useNavigate } from 'react-router-dom';
+
+// ===== CENTRALIZED COLUMN CONFIGURATION =====
+const TABLE_COLUMNS = [
+  { key: 'rentId', header: 'Rent ID', exportable: true },
+  { key: 'postedBy', header: 'Posted By', exportable: true },
+  { key: 'contact', header: 'Contact', exportable: true },
+  { key: 'rentalAmount', header: 'Rental Amount', exportable: true },
+  { key: 'location', header: 'Location', exportable: true },
+  { key: 'type', header: 'Type', exportable: true },
+  { key: 'facing', header: 'Facing', exportable: true },
+  { key: 'bedrooms', header: 'Bedrooms', exportable: true },
+  { key: 'area', header: 'Area', exportable: true },
+  { key: 'postedOn', header: 'Posted On', exportable: true },
+  { key: 'raId', header: 'RA_ID', exportable: true },
+  { key: 'raName', header: 'RA_NAME', exportable: true },
+  { key: 'raPhone', header: 'RA PHONE', exportable: true },
+  { key: 'raArea', header: 'RA AREA', exportable: true },
+  { key: 'raCity', header: 'RA CITY', exportable: true },
+  { key: 'status', header: 'Status', exportable: true },
+  { key: 'actions', header: 'Action', exportable: false },
+  { key: 'viewDetails', header: 'View Details', exportable: false },
+];
+
+const EXPORT_COLUMNS = TABLE_COLUMNS.filter(col => col.exportable);
 
 
 const MatchedDataTable = () => {
@@ -31,12 +53,13 @@ const MatchedDataTable = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [message, setMessage] = useState(null);
-const [filters, setFilters] = useState({
-  propertyId: '',
-  startDate: '',
-  endDate: ''
-});
+  const [filters, setFilters] = useState({
+    propertyId: '',
+    startDate: '',
+    endDate: ''
+  });
   const navigate = useNavigate();
+  const tableRef = useRef();
 
   // Format price with Indian rupee symbol and commas
   const formatPrice = (rentalAmount) => {
@@ -46,6 +69,77 @@ const [filters, setFilters] = useState({
   // Format date
   const formatDate = (dateString) => {
     return dateString ? new Date(dateString).toLocaleDateString('en-IN') : '-';
+  };
+
+  // ===== HELPER FUNCTION: Extract data from matched property based on column key =====
+  const getPropertyValue = (item, property, columnKey, index) => {
+    switch (columnKey) {
+      case 'rentId':
+        return property.rentId || '-';
+      case 'postedBy':
+        return property.postedBy || '-';
+      case 'contact':
+        return property.postedByUser || '-';
+      case 'rentalAmount':
+        return property.rentalAmount || '-';
+      case 'location':
+        return `${property.city || '-'} / ${property.area || '-'}`;
+      case 'type':
+        return property.propertyType || '-';
+      case 'facing':
+        return property.facing || '-';
+      case 'bedrooms':
+        return property.bedrooms || '-';
+      case 'area':
+        return property.totalArea ? `${property.totalArea} ${property.areaUnit || ''}` : '-';
+      case 'postedOn':
+        return property.createdAt ? formatDate(property.createdAt) : '-';
+      case 'raId':
+        return item.buyerAssistanceCard?.Ra_Id || 'N/A';
+      case 'raName':
+        return item.buyerAssistanceCard?.name || 'N/A';
+      case 'raPhone':
+        return item.buyerAssistanceCard?.phoneNumber || 'N/A';
+      case 'raArea':
+        return item.buyerAssistanceCard?.area || 'N/A';
+      case 'raCity':
+        return item.buyerAssistanceCard?.city || 'N/A';
+      case 'status':
+        return property.isDeleted ? 'Deleted' : 'Active';
+      default:
+        return '';
+    }
+  };
+
+  // ===== HELPER FUNCTION: Validate export data =====
+  const validateExportData = (headers, rows) => {
+    console.log('Validation Debug Info:');
+    console.log('Headers:', headers);
+    console.log('Headers length:', headers.length);
+    console.log('Rows length:', rows.length);
+    if (rows.length > 0) {
+      console.log('First row:', rows[0]);
+      console.log('First row keys:', Object.keys(rows[0]));
+      console.log('First row keys length:', Object.keys(rows[0]).length);
+    }
+
+    if (headers.length === 0) {
+      console.warn('Export validation failed: No headers defined');
+      return false;
+    }
+    if (rows.length === 0) {
+      console.warn('Export validation failed: No data rows to export');
+      return false;
+    }
+    for (let i = 0; i < rows.length; i++) {
+      if (Object.keys(rows[i]).length !== headers.length) {
+        console.warn(`Export validation failed: Row ${i} has ${Object.keys(rows[i]).length} columns, expected ${headers.length}`);
+        console.warn('Row data:', rows[i]);
+        return false;
+      }
+    }
+    console.log(`Export validation passed: ${headers.length} columns, ${rows.length} rows`);
+    return true;
   };
 
  const handleSoftDelete = async (id) => {
@@ -125,13 +219,15 @@ const handleUndoDelete = async (id) => {
 const applyFilters = () => {
   return filteredData.map(item => {
     const matched = item.matchedProperties.filter(property => {
+      // Check Rent ID (fixed: was propertyId, should be rentId)
       const matchesId = filters.propertyId
-        ? (property.propertyId && property.propertyId.toString().toLowerCase().includes(filters.propertyId.toLowerCase()))
+        ? (property.rentId && property.rentId.toString().toLowerCase().includes(filters.propertyId.toLowerCase()))
         : true;
 
+      // Check date range with proper time handling
       const createdDate = new Date(property.createdAt);
-      const startMatch = filters.startDate ? createdDate >= new Date(filters.startDate) : true;
-      const endMatch = filters.endDate ? createdDate <= new Date(filters.endDate) : true;
+      const startMatch = filters.startDate ? createdDate >= new Date(filters.startDate + 'T00:00:00') : true;
+      const endMatch = filters.endDate ? createdDate <= new Date(filters.endDate + 'T23:59:59') : true;
 
       return matchesId && startMatch && endMatch;
     });
@@ -145,105 +241,218 @@ const handleResetFilters = () => {
   setFilters({ propertyId: '', startDate: '', endDate: '' });
 };
 
-   // -------------- PDF EXPORT ----------------
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    const title = "Matched Tentant Requests & Properties";
-
-    // Prepare headers for table columns
-    const headers = [
-      "Rent ID",
-      "Posted By",
-      "Contact",
-      "Rental Amount",
-      "Location",
-      "Type",
-      "Facing",
-      "Bedrooms",
-      "Area",
-      "Posted On",
-      "BA_ID",
-      "BA_NAME",
-      "BA PHONE",
-      "BA AREA",
-      "BA CITY",
-      "Status",
-    ];
-
-    // Flatten data for export, one row per matched property with BA details
-    const data = [];
-    filteredData.forEach((item) => {
-      item.matchedProperties.forEach((property) => {
-        data.push([
-          property.rentId || "-",
-          property.postedBy || "-",
-          property.postedByUser || "-",
-          formatPrice(property.rentalAmount),
-          `${property.city || "-"} / ${property.area || "-"}`,
-          property.propertyType || "-",
-          property.facing || "-",
-          property.bedrooms || "-",
-          property.totalArea ? `${property.totalArea} ${property.areaUnit || ""}` : "-",
-          property.createdAt ? formatDate(property.createdAt) : "-",
-          item.buyerAssistanceCard.Ra_Id || "N/A",
-          item.buyerAssistanceCard.name || "N/A",
-          item.buyerAssistanceCard.phoneNumber || "N/A",
-          item.buyerAssistanceCard.area || "N/A",
-          item.buyerAssistanceCard.city || "N/A",
-          property.isDeleted ? "Deleted" : "Active",
-        ]);
-      });
+// ===== FLATTEN MATCHED DATA FOR EXPORT =====
+const getFlattenedData = () => {
+  const flattened = [];
+  const filtered = applyFilters();
+  filtered.forEach((item) => {
+    item.matchedProperties.forEach((property) => {
+      flattened.push({ item, property });
     });
+  });
+  return flattened;
+};
 
-    doc.text(title, 14, 15);
-    autoTable(doc, {
-      startY: 20,
-      head: [headers],
-      body: data,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [22, 160, 133] },
-      margin: { left: 14, right: 14 },
+// ===== PRINT FUNCTION: Generate PDF with RENT PONDY heading =====
+const handlePrint = () => {
+  const flattenedData = getFlattenedData();
+  
+  if (flattenedData.length === 0) {
+    alert('No data to print. Please adjust filters.');
+    return;
+  }
+
+  // Build header row using exportable columns
+  const exportHeaders = EXPORT_COLUMNS.map(col => col.header);
+  
+  // Build data rows using exportable columns
+  const exportRows = flattenedData.map(({ item, property }, idx) => {
+    const row = {};
+    EXPORT_COLUMNS.forEach(col => {
+      row[col.header] = getPropertyValue(item, property, col.key, idx);
     });
+    return row;
+  });
 
-    doc.save("Matched_Buyer_Requests_Properties.pdf");
-  };
+  // Validate data
+  if (!validateExportData(exportHeaders, exportRows)) {
+    alert('Export validation failed. Check console for details.');
+    return;
+  }
 
-  // -------------- EXCEL EXPORT ----------------
-  const exportExcel = () => {
-    // Prepare data array of objects for XLSX
-    const dataForExcel = [];
+  // Build HTML table
+  let tableHTML = '<table style="border-collapse: collapse; width: 100%; font-size: 11px;">';
+  tableHTML += '<thead><tr>';
+  exportHeaders.forEach(header => {
+    tableHTML += `<th style="border: 1px solid #000; padding: 8px; background: #f0f0f0; text-align: left;">${header}</th>`;
+  });
+  tableHTML += '</tr></thead><tbody>';
 
-    filteredData.forEach((item) => {
-      item.matchedProperties.forEach((property) => {
-        dataForExcel.push({
-          "Rent ID": property.rentId || "-",
-          "Posted By": property.postedBy || "-",
-          Contact: property.postedByUser || "-",
-          rentalAmount: property.rentalAmount || "-",
-          Location: `${property.city || "-"} / ${property.area || "-"}`,
-          Type: property.propertyType || "-",
-          Facing: property.facing || "-",
-          Bedrooms: property.bedrooms || "-",
-          Area: property.totalArea
-            ? `${property.totalArea} ${property.areaUnit || ""}`
-            : "-",
-          "Posted On": property.createdAt ? formatDate(property.createdAt) : "-",
-          RA_ID: item.buyerAssistanceCard.Ra_Id || "N/A",
-          RA_NAME: item.buyerAssistanceCard.name || "N/A",
-          "BA PHONE": item.buyerAssistanceCard.phoneNumber || "N/A",
-          "BA AREA": item.buyerAssistanceCard.area || "N/A",
-          "BA CITY": item.buyerAssistanceCard.city || "N/A",
-          Status: property.isDeleted ? "Deleted" : "Active",
-        });
-      });
+  exportRows.forEach(row => {
+    tableHTML += '<tr>';
+    Object.values(row).forEach(value => {
+      tableHTML += `<td style="border: 1px solid #000; padding: 6px; text-align: left; vertical-align: top;">${value}</td>`;
     });
+    tableHTML += '</tr>';
+  });
 
-    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Matched Data");
+  tableHTML += '</tbody></table>';
 
-    XLSX.writeFile(workbook, "Matched_Buyer_Requests_Properties.xlsx");
-  };
+  const printWindow = window.open("", "", "width=1400,height=900");
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Matched Property Print - ${new Date().toLocaleString()}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 10px; }
+          h1 { margin: 0 0 20px 0; text-align: center; font-size: 24px; }
+          h2 { margin-bottom: 10px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+          th { background: #f0f0f0; font-weight: bold; }
+          tr:nth-child(even) { background: #f9f9f9; }
+        </style>
+      </head>
+      <body>
+        <h1>RENT PONDY</h1>
+        <h2>Matched Property Export - ${new Date().toLocaleString()}</h2>
+        <p>Total Records: ${exportRows.length}</p>
+        ${tableHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  setTimeout(() => printWindow.print(), 500);
+};
+
+// ===== EXCEL DOWNLOAD FUNCTION: Uses filtered data with proper column mapping =====
+const downloadExcel = () => {
+  const flattenedData = getFlattenedData();
+  
+  if (flattenedData.length === 0) {
+    alert('No data to export. Please adjust filters.');
+    return;
+  }
+
+  console.log('Starting Excel export...');
+  console.log('EXPORT_COLUMNS:', EXPORT_COLUMNS);
+  console.log('Flattened data count:', flattenedData.length);
+
+  // Build data rows using only exportable columns
+  const exportRows = flattenedData.map(({ item, property }, idx) => {
+    const row = {};
+    EXPORT_COLUMNS.forEach(col => {
+      const value = getPropertyValue(item, property, col.key, idx);
+      row[col.header] = value;
+    });
+    return row;
+  });
+
+  // Log sample data for debugging
+  if (exportRows.length > 0) {
+    console.log('First row keys:', Object.keys(exportRows[0]));
+    console.log('First row sample:', exportRows[0]);
+  }
+
+  // Validate data
+  const exportHeaders = EXPORT_COLUMNS.map(col => col.header);
+  if (!validateExportData(exportHeaders, exportRows)) {
+    alert('Export validation failed. Check console for details.');
+    return;
+  }
+
+  // Create Excel workbook
+  const worksheet = XLSX.utils.json_to_sheet(exportRows);
+  
+  // Set column widths for better readability
+  const columnWidths = exportHeaders.map(header => ({
+    wch: Math.min(header.length + 5, 30)
+  }));
+  worksheet['!cols'] = columnWidths;
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Matched Properties');
+  
+  const filename = `MatchedProperties_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(workbook, filename);
+  
+  console.log(`Excel file exported: ${filename} with ${exportRows.length} rows`);
+};
+
+// ===== DOWNLOAD PDF FUNCTION: Uses filtered data =====
+const handlePrintPDF = () => {
+  const flattenedData = getFlattenedData();
+  
+  if (flattenedData.length === 0) {
+    alert('No data to export. Please adjust filters.');
+    return;
+  }
+
+  // Build header row using exportable columns
+  const exportHeaders = EXPORT_COLUMNS.map(col => col.header);
+  
+  // Build data rows using exportable columns
+  const exportRows = flattenedData.map(({ item, property }, idx) => {
+    const row = {};
+    EXPORT_COLUMNS.forEach(col => {
+      row[col.header] = getPropertyValue(item, property, col.key, idx);
+    });
+    return row;
+  });
+
+  // Validate data
+  if (!validateExportData(exportHeaders, exportRows)) {
+    alert('Export validation failed. Check console for details.');
+    return;
+  }
+
+  // Build HTML table
+  let tableHTML = '<table style="border-collapse: collapse; width: 100%; font-size: 11px;">';
+  tableHTML += '<thead><tr>';
+  exportHeaders.forEach(header => {
+    tableHTML += `<th style="border: 1px solid #000; padding: 8px; background: #f0f0f0; text-align: left;">${header}</th>`;
+  });
+  tableHTML += '</tr></thead><tbody>';
+
+  exportRows.forEach(row => {
+    tableHTML += '<tr>';
+    Object.values(row).forEach(value => {
+      tableHTML += `<td style="border: 1px solid #000; padding: 6px; text-align: left; vertical-align: top;">${value}</td>`;
+    });
+    tableHTML += '</tr>';
+  });
+
+  tableHTML += '</tbody></table>';
+
+  // Create PDF using HTML2PDF-style approach (simple print to PDF)
+  const pdfWindow = window.open("", "", "width=1400,height=900");
+  pdfWindow.document.write(`
+    <html>
+      <head>
+        <title>Matched Property PDF - ${new Date().toLocaleString()}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 10px; }
+          h1 { margin: 0 0 20px 0; text-align: center; font-size: 24px; }
+          h2 { margin-bottom: 10px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+          th { background: #f0f0f0; font-weight: bold; }
+          tr:nth-child(even) { background: #f9f9f9; }
+        </style>
+      </head>
+      <body>
+        <h1>RENT PONDY</h1>
+        <h2>Matched Property PDF Export - ${new Date().toLocaleString()}</h2>
+        <p>Total Records: ${exportRows.length}</p>
+        ${tableHTML}
+      </body>
+    </html>
+  `);
+  pdfWindow.document.close();
+  setTimeout(() => {
+    pdfWindow.print();
+  }, 500);
+};
 
 
 
@@ -267,47 +476,80 @@ const handleResetFilters = () => {
         </div>
       )}
 
-      <div className="mb-4 p-3 border rounded bg-light">
-       <div className="d-flex gap-3 mb-3">
-  <input
-    type="text"
-    placeholder="Search Property ID"
-    value={filters.propertyId}
-    onChange={e => setFilters({ ...filters, propertyId: e.target.value })}
-    className="form-control"
-  />
+      <div className="mb-4 p-3 border rounded" style={{
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+        backgroundColor: '#fff'
+      }}>
+        <div className="d-flex flex-row gap-2 align-items-center flex-nowrap">
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Search RENT ID</label>
+            <input
+              type="text"
+              placeholder="Enter RENT ID"
+              value={filters.propertyId}
+              onChange={e => setFilters({ ...filters, propertyId: e.target.value })}
+              className="form-control"
+            />
+          </div>
 
-  <input
-    type="date"
-    value={filters.startDate}
-    onChange={e => setFilters({ ...filters, startDate: e.target.value })}
-    className="form-control"
-  />
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>From Date</label>
+            <input
+              type="date"
+              placeholder="dd-mm-yyyy"
+              value={filters.startDate}
+              onChange={e => setFilters({ ...filters, startDate: e.target.value })}
+              className="form-control"
+            />
+          </div>
 
-  <input
-    type="date"
-    value={filters.endDate}
-    onChange={e => setFilters({ ...filters, endDate: e.target.value })}
-    className="form-control"
-  />
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>End Date</label>
+            <input
+              type="date"
+              placeholder="dd-mm-yyyy"
+              value={filters.endDate}
+              onChange={e => setFilters({ ...filters, endDate: e.target.value })}
+              className="form-control"
+            />
+          </div>
 
-  <button onClick={handleResetFilters} className="btn btn-secondary">
-    Reset
-  </button>
-</div>
-
+          <button onClick={handleResetFilters} className="btn btn-primary" style={{marginTop: '20px'}}>
+            Reset All
+          </button>
+        </div>
       </div>
+
+      
+
+      
   <div className='mb-4'>
-         <Button variant="success" className='me-4' onClick={exportExcel}>
-          <FaFileExcel className="me-2" />
-          Download Excel
-        </Button>
-
-        <Button variant="danger" onClick={exportPDF}>
-          <FaFilePdf className="me-2" />
-          Download PDF
-        </Button>
+    <div className="d-flex justify-content-start mb-3 gap-2 align-items-center flex-wrap">
+      <div style={{ 
+        background: '#6c757d', 
+        color: 'white', 
+        padding: '8px 16px', 
+        borderRadius: '4px', 
+        fontWeight: 'bold',
+        fontSize: '14px'
+      }}>
+        Total: {matchedData.length} Records
       </div>
+      <div style={{ 
+        background: '#007bff', 
+        color: 'white', 
+        padding: '8px 16px', 
+        borderRadius: '4px', 
+        fontWeight: 'bold',
+        fontSize: '14px'
+      }}>
+        Showing: {applyFilters().length} Records
+      </div>
+      <button className="btn btn-danger" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={handlePrint}>Print</button>
+      <button className="btn btn-success" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={downloadExcel}>Download Excel</button>
+      <button className="btn btn-warning" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={handlePrintPDF}>Download PDF</button>
+    </div>
+  </div>
     
 
       <div className="table-responsive">
