@@ -176,10 +176,13 @@ const [remarksFilter, setRemarksFilter] = useState('all');
   useEffect(() => {
     fetchUsers(); // fetch once on mount
 
-    // const interval = setInterval(() => {
-    //   fetchUsers(); // fetch again when user click refresh 10 seconds
-    // }, 10000);
+    // Set up polling interval to refresh data every 15 seconds for real-time count updates
+    const refreshInterval = setInterval(() => {
+      fetchUsers();
+    }, 15000);
 
+    // Cleanup interval on component unmount
+    return () => clearInterval(refreshInterval);
    }, []);
 
  
@@ -269,12 +272,17 @@ const handleSetActiveStatus = async (user) => {
         <head>
           <title>Print Table</title>
           <style>
+            body { font-family: Arial, sans-serif; margin: 10px; }
+            h1 { text-align: center; font-size: 24px; margin: 0 0 5px 0; font-weight: bold; }
+            h2 { text-align: center; font-size: 14px; margin: 0 0 20px 0; font-weight: bold; color: #333; }
             table { border-collapse: collapse; width: 100%; font-size: 12px; }
             th, td { border: 1px solid #000; padding: 6px; text-align: left; }
             th { background: #f0f0f0; }
           </style>
         </head>
         <body>
+          <h1>RENT PONDY</h1>
+          <h2>Login Report - ${moment().format('DD-MM-YYYY HH:mm')}</h2>
           <table>${printContent}</table>
         </body>
       </html>
@@ -286,7 +294,7 @@ const handleSetActiveStatus = async (user) => {
   // Export to Excel
   const handleExportExcel = () => {
     const exportData = filteredUsers.map((item, index) => ({
-      '#': index + 1,
+      'S.No': index + 1,
       'Phone': item.phone,
       'OTP': item.otp || 'N/A',
       'Login Date': moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
@@ -316,43 +324,74 @@ const handleSetActiveStatus = async (user) => {
     saveAs(data, `Login_Report_${moment().format('DD-MM-YYYY')}.xlsx`);
   };
 
-  // Export to PDF
+  // Export to PDF using HTML table approach
   const handleExportPDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
-    
-    doc.setFontSize(16);
-    doc.text('Login Report', 14, 15);
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${moment().format('DD-MM-YYYY HH:mm')}`, 14, 22);
+    if (filteredUsers.length === 0) {
+      alert('No data to export. Please adjust filters.');
+      return;
+    }
 
-    const tableColumns = [
-      '#', 'Phone', 'OTP', 'Login Date', 'OTP Status', 'Country Code', 
-      'Login Mode', 'Status', 'Remarks', 'Permanently Logged Out'
-    ];
+    // Build HTML table for PDF
+    let tableHTML = '<table style="border-collapse: collapse; width: 100%; font-size: 11px;">';
+    tableHTML += '<thead><tr>';
+    const headers = ['S.No', 'Phone', 'OTP', 'Login Date', 'OTP Status', 'Country Code', 'Login Mode', 'Status', 'Remarks', 'Permanently Logged Out'];
+    headers.forEach(header => {
+      tableHTML += `<th style="border: 1px solid #000; padding: 8px; background: #f0f0f0; text-align: left; font-weight: bold;">${header}</th>`;
+    });
+    tableHTML += '</tr></thead><tbody>';
 
-    const tableRows = filteredUsers.map((item, index) => [
-      index + 1,
-      item.phone,
-      item.otp || 'N/A',
-      moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
-      item.otpStatus,
-      item.countryCode,
-      item.loginMode,
-      item.status || 'active',
-      item.remarks || 'N/A',
-      item.permanentlyLoggedOut ? 'Yes' : 'No'
-    ]);
-
-    doc.autoTable({
-      head: [tableColumns],
-      body: tableRows,
-      startY: 28,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [66, 66, 66] },
-      alternateRowStyles: { fillColor: [245, 245, 245] }
+    // Add filtered user data
+    filteredUsers.forEach((item, index) => {
+      tableHTML += '<tr>';
+      const rowData = [
+        index + 1,
+        item.phone,
+        item.otp || 'N/A',
+        moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
+        item.otpStatus,
+        item.countryCode,
+        item.loginMode,
+        item.status || 'active',
+        item.remarks || 'N/A',
+        item.permanentlyLoggedOut ? 'Yes' : 'No'
+      ];
+      rowData.forEach(value => {
+        tableHTML += `<td style="border: 1px solid #000; padding: 6px; text-align: left;">${value}</td>`;
+      });
+      tableHTML += '</tr>';
     });
 
-    doc.save(`Login_Report_${moment().format('DD-MM-YYYY')}.pdf`);
+    tableHTML += '</tbody></table>';
+
+    // Create PDF window
+    const pdfWindow = window.open("", "", "width=1400,height=900");
+    pdfWindow.document.write(`
+      <html>
+        <head>
+          <title>Login Report PDF - ${new Date().toLocaleString()}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 10px; }
+            h1 { margin: 0 0 5px 0; text-align: center; font-size: 24px; }
+            h2 { margin: 0 0 10px 0; text-align: center; font-size: 16px; }
+            p { margin: 5px 0; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background: #f0f0f0; font-weight: bold; }
+            tr:nth-child(even) { background: #f9f9f9; }
+          </style>
+        </head>
+        <body>
+          <h1>RENT PONDY</h1>
+          <h2>Login Report - ${new Date().toLocaleString()}</h2>
+          <p><strong>Total Records:</strong> ${filteredUsers.length}</p>
+          ${tableHTML}
+        </body>
+      </html>
+    `);
+    pdfWindow.document.close();
+    setTimeout(() => {
+      pdfWindow.print();
+    }, 500);
   };
 
   // Memoized filtered users for performance - only recalculates when filters or users change
@@ -567,12 +606,15 @@ const handleSetActiveStatus = async (user) => {
         >
           Reset
         </button>
-                <button className="btn btn-secondary ms-3" style={{background:"tomato"}} onClick={handlePrint}>
-  Print
-</button>
+        <button className="btn btn-secondary ms-3" style={{background:"tomato"}} onClick={handlePrint}>
+          Print
+        </button>
         <button className="btn btn-success ms-2" onClick={handleExportExcel}>
-  Excel
-</button>
+          Excel
+        </button>
+        <button className="btn btn-warning ms-2" onClick={handleExportPDF}>
+          PDF
+        </button>
       </div>
 
       {/* Confirmation Modal */}
@@ -652,23 +694,33 @@ const handleSetActiveStatus = async (user) => {
 <div ref={tableRef}>
 
       {/* Display filtered results count */}
-      <div className="d-flex justify-content-between align-items-center mb-2 px-2">
-        <div>
-          <Badge bg="primary" className="fs-6 px-3 py-2">
-            Showing: {filteredUsers.length} {filteredUsers.length === 1 ? 'record' : 'records'}
-          </Badge>
-          {filteredUsers.length !== users.length && (
-            <Badge bg="secondary" className="fs-6 px-3 py-2 ms-2">
-              Total: {users.length}
-            </Badge>
-          )}
+      <div className="d-flex justify-content-start mb-3 gap-2 align-items-center flex-wrap">
+        <div style={{ 
+          background: '#6c757d', 
+          color: 'white', 
+          padding: '8px 16px', 
+          borderRadius: '4px', 
+          fontWeight: 'bold',
+          fontSize: '14px'
+        }}>
+          Total: {users.length} Records
+        </div>
+        <div style={{ 
+          background: '#007bff', 
+          color: 'white', 
+          padding: '8px 16px', 
+          borderRadius: '4px', 
+          fontWeight: 'bold',
+          fontSize: '14px'
+        }}>
+          Showing: {filteredUsers.length} Records
         </div>
       </div>
 
       <Table striped bordered hover responsive className="table-sm align-middle">
         <thead className="sticky-top">
           <tr>
-            <th className="border px-4 py-2">#</th>
+            <th className="border px-4 py-2">S.No</th>
             <th className="border px-4 py-2">Phone</th>
             <th className="border px-4 py-2">OTP</th>
             <th className="border px-4 py-2">Login Date</th>

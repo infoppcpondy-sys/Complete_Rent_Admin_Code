@@ -201,6 +201,14 @@ const handleUndoDelete = async (id) => {
   
   useEffect(() => {
     fetchMatchedData();
+    
+    // Set up polling interval to refresh data every 15 seconds for real-time count updates
+    const refreshInterval = setInterval(() => {
+      fetchMatchedData();
+    }, 15000);
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const fetchMatchedData = async () => {
@@ -234,6 +242,17 @@ const applyFilters = () => {
 
     return { ...item, matchedProperties: matched };
   }).filter(item => item.matchedProperties.length > 0);
+};
+
+// ===== HELPER FUNCTION: Calculate total matched properties count =====
+const getTotalMatchedPropertiesCount = () => {
+  return matchedData.reduce((total, item) => total + (item.matchedProperties?.length || 0), 0);
+};
+
+// ===== HELPER FUNCTION: Calculate filtered matched properties count =====
+const getFilteredMatchedPropertiesCount = () => {
+  const filtered = applyFilters();
+  return filtered.reduce((total, item) => total + (item.matchedProperties?.length || 0), 0);
 };
 
 
@@ -533,7 +552,7 @@ const handlePrintPDF = () => {
         fontWeight: 'bold',
         fontSize: '14px'
       }}>
-        Total: {matchedData.length} Records
+        Total: {getTotalMatchedPropertiesCount()} Records
       </div>
       <div style={{ 
         background: '#007bff', 
@@ -543,7 +562,7 @@ const handlePrintPDF = () => {
         fontWeight: 'bold',
         fontSize: '14px'
       }}>
-        Showing: {applyFilters().length} Records
+        Showing: {getFilteredMatchedPropertiesCount()} Records
       </div>
       <button className="btn btn-danger" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={handlePrint}>Print</button>
       <button className="btn btn-success" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={downloadExcel}>Download Excel</button>

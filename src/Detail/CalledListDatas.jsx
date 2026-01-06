@@ -41,6 +41,14 @@ const itemsPerPage = 30;
     
   useEffect(() => {
     fetchAllContactSentProperties();
+    
+    // Set up polling interval to refresh data every 15 seconds for real-time count updates
+    const refreshInterval = setInterval(() => {
+      fetchAllContactSentProperties();
+    }, 15000);
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const fetchAllContactSentProperties = async () => {

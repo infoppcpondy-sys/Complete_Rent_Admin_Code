@@ -538,7 +538,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaUserCheck />
-          Approved Property
+          Approved Properties
         </NavLink>
       </li>
       <li className="p-0 mt-2" >
@@ -548,7 +548,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaUserCheck />
-          PreApproved Property
+          PreApproved Properties
         </NavLink>
       </li>
       <li className="p-0 mt-2" >
@@ -558,7 +558,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaUserClock />
-          Pending Property
+          Pending Properties
         </NavLink>
       </li>
 
@@ -569,7 +569,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaTrashAlt />
-          Removed Property
+          Removed Properties
         </NavLink>
       </li>
    
@@ -581,7 +581,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaUserTimes />
-          Expired Property
+          Expired Properties
         </NavLink>
       </li>
       <li className="p-0 mt-2" >
@@ -591,21 +591,21 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaTrashAlt />
-        Permenent Deleted Property
+        Permenent Deleted Properties
         </NavLink>
       </li>
 
         <li className="p-0 mt-2">
     <NavLink to="/dashboard/feature-property"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaCar />
-      Featured Property
+      Featured Properties
     </NavLink>
   </li>
 
       <li className="p-0 mt-2">
     <NavLink to="/dashboard/paid-car"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaCar />
-      Paid Property
+      Paid Properties
     </NavLink>
   </li>
 
@@ -614,7 +614,7 @@ const menuItems = [
     <NavLink to="/dashboard/free-car" 
     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaCar />
-      Free Property
+      Free Properties
     </NavLink>
   </li>
 
