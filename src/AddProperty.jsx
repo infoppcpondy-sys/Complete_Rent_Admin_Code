@@ -1767,7 +1767,7 @@ const dropdownFieldOrder = [
 const handleCombinedClick = async (e) => {
   e.preventDefault(); // prevent default once here
   await handleAnim(); // Wait for the animation to complete
-  handleSubmit(e);    // call submit function, passing the event
+  await handleSubmit(e);    // call submit function, passing the event
 };
 const hiddenPropertyTypes = ['Plot', 'Land', 'Agricultural land'].map(type => type.toLowerCase());
 
@@ -1805,19 +1805,18 @@ const handleAnim = () => {
 
     // Simulate processing animation
     setTimeout(() => {
-      setIsProcessing(false);
       setIsSuccess(true);
 
       // Small delay before showing the checkmark
       setTimeout(() => {
         setShowCheckmark(true); // Show checkmark and text
 
-        // Wait 2s to let user see the checkmark and text
+        // Wait 1s to let user see the checkmark and text
         setTimeout(() => {
-          resolve(); // Now allow submission
-        }, 2000);
+          resolve(); // Now allow submission (but keep isProcessing=true for actual submission)
+        }, 1000);
       }, 100); // Delay before showing checkmark
-    }, 2000); // Processing animation duration
+    }, 1500); // Processing animation duration
   });
 };
 
@@ -1825,6 +1824,7 @@ const handleAnim = () => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  setIsProcessing(true); // Show loading state during submission
 
   try {
     let newRentId = rentId; // Use existing Rent ID if available
@@ -1906,8 +1906,10 @@ const handleSubmit = async (e) => {
     );
 
     alert(propertyResponse.data.message || "Property updated successfully.");
-    navigate('/dashboard/property-list');
+    setIsProcessing(false); // Hide loading state
+    navigate('/dashboard/preapproved-car');
   } catch (error) {
+    setIsProcessing(false); // Hide loading state on error
     console.error("Submit Error:", error);
     console.error("Error Response:", error.response?.data);
     const errorMessage = error.response?.data?.message || error.message || "An error occurred while submitting the property data.";

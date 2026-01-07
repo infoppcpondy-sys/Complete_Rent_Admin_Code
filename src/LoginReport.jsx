@@ -148,12 +148,28 @@ const LoginReportTable = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 const [otpStatusFilter, setOtpStatusFilter] = useState('all');
 const [remarksFilter, setRemarksFilter] = useState('all');
+  const [loginModeFilter, setLoginModeFilter] = useState('all');
 
+  const handleResetFilters = () => {
+    setPhoneFilter('');
+    setStartDate('');
+    setEndDate('');
+    setStatusFilter('all');
+    setOtpStatusFilter('all');
+    setRemarksFilter('all');
+    setLoginModeFilter('all');
+  };
 
-  const fetchUsers = async () => {
-    setLoading(true);
+  const fetchUsers = async (options = { silent: false }) => {
+    if (!options.silent) {
+      setLoading(true);
+    } else {
+      setIsPolling(true);
+    }
+
     try {
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/user/alls`);
 
@@ -169,7 +185,11 @@ const [remarksFilter, setRemarksFilter] = useState('all');
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
-      setLoading(false);
+      if (!options.silent) {
+        setLoading(false);
+      } else {
+        setIsPolling(false);
+      }
     }
   };
 
@@ -178,7 +198,8 @@ const [remarksFilter, setRemarksFilter] = useState('all');
 
     // Set up polling interval to refresh data every 15 seconds for real-time count updates
     const refreshInterval = setInterval(() => {
-      fetchUsers();
+      // silent background refresh - do not toggle the main loading state
+      fetchUsers({ silent: true });
     }, 15000);
 
     // Cleanup interval on component unmount
@@ -404,6 +425,7 @@ const handleSetActiveStatus = async (user) => {
       // Quick string comparisons first (fastest)
       if (statusFilter !== 'all' && user.status !== statusFilter) return false;
       if (otpStatusFilter !== 'all' && user.otpStatus !== otpStatusFilter) return false;
+      if (loginModeFilter !== 'all' && (user.loginMode || '').toLowerCase() !== loginModeFilter) return false;
       if (remarksFilter !== 'all' && user.remarks !== remarksFilter) return false;
       if (phoneFilterTrimmed && !user.phone?.toLowerCase().includes(phoneFilterTrimmed)) return false;
 
@@ -417,7 +439,7 @@ const handleSetActiveStatus = async (user) => {
 
       return true;
     });
-  }, [users, statusFilter, otpStatusFilter, remarksFilter, phoneFilter, startDate, endDate]);
+  }, [users, statusFilter, otpStatusFilter, loginModeFilter, remarksFilter, phoneFilter, startDate, endDate]);
 
   const reduxAdminName = useSelector((state) => state.admin.name);
   const reduxAdminRole = useSelector((state) => state.admin.role);
@@ -572,6 +594,14 @@ const handleSetActiveStatus = async (user) => {
   <option value="verified">Verified</option>
 </select>
 </div>
+                <div className="mb-4">
+                  <label className="mr-2 font-medium">Filter by Login Mode:</label>
+                  <select value={loginModeFilter} onChange={e => setLoginModeFilter(e.target.value)} className="border p-2 rounded">
+                    <option value="all">All</option>
+                    <option value="web">Web</option>
+                    <option value="app">App</option>
+                  </select>
+                </div>
         <div className="mb-4">
           <label className="mr-2 font-medium">Filter by Status:</label>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="border p-2 rounded">
@@ -593,28 +623,7 @@ const handleSetActiveStatus = async (user) => {
             <option value="visitor">Visitor</option>
           </select>
         </div>
-        <button
-          className="btn btn-secondary"
-          onClick={() => {
-            setPhoneFilter('');
-            setStartDate('');
-            setEndDate('');
-            setStatusFilter('all');
-            setOtpStatusFilter('all');
-            setRemarksFilter('all');
-          }}
-        >
-          Reset
-        </button>
-        <button className="btn btn-secondary ms-3" style={{background:"tomato"}} onClick={handlePrint}>
-          Print
-        </button>
-        <button className="btn btn-success ms-2" onClick={handleExportExcel}>
-          Excel
-        </button>
-        <button className="btn btn-warning ms-2" onClick={handleExportPDF}>
-          PDF
-        </button>
+        {}
       </div>
 
       {/* Confirmation Modal */}
@@ -694,26 +703,58 @@ const handleSetActiveStatus = async (user) => {
 <div ref={tableRef}>
 
       {/* Display filtered results count */}
-      <div className="d-flex justify-content-start mb-3 gap-2 align-items-center flex-wrap">
-        <div style={{ 
-          background: '#6c757d', 
-          color: 'white', 
-          padding: '8px 16px', 
-          borderRadius: '4px', 
-          fontWeight: 'bold',
-          fontSize: '14px'
-        }}>
-          Total: {users.length} Records
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <div className="d-flex align-items-center gap-2">
+          <div style={{ 
+            background: '#6c757d', 
+            color: 'white', 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}>
+            Total: {users.length} Records
+          </div>
+          <div style={{ 
+            background: '#007bff', 
+            color: 'white', 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}>
+            Showing: {filteredUsers.length} Records
+          </div>
         </div>
-        <div style={{ 
-          background: '#007bff', 
-          color: 'white', 
-          padding: '8px 16px', 
-          borderRadius: '4px', 
-          fontWeight: 'bold',
-          fontSize: '14px'
-        }}>
-          Showing: {filteredUsers.length} Records
+
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button
+            onClick={handleResetFilters}
+            style={{ background: '#6c757d', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
+          >
+            Reset
+          </button>
+
+          <button
+            onClick={handlePrint}
+            style={{ background: '#ff6b61', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
+          >
+            Print
+          </button>
+
+          <button
+            onClick={handleExportExcel}
+            style={{ background: '#2e8b57', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
+          >
+            Excel
+          </button>
+
+          <button
+            onClick={handleExportPDF}
+            style={{ background: '#f0c419', color: '#000', border: 'none', padding: '8px 12px', borderRadius: 6 }}
+          >
+            PDF
+          </button>
         </div>
       </div>
 

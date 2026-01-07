@@ -175,9 +175,14 @@ const CreateBill = () => {
       const res = await axios.post(`${process.env.REACT_APP_API_URL}/create-bill`, billData);
       if (res.data.success) {
         setMessage('Bill created successfully!');
-          setTimeout(() => {
-      navigate(-1);
-    }, 3000);
+        // After creating bill from PreApproved flow, redirect to Approved Properties
+        setTimeout(() => {
+          if (location.state?.from === 'preapproved') {
+            navigate('/dashboard/approved-car');
+          } else {
+            navigate(-1);
+          }
+        }, 1500);
         // Trigger download after successful creation
         downloadBill(billData);
   

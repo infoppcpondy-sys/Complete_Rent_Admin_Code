@@ -42,8 +42,10 @@ const SearchProperty = () => {
     negotiation: '', length: '', breadth: '', totalArea: '', ownership: '', bedrooms: '',
     kitchen: '', kitchenType: '', balconies: '', floorNo: '', areaUnit: '', propertyApproved: '',
     facing: '', salesMode: '', salesType: '', furnished: '', lift: '', attachedBathrooms: '',
-    western: '', numberOfFloors: '', carParking: '', city: '' , status:'', pinCode: '', area: ''
+    western: '', numberOfFloors: '', carParking: '', city: '' , status:'', pinCode: '', area: '', propertyStatus: ''
   });
+
+  const [statusFilteredProperties, setStatusFilteredProperties] = useState(null);
 
   // Area to Pincode mapping for Pondicherry
   const areaPincodeMap = {
@@ -229,25 +231,126 @@ useEffect(() => {
         printWindow.document.close();
         printWindow.print();
       };
-  const filteredProperties = properties.filter((property) => {
-    const advancedFilterMatch = Object.keys(advancedFilters).every((key) => {
-      if (!advancedFilters[key]) return true;
-  
-      if (key === "minrentalAmount") {
-        return property.rentalAmount >= Number(advancedFilters[key]);
-      }
-      if (key === "maxrentalAmount") {
-        return property.rentalAmount <= Number(advancedFilters[key]);
-      }
-  
-      return property[key]?.toString()?.toLowerCase()?.includes(advancedFilters[key]?.toLowerCase());
+  const filteredProperties = (() => {
+    // If propertyStatus filter is applied, use the status-filtered data
+    if (advancedFilters.propertyStatus && statusFilteredProperties !== null) {
+      return statusFilteredProperties;
+    }
+    
+    // Otherwise, use the original filtering logic for all other filters
+    return properties.filter((property) => {
+      const advancedFilterMatch = Object.keys(advancedFilters).every((key) => {
+        if (!advancedFilters[key]) return true;
+    
+        if (key === "minrentalAmount") {
+          return property.rentalAmount >= Number(advancedFilters[key]);
+        }
+        if (key === "maxrentalAmount") {
+          return property.rentalAmount <= Number(advancedFilters[key]);
+        }
+        
+        // Skip propertyStatus since we handle it above
+        if (key === "propertyStatus") {
+          return true;
+        }
+    
+        return property[key]?.toString()?.toLowerCase()?.includes(advancedFilters[key]?.toLowerCase());
+      });
+    
+      return advancedFilterMatch;
     });
-  
-    return advancedFilterMatch; // ← THIS was missing
-  });
+  })();
   const [showStatusOptions, setShowStatusOptions] = useState(false);
+  const [showPropertyStatusOptions, setShowPropertyStatusOptions] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [propertyStatusCounts, setPropertyStatusCounts] = useState({});
   const statusOptions = ["active", "pending", "delete", "incomplete", "complete", "contact"];
+  const propertyStatusOptions = ["Property Approved", "Property Preapproved", "Pending Property", "Removed Property", "Featured Property", "Paid Property", "Free Property"];
+
+  // Fetch actual counts from respective API endpoints
+  useEffect(() => {
+    const fetchPropertyStatusCounts = async () => {
+      try {
+        const counts = {};
+        
+        // Property Approved - fetch-active-users-datas-all-rent returns only complete/approved properties
+        try {
+          const approvedRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-active-users-datas-all-rent`);
+          counts["Property Approved"] = (approvedRes.data.users || []).length;
+        } catch (e) {
+          counts["Property Approved"] = 0;
+        }
+        
+        // Property Preapproved - properties/pre-approved-all-rent
+        try {
+          const preapprovedRes = await axios.get(`${process.env.REACT_APP_API_URL}/properties/pre-approved-all-rent`);
+          counts["Property Preapproved"] = (preapprovedRes.data.users || []).length;
+        } catch (e) {
+          counts["Property Preapproved"] = 0;
+        }
+        
+        // Pending Property - properties/pending-rent
+        try {
+          const pendingRes = await axios.get(`${process.env.REACT_APP_API_URL}/properties/pending-rent`);
+          counts["Pending Property"] = (pendingRes.data.users || []).length;
+        } catch (e) {
+          counts["Pending Property"] = 0;
+        }
+        
+        // Removed Property - properties/deleted-rent (already filtered to deleted status on backend)
+        try {
+          const removedRes = await axios.get(`${process.env.REACT_APP_API_URL}/properties/deleted-rent`);
+          counts["Removed Property"] = (removedRes.data.data || []).length;
+        } catch (e) {
+          counts["Removed Property"] = 0;
+        }
+        
+        // Featured Property - fetch-all-featured-properties
+        try {
+          const featuredRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-featured-properties`);
+          const featuredData = featuredRes.data.data || [];
+          counts["Featured Property"] = featuredData.reduce((total, item) => {
+            return total + (item.properties || []).length;
+          }, 0);
+        } catch (e) {
+          counts["Featured Property"] = 0;
+        }
+        
+        // Paid Property - fetch-all-paid-plans
+        try {
+          const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+          const paidData = paidRes.data.data || [];
+          counts["Paid Property"] = paidData.reduce((total, item) => {
+            return total + (item.properties || []).length;
+          }, 0);
+        } catch (e) {
+          counts["Paid Property"] = 0;
+        }
+        
+        // Free Property - fetch-all-free-plans
+        try {
+          const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+          const freeData = freeRes.data.data || [];
+          counts["Free Property"] = freeData.reduce((total, item) => {
+            return total + (item.properties || []).length;
+          }, 0);
+        } catch (e) {
+          counts["Free Property"] = 0;
+        }
+        
+        setPropertyStatusCounts(counts);
+      } catch (error) {
+        console.error("Error fetching property status counts:", error);
+      }
+    };
+
+    fetchPropertyStatusCounts();
+  }, []);
+
+  // Function to get property status count from state
+  const getPropertyStatusCount = (status) => {
+    return propertyStatusCounts[status] || 0;
+  };
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
@@ -256,9 +359,59 @@ useEffect(() => {
     setSearchQuery('');
   };
 
+  const closePropertyStatusOptions = () => {
+    setShowPropertyStatusOptions(false);
+    setSearchQuery('');
+  };
+
   const handleStatusSelect = (value) => {
     setAdvancedFilters((prev) => ({ ...prev, status: value }));
     closeStatusOptions();
+  };
+
+  const handlePropertyStatusSelect = (value) => {
+    setAdvancedFilters((prev) => ({ ...prev, propertyStatus: value }));
+    closePropertyStatusOptions();
+    
+    // Fetch data from the appropriate endpoint based on selection
+    const fetchStatusData = async () => {
+      try {
+        let data = [];
+        
+        if (value === "Property Approved") {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-active-users-datas-all-rent`);
+          data = res.data.users || [];
+        } else if (value === "Property Preapproved") {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/properties/pre-approved-all-rent`);
+          data = res.data.users || [];
+        } else if (value === "Pending Property") {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/properties/pending-rent`);
+          data = res.data.users || [];
+        } else if (value === "Removed Property") {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/properties/deleted-rent`);
+          data = res.data.data || [];
+        } else if (value === "Featured Property") {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-featured-properties`);
+          const rawData = res.data.data || [];
+          data = rawData.flatMap(item => item.properties || []);
+        } else if (value === "Paid Property") {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+          const rawData = res.data.data || [];
+          data = rawData.flatMap(item => item.properties || []);
+        } else if (value === "Free Property") {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+          const rawData = res.data.data || [];
+          data = rawData.flatMap(item => item.properties || []);
+        }
+        
+        setStatusFilteredProperties(data);
+      } catch (error) {
+        console.error("Error fetching status filtered data:", error);
+        setStatusFilteredProperties([]);
+      }
+    };
+    
+    fetchStatusData();
   };
 
   const filterOptions = (options) =>
@@ -342,7 +495,11 @@ useEffect(() => {
           };
   const handleAdvancedFilterChange = (e) => {
     const { name, value } = e.target;
-    setAdvancedFilters((prevState) => ({ ...prevState, [name]: value }));
+    // Only update advancedFilters when the input has a valid `name` attribute.
+    if (name) {
+      setAdvancedFilters((prevState) => ({ ...prevState, [name]: value }));
+    }
+    // Always update dropdown filter text (used by the dropdown option filter UI)
     setDropdownState((prevState) => ({ ...prevState, filterText: value }));
   };
   const renderDropdown = (field) => {
@@ -1250,7 +1407,7 @@ useEffect(() => {
       
           {/* propertyApproved */}
       
-          <div className="form-group ">
+          {/* <div className="form-group ">
           <label style={{ width: '100%'}}>
           <label>Property Approved</label>
       
@@ -1293,6 +1450,142 @@ useEffect(() => {
                 </button>
       
                 {renderDropdown("propertyApproved")}
+              </div>
+            </div>
+          </label>
+        </div> */}
+  
+        {/* Property Status Filter */}
+        <div className="form-group">
+          <label style={{ width: '100%' }}>
+            <label>Property Status</label>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ flex: "1", position: "relative" }}>
+                <select
+                  name="propertyStatus"
+                  value={advancedFilters.propertyStatus || ""}
+                  onChange={() => {}}
+                  className="form-control"
+                  style={{ display: "none" }}
+                >
+                  <option value="">Select property status</option>
+                  {propertyStatusOptions.map((status, index) => (
+                    <option key={index} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  className="m-0"
+                  type="button"
+                  onClick={() => setShowPropertyStatusOptions(!showPropertyStatusOptions)}
+                  style={{
+                    cursor: "pointer",
+                    border: "1px solid #2F747F",
+                    padding: "10px",
+                    background: "#fff",
+                    borderRadius: "5px",
+                    width: "100%",
+                    textAlign: "left",
+                    color: "#2F747F",
+                  }}
+                >
+                  <span style={{ marginRight: "10px" }}>
+                    <MdApproval />
+                  </span>
+                  {advancedFilters.propertyStatus || "Select property status"}
+                </button>
+
+                {showPropertyStatusOptions && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      backgroundColor: '#E9F7F2',
+                      width: '100%',
+                      maxWidth: '350px',
+                      padding: '10px',
+                      zIndex: 10,
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                      borderRadius: '8px',
+                      overflowY: 'auto',
+                      maxHeight: '50vh',
+                      animation: 'popupOpen 0.3s ease-in-out',
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontWeight: "bold",
+                        fontSize: "16px",
+                        marginBottom: "10px",
+                        textAlign: "start",
+                        color: "#019988",
+                      }}
+                    >
+                      Property Status
+                    </label>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      placeholder="Search Options"
+                      style={{
+                        width: '80%',
+                        padding: '5px',
+                        background: "#C0DFDA",
+                        border: "none",
+                        outline: "none",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={closePropertyStatusOptions}
+                      style={{
+                        cursor: 'pointer',
+                        border: 'none',
+                        background: 'none',
+                        float: 'right',
+                      }}
+                    >
+                      <FaTimes size={18} color="red" />
+                    </button>
+
+                    {filterOptions(propertyStatusOptions).map((value, index) => (
+                      <div
+                        key={index}
+                        style={{ 
+                          padding: "10px", 
+                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderBottom: "1px solid #ddd",
+                          transition: "background-color 0.2s"
+                        }}
+                        onClick={() => handlePropertyStatusSelect(value)}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = "#D5EDE9"}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
+                      >
+                        <span>{value}</span>
+                        <span style={{ 
+                          backgroundColor: "#019988", 
+                          color: "#fff", 
+                          borderRadius: "50%",
+                          padding: "2px 8px",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          minWidth: "30px",
+                          textAlign: "center"
+                        }}>
+                          {getPropertyStatusCount(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </label>

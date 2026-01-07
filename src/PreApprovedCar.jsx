@@ -326,7 +326,7 @@ const handleUndo = async (rentId) => {
       });
     } else if (actionType === 'Bill') {
       navigate('/dashboard/create-bill', {
-        state: { rentId: rentId, phoneNumber: phoneNumber },
+        state: { rentId: rentId, phoneNumber: phoneNumber, from: 'preapproved' },
       });
     }
   };
