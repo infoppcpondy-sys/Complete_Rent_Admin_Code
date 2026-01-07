@@ -1005,7 +1005,7 @@ Tenant Assistant Pay Later
   aria-controls="BussinessSupporMenu"
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
       <FaUser style={{marginRight:'10px '}}/>
-      Bussiness Support prop
+      Bussiness Support property
   </li>
 
 <ul className="collapse " id="BussinessSupporMenu">

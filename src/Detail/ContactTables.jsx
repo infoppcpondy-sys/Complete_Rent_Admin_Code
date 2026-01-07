@@ -55,19 +55,21 @@ const itemsPerPage = 30;
     }, []);
 
     // Filter data
-const filterData = (data) => {
-    return data.filter(data => {
-        const createdAt = new Date(data.createdAt).getTime();
-        const from = fromDate ? new Date(fromDate).getTime() : null;
-        const to = endDate ? new Date(endDate).getTime() : null;
+    const filterData = (data) => {
+        return data.filter(item => {
+            const createdAt = item.createdAt ? new Date(item.createdAt).getTime() : 0;
+            const from = fromDate ? new Date(fromDate).getTime() : null;
+            const to = endDate ? new Date(endDate).getTime() : null;
 
-        const matchesSearch = search ? String(data.RENTId).toLowerCase().includes(search.toLowerCase()) : true;
-        const matchesStartDate = from ? createdAt >= from : true;
-        const matchesEndDate = to ? createdAt <= to : true;
+            // support different rent id field names
+            const rentIdentifier = String(item.rentId || item.RENTId || item.RentId || item.rentID || '').toLowerCase();
+            const matchesSearch = search ? rentIdentifier.includes(search.toLowerCase()) : true;
+            const matchesStartDate = from ? createdAt >= from : true;
+            const matchesEndDate = to ? createdAt <= to : true;
 
-        return matchesSearch && matchesStartDate && matchesEndDate;
-    });
-};
+            return matchesSearch && matchesStartDate && matchesEndDate;
+        });
+    };
 
 const handleReset = () => {
   setSearch('');
@@ -126,39 +128,71 @@ const currentPageData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     // Download PDF
 const downloadPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Contact Request Owner Data", 14, 10);
+    // landscape A4 to better fit columns
+    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+    const marginLeft = 40;
+    const marginTop = 40;
+    doc.setFontSize(12);
+    doc.text('Contact Request Owner Data', marginLeft, marginTop - 8);
 
-    const filtered = filterData(contactRequestsData);
+    // Use filteredData (matches what user sees after filters)
+    const rows = filteredData.map(item => {
+        const contacts = (item.contactRequestedUserPhoneNumbers || []).map(r => {
+            const phone = r?.phoneNumber || r || '';
+            const dateStr = r?.date ? moment(r.date).format('M/D/YYYY, h:mm:ss A') : '';
+            // phone on one line, date/time on next line
+            return dateStr ? `${phone}\n${dateStr}` : `${phone}`;
+        }).join('\n\n'); // separate multiple contacts with a blank line
 
-    const tableData = filtered.map(item => [
-        item.rentId,
-        item.postedUserPhoneNumber,
-        (item.contactRequestedUserPhoneNumbers || []).join(', '),
-        item.bestTimeToCall || 'N/A',
-        item.email || 'N/A',
-        item.views || 0,
-        item.createdAt ? moment(item.createdAt).format('YYYY-MM-DD HH:mm') : 'N/A',
-        item.updatedAt ? moment(item.updatedAt).format('YYYY-MM-DD HH:mm') : 'N/A',
-    ]);
-
-    autoTable(doc, {
-        head: [['RENT ID', 'Posted User', 'Requested Users', 'Best Time', 'Email', 'Views', 'Created At', 'Updated At']],
-        body: tableData,
-        startY: 20
+        return [
+            item.rentId || item.RENTId || 'N/A',
+            item.postedUserPhoneNumber || 'N/A',
+            contacts || 'N/A',
+            item.bestTimeToCall || 'N/A',
+            item.email || 'Not provided',
+            item.views || 0,
+            item.createdAt ? moment(item.createdAt).format('M/D/YYYY, h:mm:ss A') : 'N/A',
+            item.updatedAt ? moment(item.updatedAt).format('M/D/YYYY, h:mm:ss A') : 'N/A',
+        ];
     });
 
-    doc.save("ContactRequests.pdf");
+    autoTable(doc, {
+        startY: marginTop + 6,
+        head: [[
+            'Rent ID', 'Posted User Phone Number', 'Contact Requested User Phone Numbers',
+            'Best Time to Call', 'Email', 'Views', 'Created At', 'Updated At'
+        ]],
+        body: rows,
+        theme: 'striped',
+        tableWidth: 'auto',
+        styles: {
+            fontSize: 9,
+            overflow: 'linebreak',
+            cellPadding: 4,
+            valign: 'top'
+        },
+        headStyles: {
+            fillColor: [240,240,240],
+            textColor: 40,
+            halign: 'center'
+        },
+        columnStyles: {
+            2: { cellWidth: 'wrap' }
+        },
+        pageBreak: 'auto'
+    });
+
+    doc.save('ContactRequests.pdf');
 };
 
 // Download Excel
 const downloadExcel = () => {
-    const filtered = filterData(contactRequestsData);
+    const filtered = filteredData;
 
     const worksheetData = filtered.map(item => ({
-        "RENT ID": item.rentId,
-        "Posted User Phone": item.postedUserPhoneNumber,
-        "Contact Requested Users": (item.contactRequestedUserPhoneNumbers || []).join(', '),
+        "RENT ID": item.rentId || item.RENTId || 'N/A',
+        "Posted User Phone": item.postedUserPhoneNumber || 'N/A',
+        "Contact Requested Users": (item.contactRequestedUserPhoneNumbers || []).map(r => r.phoneNumber || r).join(', '),
         "Best Time to Call": item.bestTimeToCall || 'N/A',
         "Email": item.email || 'N/A',
         "Views": item.views || 0,
@@ -294,10 +328,35 @@ const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
                 <button className="btn btn-primary" onClick={handleReset}>Reset</button>
             </form>
 
-            <div className="d-flex justify-content-end mb-3 gap-2">
-    <button className="btn btn-success" onClick={downloadPDF}>Download PDF</button>
-    <button className="btn btn-primary" onClick={downloadExcel}>Download Excel</button>
-</div>
+                        {/* Realtime counters and export buttons in one row */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', margin: '15px 0', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <div style={{ 
+                                    background: '#6c757d', 
+                                    color: 'white', 
+                                    padding: '8px 16px', 
+                                    borderRadius: '4px', 
+                                    fontWeight: 'bold',
+                                    fontSize: '14px'
+                                }}>
+                                    Total: {propertiesData.length} Records
+                                </div>
+                                <div style={{ 
+                                    background: '#007bff', 
+                                    color: 'white', 
+                                    padding: '8px 16px', 
+                                    borderRadius: '4px', 
+                                    fontWeight: 'bold',
+                                    fontSize: '14px'
+                                }}>
+                                    Showing: {filteredData.length} Records
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <button className="btn btn-danger" onClick={downloadPDF}>Download PDF</button>
+                                <button className="btn btn-success" onClick={downloadExcel}>Download Excel</button>
+                            </div>
+                        </div>
 
 
             {loading ? (

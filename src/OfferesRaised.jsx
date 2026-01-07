@@ -81,10 +81,9 @@ useEffect(() => {
 
  
   // Calculate total pages
-  const totalPages = Math.ceil(offers.length / offersPerPage);
-
-  // Change page handler
+  // Pagination and exports should operate on filtered results
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
 useEffect(() => {
   const filtered = offers.filter((offer) => {
     const isRentIdMatch = rentId
@@ -113,13 +112,25 @@ useEffect(() => {
   });
 
   setFilteredOffers(filtered);
+  // reset to first page when filters change
+  setCurrentPage(1);
 }, [rentId, phoneNumber, startDate, endDate, status, offers]);
+
+// compute pagination using filtered results
+const totalPages = Math.ceil(filteredOffers.length / offersPerPage);
+
+// ensure current page stays valid
+useEffect(() => {
+  if (totalPages > 0 && currentPage > totalPages) setCurrentPage(totalPages);
+}, [totalPages, currentPage]);
+
 const handleReset = () => {
   setRentId("");
   setPhoneNumber("");
   setStartDate("");
   setEndDate("");
   setStatus("");
+  setCurrentPage(1);
 };
 const indexOfLastOffer = currentPage * offersPerPage;
 const indexOfFirstOffer = indexOfLastOffer - offersPerPage;
@@ -211,33 +222,39 @@ const handleUndoDelete = async (id) => {
   }
 };
 const handleDownloadPDF = () => {
+  const dataToExport = filteredOffers;
   const doc = new jsPDF();
-  doc.text("Offers Raised Report", 14, 15);
+  doc.text("RENT PONDY - Offers Raised Report", 14, 15);
   autoTable(doc, {
     startY: 20,
     head: [["RENT ID", "Offer Phone", "Posted Phone", "Original Price", "Offer Price", "Status", "Created At"]],
-    body: offers.map((offer) => [
-      offer.rentId,
-      offer.phoneNumber,
-      offer.postedUserPhoneNumber,
-      offer.originalPrice,
-      offer.price,
-      offer.status,
-      new Date(offer.createdAt).toLocaleString(),
+    body: dataToExport.map((offer) => [
+      offer.rentId || "",
+      offer.phoneNumber || "",
+      offer.postedUserPhoneNumber || "",
+      offer.originalPrice || "",
+      offer.price || offer.offeredPrice || "",
+      offer.status || "",
+      offer.createdAt ? new Date(offer.createdAt).toLocaleString() : "",
     ]),
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [0, 0, 0] },
+    theme: 'striped',
+    margin: { left: 10, right: 10 },
   });
   doc.save("offers_report.pdf");
 };
 
 const handleDownloadExcel = () => {
-  const worksheetData = offers.map((offer) => ({
-    "RENT ID": offer.rentId,
-    "Offer Phone": offer.phoneNumber,
-    "Posted Phone": offer.postedUserPhoneNumber,
-    "Original Price": offer.originalPrice,
-    "Offer Price": offer.price,
-    "Status": offer.status,
-    "Created At": new Date(offer.createdAt).toLocaleString(),
+  const dataToExport = filteredOffers;
+  const worksheetData = dataToExport.map((offer) => ({
+    "RENT ID": offer.rentId || "",
+    "Offer Phone": offer.phoneNumber || "",
+    "Posted Phone": offer.postedUserPhoneNumber || "",
+    "Original Price": offer.originalPrice || "",
+    "Offer Price": offer.price || offer.offeredPrice || "",
+    "Status": offer.status || "",
+    "Created At": offer.createdAt ? new Date(offer.createdAt).toLocaleString() : "",
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -304,6 +321,30 @@ const handleDownloadExcel = () => {
   </button>
 </form>
 
+{/* realtime counters */}
+<div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '15px 0', flexWrap: 'wrap' }}>
+  <div style={{ 
+    background: '#6c757d', 
+    color: 'white', 
+    padding: '8px 16px', 
+    borderRadius: '4px', 
+    fontWeight: 'bold',
+    fontSize: '14px'
+  }}>
+    Total: {offers.length} Records
+  </div>
+  <div style={{ 
+    background: '#007bff', 
+    color: 'white', 
+    padding: '8px 16px', 
+    borderRadius: '4px', 
+    fontWeight: 'bold',
+    fontSize: '14px'
+  }}>
+    Showing: {filteredOffers.length} Records
+  </div>
+</div>
+
       {/* New Offer Form */}
       <Form     style={{ 
   boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)', 
@@ -339,8 +380,8 @@ const handleDownloadExcel = () => {
       </Form>
 
       <div className="mb-3 d-flex gap-2">
-  <Button variant="outline-primary" onClick={handleDownloadPDF}>Download PDF</Button>
-  <Button variant="outline-success" onClick={handleDownloadExcel}>Download Excel</Button>
+  <Button variant="danger" onClick={handleDownloadPDF}>Download PDF</Button>
+  <Button variant="success" onClick={handleDownloadExcel}>Download Excel</Button>
 </div>
 
 

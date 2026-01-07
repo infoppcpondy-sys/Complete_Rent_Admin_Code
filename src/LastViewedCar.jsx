@@ -29,6 +29,11 @@ const AllLastViewedProperties = () => {
     fetchLastViewedProperties();
   }, []);
 
+  // Reset pagination to page 1 whenever any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, searchPhoneNumber, fromDate, endDate]);
+
   const fetchLastViewedProperties = async () => {
     try {
       const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/user-get-all-last-views`);
@@ -62,8 +67,9 @@ const AllLastViewedProperties = () => {
 const filteredData = React.useMemo(() => {
   const filtered = views.filter(entry => {
     const createdAt = new Date(entry.createdAt || entry.viewedAt).getTime();
-    const from = fromDate ? new Date(fromDate).getTime() : null;
-    const to = endDate ? new Date(endDate).getTime() : null;
+    // Normalize fromDate to start of day and endDate to end of day so full days are included
+    const from = fromDate ? moment(fromDate, 'YYYY-MM-DD').startOf('day').valueOf() : null;
+    const to = endDate ? moment(endDate, 'YYYY-MM-DD').endOf('day').valueOf() : null;
 
     const rentId = entry.property?.rentId || "";
     const phoneNumber = entry.phoneNumber || "";
@@ -169,35 +175,45 @@ const handleUndoDelete = async (rentId) => {
 // Function to fetch the latest data
 
 
-// PDF download handler
+// PDF download handler — use filteredData (the dataset shown to the user)
 const downloadPDF = () => {
-  const doc = new jsPDF();
-  doc.text("All Users' Last Viewed Properties", 14, 10);
+  const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+  const titleY = 20;
+  doc.setFontSize(12);
+  doc.text("RENT PONDY - All Users' Last Viewed Properties", 40, titleY);
+
+  const body = filteredData.map((entry, index) => [
+    index + 1,
+    entry.phoneNumber || '-',
+    entry.property?.rentId || '-',
+    entry.property?.propertyType || '-',
+    entry.property?.city || '-',
+    entry.property?.district || '-',
+    entry.viewedAt ? new Date(entry.viewedAt).toLocaleString() : '-'
+  ]);
+
   autoTable(doc, {
+    startY: titleY + 14,
     head: [["#", "Phone Number", "RENT ID", "Property Type", "City", "District", "Viewed At"]],
-    body: filteredViews.map((entry, index) => [
-      index + 1,
-      entry.phoneNumber,
-      entry.property.rentId,
-      entry.property.propertyType,
-      entry.property.city || "-",
-      entry.property.district || "-",
-      new Date(entry.viewedAt).toLocaleString()
-    ]),
+    body,
+    styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
+    headStyles: { fillColor: [240,240,240], textColor: [0,0,0], fontStyle: 'bold' },
+    tableWidth: 'auto'
   });
+
   doc.save("Last_Viewed_Properties.pdf");
 };
 
-// Excel download handler
+// Excel download handler — use filteredData
 const downloadExcel = () => {
-  const worksheetData = filteredViews.map((entry, index) => ({
+  const worksheetData = filteredData.map((entry, index) => ({
     "S.No": index + 1,
-    "Phone Number": entry.phoneNumber,
-    "RENT ID": entry.property.rentId,
-    "Property Type": entry.property.propertyType,
-    "City": entry.property.city || "-",
-    "District": entry.property.district || "-",
-    "Viewed At": new Date(entry.viewedAt).toLocaleString(),
+    "Phone Number": entry.phoneNumber || '-',
+    "RENT ID": entry.property?.rentId || '-',
+    "Property Type": entry.property?.propertyType || '-',
+    "City": entry.property?.city || '-',
+    "District": entry.property?.district || '-',
+    "Viewed At": entry.viewedAt ? new Date(entry.viewedAt).toLocaleString() : '-'
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -287,27 +303,42 @@ const downloadExcel = () => {
       setSearchPhoneNumber('');
       setFromDate('');
       setEndDate('');
+      setCurrentPage(1);
     }}
   >
     Reset Filters
   </button>
             </form>
 
-
-<div className="flex gap-4 mb-4">
-  <button
-    onClick={downloadPDF}
-    className="bg-primary text-white me-3 px-4 py-2 rounded hover:bg-red-600"
-  >
-    Download PDF
-  </button>
-  <button
-    onClick={downloadExcel}
-    className="bg-success text-white px-4 py-2 rounded hover:bg-green-700"
-  >
-    Download Excel
-  </button>
-</div>
+      {/* Realtime counters and export buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', margin: '15px 0', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ 
+            background: '#6c757d', 
+            color: 'white', 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}>
+            Total: {views.length} Records
+          </div>
+          <div style={{ 
+            background: '#007bff', 
+            color: 'white', 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}>
+            Showing: {filteredData.length} Records
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button className="btn btn-danger" onClick={downloadPDF}>Download PDF</button>
+          <button className="btn btn-success" onClick={downloadExcel}>Download Excel</button>
+        </div>
+      </div>
 
 
       {/* Table */}
@@ -330,8 +361,8 @@ const downloadExcel = () => {
           <tbody>
             {currentPageData.length > 0 ? (
               currentPageData.map((entry, index) => (
-                <tr key={entry.property._id || index}>
-                  <td className="border px-4 py-2">{index + 1}</td>
+                <tr key={`${entry.property?.rentId || 'rid'}-${new Date(entry.viewedAt).getTime() || index}`}>
+                  <td className="border px-4 py-2">{startIndex + index + 1}</td>
                   <td className="border px-4 py-2">{entry.phoneNumber}</td>
                   <td style={{cursor: "pointer"}}   onClick={() =>
                               navigate(`/dashboard/detail`, {
