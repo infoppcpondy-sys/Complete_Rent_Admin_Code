@@ -31,6 +31,8 @@ const ApprovedCar = () => {
   const [currentPhoneNumber, setCurrentPhoneNumber] = useState('');
   const [deletionReason, setDeletionReason] = useState('');
   const [phoneNumberSearch, setPhoneNumberSearch] = useState('');
+  const [showMoveToModal, setShowMoveToModal] = useState(false);
+  const [selectedPropertyForMove, setSelectedPropertyForMove] = useState(null);
 const [featureStatusFilter, setFeatureStatusFilter] = useState('');
  
 const [sortOption, setSortOption] = useState('');
@@ -434,6 +436,69 @@ const handlePermanentDelete = async (rentId) => {
     console.error(error);
   }
 };
+
+// Move To handler
+const handleMoveToClick = (property) => {
+  setSelectedPropertyForMove(property);
+  setShowMoveToModal(true);
+};
+
+const handleMoveToOption = async (targetLabel) => {
+  if (!selectedPropertyForMove) return;
+
+  // Map user-facing labels to backend-allowed status values
+  // Valid statuses: delete, pending, expired
+  const mapping = {
+    'preapproved property': 'expired',
+    'pending property': 'pending',
+    'removed property': 'delete',
+  };
+
+  const key = String(targetLabel || '').toLowerCase().trim();
+  const backendStatus = mapping[key];
+
+  if (!backendStatus) {
+    alert('Invalid target status');
+    return;
+  }
+
+  try {
+    // Call API to update the status
+    await axios.put(`${process.env.REACT_APP_API_URL}/update-property-status`, {
+      rentId: selectedPropertyForMove.rentId,
+      status: backendStatus,
+    });
+
+    // Update properties locally
+    setProperties(prev => prev.map(prop =>
+      prop.rentId === selectedPropertyForMove.rentId 
+        ? { ...prop, status: backendStatus } 
+        : prop
+    ));
+    setFiltered(prev => prev.map(prop =>
+      prop.rentId === selectedPropertyForMove.rentId 
+        ? { ...prop, status: backendStatus } 
+        : prop
+    ));
+
+    // Close modal
+    setShowMoveToModal(false);
+    const movedRentId = selectedPropertyForMove.rentId;
+    setSelectedPropertyForMove(null);
+    alert(`Property moved to ${targetLabel}`);
+
+    // Navigate to the respective page based on selected option
+    if (backendStatus === 'expired') {
+      navigate('/dashboard/pre-approved-car', { state: { clearedRentIds: [movedRentId] } });
+    } else if (backendStatus === 'pending') {
+      navigate('/dashboard/pending-property', { state: { clearedRentIds: [movedRentId] } });
+    } else if (backendStatus === 'delete') {
+      navigate('/dashboard/removed-property', { state: { clearedRentIds: [movedRentId] } });
+    }
+  } catch (error) {
+    alert(error.response?.data?.message || 'Error moving property');
+  }
+};
     
  
 const handlePrint = (prop) => {
@@ -711,6 +776,7 @@ const handlePrint = (prop) => {
               <th>Create Bill</th>
               <th>Feature Status</th>
               <th>Features Property Status</th>
+              <th>Move To</th>
               <th>FollowUp Admin Name</th>
               <th>Bill Date</th>
               <th>Validity (days)</th>
@@ -835,11 +901,20 @@ const handlePrint = (prop) => {
                       {prop.featureStatus === "yes" ? "Set to No" : "Set to Yes"}
                     </Button>
                   </td>
+                  <td>
+                    <Button
+                      variant="info"
+                      size="sm"
+                      onClick={() => handleMoveToClick(prop)}
+                    >
+                      Move To
+                    </Button>
+                  </td>
                   <td>{prop.followUpAdminName}</td>
                   <td>{prop.billDate}</td>
                   <td>{prop.validity}</td>
                   <td>{prop.billExpiryDate}</td>
-                              <td>         <Button
+                  <td>         <Button
                     variant="secondary"
                     size="sm"
                     className="ms-2"
@@ -853,6 +928,25 @@ const handlePrint = (prop) => {
           </tbody>
         </Table>
       </div>
+
+      {/* Move To Modal */}
+      <Modal show={showMoveToModal} onHide={() => setShowMoveToModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Move Property</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Move to Preapproved Property,Sure you want to move:</p>
+          <div className="d-flex flex-column gap-2">
+            <Button
+              variant="primary"
+              onClick={() => handleMoveToOption('preapproved property')}
+              className="w-100"
+            >
+              Preapproved Property
+            </Button>
+          </div>
+        </Modal.Body>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>

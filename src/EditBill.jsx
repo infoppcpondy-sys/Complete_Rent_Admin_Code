@@ -81,9 +81,24 @@ const navigate = useNavigate();
     e.preventDefault();
     setLoading(true);
     try {
+      // Update the bill
       const res = await axios.put(`${process.env.REACT_APP_API_URL}/update-bill/${rentId}`, billData);
       if (res.data.success) {
         setMessage('Bill updated successfully!');
+        
+        // Update property status from 'expired' (preapproved) to 'active' (approved)
+        try {
+          await axios.put(`${process.env.REACT_APP_API_URL}/update-property-status`, {
+            rentId: rentId,
+            status: 'active',
+          });
+        } catch (statusError) {
+          console.error('Error updating property status:', statusError);
+        }
+        
+        setTimeout(() => {
+          navigate('/dashboard/approved-car', { state: { updatedBillRentId: rentId } });
+        }, 1500);
       } else {
         setMessage('Failed to update bill.');
       }
@@ -91,9 +106,7 @@ const navigate = useNavigate();
       setMessage('Server error while updating bill.');
     }
     setLoading(false);
-   setTimeout(() => {
-      navigate(-1);
-    }, 3000);  };
+  };
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>

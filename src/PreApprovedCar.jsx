@@ -331,6 +331,10 @@ const handleUndo = async (rentId) => {
     }
   };
 
+  const handleEditBill = (rentId) => {
+    navigate(`/dashboard/edit-bill/${rentId}`);
+  };
+
   return (
     <div className="p-3">
       <h4>Pending Properties</h4>
@@ -437,6 +441,7 @@ const handleUndo = async (rentId) => {
             {/* <th>Change Status</th> */}
             <th>Create FollowUp</th>
             <th>Create Bill</th>
+            <th>Edit Bill</th>
           </tr>
         </thead>
         <tbody>
@@ -611,6 +616,17 @@ const handleUndo = async (rentId) => {
                     <span className="text-success">Bill Created</span>
                   ) : (
                     <span className="text-muted">Follow-up Required</span>
+                  )}
+                </td>
+
+                <td>
+                  {billMap[prop.rentId] && (
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => handleEditBill(prop.rentId)}
+                    >
+                      Edit Bill
+                    </button>
                   )}
                 </td>
               </tr>

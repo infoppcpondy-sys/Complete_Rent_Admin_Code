@@ -181,7 +181,50 @@ const [remarksFilter, setRemarksFilter] = useState('all');
         throw new Error("Unexpected data format received");
       }
 
-      setUsers(res.data.data);
+      // Normalize entries by phone: keep a single record per phone.
+      // Priority: if any record for a phone has otpStatus 'verified', prefer the latest verified record.
+      // Otherwise prefer the latest record by loginDate.
+      const normalizeByPhone = (arr) => {
+        const map = new Map();
+        arr.forEach((u) => {
+          const phone = u.phone || '';
+          if (!phone) return;
+
+          const existing = map.get(phone);
+          if (!existing) {
+            map.set(phone, u);
+            return;
+          }
+
+          const statusPriority = (s) => (s === 'verified' ? 2 : s === 'pending' ? 1 : 0);
+
+          const exPriority = statusPriority(existing.otpStatus);
+          const curPriority = statusPriority(u.otpStatus);
+
+          if (curPriority > exPriority) {
+            // current has higher otp priority (e.g., verified over pending)
+            map.set(phone, u);
+            return;
+          }
+
+          if (curPriority === exPriority) {
+            // choose latest loginDate
+            const exDate = existing.loginDate ? new Date(existing.loginDate) : null;
+            const curDate = u.loginDate ? new Date(u.loginDate) : null;
+            if (!exDate && curDate) {
+              map.set(phone, u);
+            } else if (exDate && curDate && curDate > exDate) {
+              map.set(phone, u);
+            }
+          }
+          // otherwise keep existing
+        });
+
+        return Array.from(map.values());
+      };
+
+      const normalized = normalizeByPhone(res.data.data);
+      setUsers(normalized);
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
