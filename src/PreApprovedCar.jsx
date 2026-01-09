@@ -64,7 +64,8 @@ const PreApprovedCar = () => {
           if (!map[bill.rentId]) {
             map[bill.rentId] = {
               adminName: bill.adminName,
-              billNo: bill.billNo
+              billNo: bill.billNo,
+              createdAt: bill.createdAt
             };
           }
         });
@@ -613,7 +614,12 @@ const handleUndo = async (rentId) => {
                       Create Bill
                     </button>
                   ) : billMap[prop.rentId] ? (
-                    <span className="text-success">Bill Created</span>
+                    <div className="text-success">
+                      <div><strong>{billMap[prop.rentId].adminName}</strong></div>
+                      <div>
+                        <small>{new Date(billMap[prop.rentId].createdAt).toLocaleDateString()}</small>
+                      </div>
+                    </div>
                   ) : (
                     <span className="text-muted">Follow-up Required</span>
                   )}

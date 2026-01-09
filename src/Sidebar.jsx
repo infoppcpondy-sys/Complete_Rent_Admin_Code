@@ -81,13 +81,11 @@ const menuItems = [
   },
   // Add more sections as needed
 ];
-  const [openSections, setOpenSections] = useState({});
+  const [activeMenu, setActiveMenu] = useState(null); // Only one menu can be open at a time
 
-  const toggleSection = (title) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [title]: !prev[title],
-    }));
+  const toggleMenu = (menuId) => {
+    // If clicking the already open menu, close it; otherwise open the new one
+    setActiveMenu(activeMenu === menuId ? null : menuId);
   };
   return (
     <div className={`sidebar ${isOpen ? "sidebar-open" : ""} p-3 m-3`}>
@@ -99,11 +97,14 @@ const menuItems = [
       
         <ul>
    
-          <li className="p-3 text-white" style={{borderRadius:"5px", background:"#8BC34A"}}>
+          <li className="p-3 text-white" 
+            onClick={() => toggleMenu('dashboard')}
+            style={{borderRadius:"5px", background:"#8BC34A", cursor: "pointer"}}>
       
               <RiDashboardHorizontalFill size={20} style={{marginRight:'10px '}}/>
               Dashboard
           </li>
+          <ul className={`collapse ${activeMenu === 'dashboard' ? 'show' : ''}`} id="dashboardMenu">
           <li className="p-0 mt-2" >
             <NavLink 
               to="/dashboard/statistics" 
@@ -111,7 +112,7 @@ const menuItems = [
               className={({ isActive }) => (isActive ? "active-link rounded" : "")}
             >
               <FcStatistics size={20}/>
-              Statistics
+              Daily Report(Staff)
             </NavLink>
           </li>
 
@@ -120,7 +121,7 @@ const menuItems = [
      to="/dashboard/daily-report-rent" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Rent Property Daily Report 
+     RP Daily Report - Status - Customer care
     </NavLink>
   </li>
 
@@ -129,14 +130,7 @@ const menuItems = [
      to="/dashboard/detail-daily-report" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Rent Detail Daily Report 
-    </NavLink>
-  </li>
-
-  <li className="p-0 mt-2">
-    <NavLink to="/dashboard/assist-subscriber"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-      <FaUsers />
-    Tenant Assist Daily Report
+     RP  Daily Request - photo - offer - Address - Login 
     </NavLink>
   </li>
 
@@ -145,21 +139,35 @@ const menuItems = [
      to="/dashboard/property-payment-daily-report" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Rent Property Payment Daily Report 
+     RP Payment(PayU) Daily Report 
     </NavLink>
   </li>
 
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/assist-subscriber"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+    Tenant Assist - Payment Daily
+    </NavLink>
+  </li>
+
+   {/* <li className="p-0 mt-2">
+    <NavLink  
+     to="/dashboard/property-payment-daily-report" 
+     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+     Rent Property Payment Daily Report 
+    </NavLink>
+  </li> */}
+          </ul>
+
           <li className="p-3 mt-2  text-white" 
-            data-bs-toggle="collapse"
-  data-bs-target="#reportMenu"
-  aria-expanded="false"
-  aria-controls="reportMenu"
+            onClick={() => toggleMenu('report')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
       
               <MdReport size={20} style={{marginRight:'10px '}}/>
-              Report
+              Login User Report
           </li>
-          <ul className="collapse " id="reportMenu">
+          <ul className={`collapse ${activeMenu === 'report' ? 'show' : ''}`} id="reportMenu">
 
           <li className="p-0 mt-2" >
             <NavLink 
@@ -168,7 +176,7 @@ const menuItems = [
               className={({ isActive }) => (isActive ? "active-link rounded" : "")}
             >
               <IoLogInSharp size={20}/>
-              Login Report
+              Login(OTP) Report
             </NavLink>
           </li>
 
@@ -179,14 +187,14 @@ const menuItems = [
               className={({ isActive }) => (isActive ? "active-link rounded" : "")}
             >
               <FaUser size={20}/>
-              Login Users Data
+              Login Users Report
             </NavLink>
           </li> 
 
                <li className="p-0 mt-2">
         <NavLink to="/dashboard/user-log" 
         onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <RiFileListFill size={20} /> User Views Data
+          <RiFileListFill size={20} /> Login user Activity
         </NavLink>
       </li>
 
@@ -198,7 +206,7 @@ const menuItems = [
               className={({ isActive }) => (isActive ? "active-link rounded" : "")}
             >
               <FaUser size={20}/>
-              Login data Separate Users 
+              User Login History
             </NavLink>
           </li>
 
@@ -209,22 +217,19 @@ const menuItems = [
               className={({ isActive }) => (isActive ? "active-link rounded" : "")}
             >
               <FaSignInAlt size={20}/>
-              Admin Report
+              RP General Report (Admin)
             </NavLink>
           </li>
 </ul> 
 <li
   className="p-3 mt-2 text-white"
   style={{ borderRadius: "5px", background: "#8BC34A", cursor: "pointer" }}
-  data-bs-toggle="collapse"
-  data-bs-target="#LoginDirectMenu"
-  aria-expanded="false"
-  aria-controls="LoginDirectMenu"
+  onClick={() => toggleMenu('loginDirect')}
 >
   <MdReport size={20} style={{ marginRight: "10px" }} />
   Login Direct
 </li>
-     <ul className="collapse " id="LoginDirectMenu">
+     <ul className={`collapse ${activeMenu === 'loginDirect' ? 'show' : ''}`} id="LoginDirectMenu">
       
  <li className="p-0 mt-2" >
             <NavLink 
@@ -238,7 +243,7 @@ const menuItems = [
           </li>
           <li className="p-0 mt-2">
         <NavLink to="/dashboard/my-account" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <RiUserSettingsFill size={20} /> My Account
+          <RiUserSettingsFill size={20} /> My Account - User
         </NavLink>
       </li>
 
@@ -249,7 +254,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaFileInvoice />
-          PUC Property
+          RP All Property
         </NavLink>
       </li>
 
@@ -278,16 +283,13 @@ const menuItems = [
 
 
 <li className="p-3 mt-2  text-white" 
-  data-bs-toggle="collapse"
-  data-bs-target="#NotificationMenu"
-  aria-expanded="false"
-  aria-controls="NotificationMenu"
+  onClick={() => toggleMenu('notification')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
            
               <FaBell size={20} style={{marginRight:'10px '}}/>
               Notification
           </li>
-<ul className="collapse " id="NotificationMenu">
+<ul className={`collapse ${activeMenu === 'notification' ? 'show' : ''}`} id="NotificationMenu">
 
           <li className="p-0 mt-2" >
         <NavLink
@@ -296,7 +298,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaBell size={20}/>
-          Admin Notification
+          User Notification Record
         </NavLink>
       </li>
      <li className="p-0 mt-2" >
@@ -311,16 +313,13 @@ const menuItems = [
       </li>
 </ul>
       <li className="p-3 mt-2  text-white" 
-        data-bs-toggle="collapse"
-  data-bs-target="#OfficeMenu"
-  aria-expanded="false"
-  aria-controls="OfficeMenu"
+        onClick={() => toggleMenu('office')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
      
           <FaBuilding size={20} style={{marginRight:'10px '}}/>
           Office Setup
       </li>
-<ul className="collapse " id="OfficeMenu">
+<ul className={`collapse ${activeMenu === 'office' ? 'show' : ''}`} id="OfficeMenu">
 
       <li className="p-0 mt-2" >
        <NavLink
@@ -329,7 +328,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         > 
           <FaBuilding size={20}/>
-          Office 
+          Create Office - List
         </NavLink>
       </li>
 
@@ -340,7 +339,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaUsers size={20}/>
-          Users
+          Create Staff - List
         </NavLink>
       </li>
 
@@ -353,7 +352,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaClipboardList size={20}/>
-          Tenant Plan
+          Create Tenant Plan - List
         </NavLink>
       </li>
 
@@ -364,7 +363,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaClipboardList size={20}/>
-          Owners Plan
+          Create Owners Plan - List
         </NavLink>
       </li>
 
@@ -375,7 +374,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaMoneyBill size={20}/>
-          Payment Type
+          Add Payment Type - List
         </NavLink>
       </li>
 
@@ -389,7 +388,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaMapMarkedAlt />
-          State
+          Add State - List
         </NavLink>
       </li>
       <li className="p-0 mt-2" >
@@ -399,7 +398,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaMapMarkedAlt />
-          District
+          Add District - List
         </NavLink>
       </li>
       <li className="p-0 mt-2" >
@@ -409,7 +408,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaMapMarkedAlt />
-          City
+          Add City - List
         </NavLink>
       </li>
       <li className="p-0 mt-2" >
@@ -419,7 +418,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaMapMarkedAlt />
-          Area
+          Add Area - List
         </NavLink>
       </li>
       <li className="p-0 mt-2" >
@@ -440,7 +439,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaFileAlt />
-          Admin Log
+          Admin Log Record
         </NavLink>
       </li>
      
@@ -450,7 +449,7 @@ const menuItems = [
         className={({ isActive }) => (isActive ? "active-link rounded" : "")}
       >
         <FaPlusCircle />
-     Text Editors
+     Text Editors T&C - Policy
       </NavLink>
     </li>
             <li className="p-0 mt-2" >
@@ -473,7 +472,7 @@ const menuItems = [
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaFileAlt />
-          Get User Profile
+          RP User Profile
  </NavLink>
       </li>
 
@@ -483,16 +482,13 @@ const menuItems = [
 
 
       <li className="p-3 mt-2  text-white" 
-        data-bs-toggle="collapse"
-  data-bs-target="#PPCMenu"
-  aria-expanded="false"
-  aria-controls="PPCMenu"
+        onClick={() => toggleMenu('ppc')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
      
           <FaBuilding size={20} style={{marginRight:'10px '}}/>
           RENT Property
       </li>
-<ul className="collapse " id="PPCMenu">
+<ul className={`collapse ${activeMenu === 'ppc' ? 'show' : ''}`} id="PPCMenu">
 
 
      <li className="p-0 mt-2" >
@@ -623,7 +619,7 @@ const menuItems = [
     <NavLink to="/dashboard/set-property-message" 
     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaCar />
-      Set Property Message
+      Send Property Message
     </NavLink>
   </li>
 
@@ -651,16 +647,13 @@ const menuItems = [
 
 
       <li className="p-3 mt-2  text-white" 
-        data-bs-toggle="collapse"
-  data-bs-target="#AccountsMenu"
-  aria-expanded="false"
-  aria-controls="AccountsMenu"
+        onClick={() => toggleMenu('accounts')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
     
     <FaCar style={{marginRight:'10px '}}/>
-    PPC prop Accounts
+    RP property Accounts
 </li>
-<ul className="collapse " id="AccountsMenu">
+<ul className={`collapse ${activeMenu === 'accounts' ? 'show' : ''}`} id="AccountsMenu">
 
   
          <li className="p-0 mt-2">
@@ -714,6 +707,17 @@ Payment Pay Later
       All Bills Data
     </NavLink>
   </li>
+  </ul>
+
+  <li className="p-3 mt-2  text-white" 
+        onClick={() => toggleMenu('mobileAds')}
+   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
+    
+    <FaCar style={{marginRight:'10px '}}/>
+    Mobile view Leads - Ads
+</li>
+< ul className={`collapse ${activeMenu === 'mobileAds' ? 'show' : ''}`} id="MobileMenuAds">
+
       <li className="p-0 mt-2" >
         <NavLink
           to="/dashboard/upload-images-groom"
@@ -762,16 +766,13 @@ Upload Detail Ads Images
 </ul>
 
   <li className="p-3 mt-2  text-white" 
-    data-bs-toggle="collapse"
-  data-bs-target="#CustomerMenu"
-  aria-expanded="false"
-  aria-controls="CustomerMenu"
+    onClick={() => toggleMenu('customer')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
       <FaPhone style={{marginRight:'10px '}}/>
       Customer Care
   </li>
 
-<ul className="collapse " id="CustomerMenu">
+<ul className={`collapse ${activeMenu === 'customer' ? 'show' : ''}`} id="CustomerMenu">
 
 <li className="p-0 mt-2">
     <NavLink to="/dashboard/customer-car"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
@@ -797,24 +798,24 @@ Customer Care
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaMoneyBill size={20}/>
-         All Contact Form Data
+         Contact us Report
         </NavLink>
       </li>
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/needhelp-table"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Need Help
+      User - Need Help
     </NavLink>
   </li><li className="p-0 mt-2">
     <NavLink to="/dashboard/report-property-table"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Report Property
+      Property Reported (User)
     </NavLink>
   </li>
  <li className="p-0 mt-2">
     <NavLink to="/dashboard/soldout-table" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received SoldOut Request
+      Property Reported - Rent out
     </NavLink>
   </li>
 </ul>
@@ -824,17 +825,14 @@ Customer Care
 
 
 <li className="p-3 mt-2  text-white" 
-  data-bs-toggle="collapse"
-  data-bs-target="#PropertyMenu"
-  aria-expanded="false"
-  aria-controls="PropertyMenu"
+  onClick={() => toggleMenu('property')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
      
           <FaCar style={{marginRight:'10px '}}/>
           Property List
       </li>
 
-<ul className="collapse " id="PropertyMenu">
+<ul className={`collapse ${activeMenu === 'property' ? 'show' : ''}`} id="PropertyMenu">
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/developer-property"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
@@ -879,15 +877,12 @@ Customer Care
 </ul>
 
   <li className="p-3 mt-2  text-white" 
-    data-bs-toggle="collapse"
-  data-bs-target="#BuyerAssistantMenu"
-  aria-expanded="false"
-  aria-controls="BuyerAssistantMenu"
+    onClick={() => toggleMenu('buyerAssistant')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
       <FaUser style={{marginRight:'10px '}}/>
       Tenant Assistant
   </li>
-  <ul className="collapse " id="BuyerAssistantMenu">
+  <ul className={`collapse ${activeMenu === 'buyerAssistant' ? 'show' : ''}`} id="BuyerAssistantMenu">
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/add-buyer-assistance"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
@@ -898,21 +893,21 @@ Customer Care
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/get-buyer-assistance"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Get Tenant Assistantce
+     Manage All Tenant Assistantce
     </NavLink>
   </li>
    <li className="p-0 mt-2">
     <NavLink to="/dashboard/active-buyer-assistant" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Tenant Active Assistant
+      Active - Tenant Assistant
     </NavLink>
   </li>
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/pending-assistant"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Pending Assistant
+      Pending - Tenant Assistant
     </NavLink>
   </li>
 
@@ -934,16 +929,13 @@ Customer Care
 </ul>
 
   <li className="p-3 mt-2  text-white" 
-    data-bs-toggle="collapse"
-  data-bs-target="#BuyerPayUMenu"
-  aria-expanded="false"
-  aria-controls="BuyerPayUMenu"
+    onClick={() => toggleMenu('buyerPayU')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
      
           <FaCar style={{marginRight:'10px '}}/>
-         Tenant PayU 
+         Tenant Account
       </li>
-<ul className="collapse " id="BuyerPayUMenu">
+<ul className={`collapse ${activeMenu === 'buyerPayU' ? 'show' : ''}`} id="BuyerPayUMenu">
 
        <li className="p-0 mt-2">
     <NavLink to="/dashboard/payment-success-buyer" 
@@ -978,7 +970,7 @@ Tenant Assistant Pay Later
     <NavLink to="/dashboard/all-buyer-bills" 
     className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaFileAlt />
-     Get All RA Bills
+     Manage All RA Bills
     </NavLink>
   </li>
 
@@ -999,29 +991,26 @@ Tenant Assistant Pay Later
 </ul>
 
   <li className="p-3 mt-2  text-white" 
-    data-bs-toggle="collapse"
-  data-bs-target="#BussinessSupporMenu"
-  aria-expanded="false"
-  aria-controls="BussinessSupporMenu"
+    onClick={() => toggleMenu('bussinessSupport')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
       <FaUser style={{marginRight:'10px '}}/>
-      Bussiness Support property
+      Bussiness Support Menu
   </li>
 
-<ul className="collapse " id="BussinessSupporMenu">
+<ul className={`collapse ${activeMenu === 'bussinessSupport' ? 'show' : ''}`} id="BussinessSupporMenu">
 
     <li className="p-0 mt-2">
     <NavLink to="/dashboard/searched-data" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaClipboardList />
-      Searched Data
+      User Searched History
     </NavLink>
   </li>
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/buyerlist-interest"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaListAlt />
-      Tenant List - Interest
+      Tenant List - Interested Owner
     </NavLink>
   </li>
 
@@ -1037,35 +1026,35 @@ Tenant Assistant Pay Later
  <li className="p-0 mt-2">
     <NavLink to="/dashboard/contact-table"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Contact Request Data
+      Contact Viewed
     </NavLink>
   </li>
   
  <li className="p-0 mt-2">
     <NavLink to="/dashboard/called-list-datas"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-     Called List Data
+     Called Owner List
     </NavLink>
   </li>
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/favorite-table"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Favorite Data
+      Favorite List
     </NavLink>
   </li>
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/favorite-removed"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Received Favorite Removed data
+      Favorite List - Removed 
     </NavLink>
   </li>
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/viewed-property"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Viewed Properties
+      All Property Viewed History
     </NavLink>
   </li>
   
@@ -1120,15 +1109,12 @@ All Views Data        </NavLink>
  
 
       <li className="p-3 mt-2  text-white" 
-        data-bs-toggle="collapse"
-  data-bs-target="#LeadMenu"
-  aria-expanded="false"
-  aria-controls="LeadMenu"
+        onClick={() => toggleMenu('lead')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
 
           <RiBankCard2Fill size={20} style={{marginRight:'10px '}}/> Lead Menu
       </li>
-      <ul className="collapse " id="LeadMenu">
+      <ul className={`collapse ${activeMenu === 'lead' ? 'show' : ''}`} id="LeadMenu">
 
    
       <li className="p-0 mt-2">
@@ -1186,16 +1172,13 @@ All Views Data        </NavLink>
 
 
 <li className="p-3 mt-2  text-white" 
-  data-bs-toggle="collapse"
-  data-bs-target="#NoPropertyUsersMenu"
-  aria-expanded="false"
-  aria-controls="NoPropertyUsersMenu"
+  onClick={() => toggleMenu('noPropertyUsers')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
  
           <FaBuilding style={{marginRight:'10px '}}/>
           No Property Users
       </li>
-<ul className="collapse " id="NoPropertyUsersMenu">
+<ul className={`collapse ${activeMenu === 'noPropertyUsers' ? 'show' : ''}`} id="NoPropertyUsersMenu">
 
  <li className="p-0 mt-2">
         <NavLink to="/dashboard/without-property-user" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
@@ -1218,16 +1201,13 @@ All Views Data        </NavLink>
 
       
   <li className="p-3 mt-2  text-white" 
-    data-bs-toggle="collapse"
-  data-bs-target="#BusinessStaticsMenu"
-  aria-expanded="false"
-  aria-controls="BusinessStaticsMenu"
+    onClick={() => toggleMenu('businessStatics')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
  
           <FaChartLine style={{marginRight:'10px '}}/>
           Business Statics
       </li>
-<ul className="collapse " id="BusinessStaticsMenu">
+<ul className={`collapse ${activeMenu === 'businessStatics' ? 'show' : ''}`} id="BusinessStaticsMenu">
 
 <li className="p-0 mt-2">
         <NavLink to="/dashboard/carstatics"
@@ -1283,14 +1263,11 @@ All Views Data        </NavLink>
     
       
       <li className="p-3 mt-2  text-white" 
-        data-bs-toggle="collapse"
-  data-bs-target="#FollowUpsMenu"
-  aria-expanded="false"
-  aria-controls="FollowUpsMenu"
+        onClick={() => toggleMenu('followUps')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
           <RiNewspaperFill size={20} style={{marginRight:'10px '}}/> Follow Ups
       </li>
-      <ul className="collapse " id="FollowUpsMenu">
+      <ul className={`collapse ${activeMenu === 'followUps' ? 'show' : ''}`} id="FollowUpsMenu">
 
       <li className="p-0 mt-2">
         <NavLink to="/dashboard/car-follow-ups" 
@@ -1330,14 +1307,11 @@ All Views Data        </NavLink>
 </ul>
 
       <li className="p-3 mt-2  text-white" 
-        data-bs-toggle="collapse"
-  data-bs-target="#SettingsMenu"
-  aria-expanded="false"
-  aria-controls="SettingsMenu"
+        onClick={() => toggleMenu('settings')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
           <RiSettings5Fill size={20} style={{marginRight:'10px '}}/> Settings
       </li>
-      <ul className="collapse " id="SettingsMenu">
+      <ul className={`collapse ${activeMenu === 'settings' ? 'show' : ''}`} id="SettingsMenu">
 
       <li className="p-0 mt-2">
         <NavLink to="/dashboard/user-rolls"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>

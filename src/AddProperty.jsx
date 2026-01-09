@@ -1850,7 +1850,8 @@ const handleSubmit = async (e) => {
 
     // 🔹 Determine status based on property mode and type
     // Commercial + Plot/Land/Agricultural Land → Pre-Approved (complete)
-    // Otherwise → Pending
+    // Residential properties → Pending
+    // This allows them to show in PreApprovedCar page after proper verification
     const commercialLandTypes = ["plot", "land", "agricultural land"];
     const isCommercialLand = 
       formData.propertyMode?.toLowerCase() === "commercial" && 
@@ -1858,6 +1859,13 @@ const handleSubmit = async (e) => {
     
     const propertyStatus = isCommercialLand ? "complete" : "pending";
     formDataToSend.append("status", propertyStatus);
+
+    // 🔹 Add createdBy (admin name) from localStorage or Redux
+    const adminName = localStorage.getItem("adminName") || "Admin";
+    formDataToSend.append("createdBy", adminName);
+
+    // 🔹 Add createdAt timestamp
+    formDataToSend.append("createdAt", new Date().toISOString());
 
     // Append form fields (excluding null/undefined)
     Object.keys(formData).forEach((key) => {

@@ -189,7 +189,6 @@ const BuyerAssistanceTable = () => {
                 <th>Created</th>
                 <th>Soft Delete</th>
                 <th>Actions</th>
-                <th>Status Toggle</th>
                 <th>Edit</th>
               </tr>
             </thead>
@@ -235,14 +234,6 @@ const BuyerAssistanceTable = () => {
                       )}
                     </td>
                     <td>
-                      <button
-                        className={`btn btn-sm btn-${request.ra_status === "raPending" ? "warning" : "success"}`}
-                        onClick={() => handleStatusToggle(id, request.ra_status)}
-                      >
-                        {request.ra_status === "raPending" ? "Activate" : "Deactivate"}
-                      </button>
-                    </td>
-                    <td>
                       <button onClick={() => handleEdit(request.Ra_Id)} className="btn btn-outline-secondary btn-sm">
                         <FaEdit />
                       </button>
@@ -251,7 +242,7 @@ const BuyerAssistanceTable = () => {
                 );
               }) : (
                 <tr>
-                  <td colSpan="17" className="text-center">No Data Found</td>
+                  <td colSpan="16" className="text-center">No Data Found</td>
                 </tr>
               )}
             </tbody>
