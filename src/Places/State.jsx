@@ -1,0 +1,161 @@
+
+import React, { useEffect, useRef, useState } from "react";
+import axios from "axios";
+import moment from "moment";
+import { useSelector } from "react-redux";
+
+const ActivePropertyFilterTable = () => {
+  const [states, setStates] = useState([]);
+  const [selectedState, setSelectedState] = useState("");
+
+  const [properties, setProperties] = useState([]);
+  const [filteredProperties, setFilteredProperties] = useState([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
+  useEffect(() => {
+    fetchStates();
+    fetchActiveProperties();
+  }, []);
+
+  useEffect(() => {
+    filterProperties();
+    setCurrentPage(1); // Reset to first page on filter change
+  }, [selectedState, properties]);
+
+  // ✅ Fetch states from /fetch
+  const fetchStates = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch`);
+      const allData = res.data.data || [];
+
+      const stateValues = allData
+        .filter(item => item.field === "state")
+        .map(item => item.value);
+
+      setStates([...new Set(stateValues)]);
+    } catch (err) {
+      console.error("Error fetching states:", err);
+    }
+  };
+
+  // ✅ Fetch properties from new API: /active-properties-state
+  const fetchActiveProperties = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/active-properties-state`);
+      const allData = res.data.data || [];
+      setProperties(allData);
+    } catch (err) {
+      console.error("Error fetching active properties:", err);
+    }
+  };
+    const tableRef = useRef();
+  
+  const handlePrint = () => {
+    const printContent = tableRef.current.innerHTML;
+    const printWindow = window.open("", "", "width=1200,height=800");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Table</title>
+          <style>
+            table { border-collapse: collapse; width: 100%; font-size: 12px; }
+            th, td { border: 1px solid #000; padding: 6px; text-align: left; }
+            th { background: #f0f0f0; }
+          </style>
+        </head>
+        <body>
+          <table>${printContent}</table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+  const filterProperties = () => {
+    let filtered = properties;
+
+    if (selectedState) {
+      filtered = filtered.filter(item => item.state === selectedState);
+    }
+
+    setFilteredProperties(filtered);
+  };
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredProperties.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredProperties.length / itemsPerPage);
+
+  const goToPrevious = () => {
+    if (currentPage > 1) setCurrentPage(prev => prev - 1);
+  };
+
+  const goToNext = () => {
+    if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+  };
+
+ 
+  return (
+    <div style={{ padding: "20px" }}>
+      <h3>Active Properties (State-Wise)</h3>
+
+      {/* Filter */}
+      <div style={{ marginBottom: "20px" }}>
+        <label>Select State:</label><br />
+        <select
+          value={selectedState}
+          onChange={(e) => setSelectedState(e.target.value)}
+        >
+          <option value="">-- All States --</option>
+          {states.map((state, i) => (
+            <option key={i} value={state}>{state}</option>
+          ))}
+        </select>
+      </div>
+              <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
+  Print
+</button>
+      {/* Table */}
+      {filteredProperties.length === 0 ? (
+        <p>No matching active properties found.</p>
+      ) : (
+        <><div ref={tableRef}>
+          <table border="1" cellPadding="5" cellSpacing="0" style={{ width: "100%" }}>
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Rent ID</th>
+                <th>Phone Number</th>
+                <th>Status</th>
+                <th>State</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentItems.map((property, i) => (
+                <tr key={i}>
+                  <td>{indexOfFirstItem + i + 1}</td>
+                  <td>{property.rentId}</td>
+                  <td>{property.phoneNumber}</td>
+                  <td>{property.status}</td>
+                  <td>{property.state}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+</div>
+          {/* Pagination */}
+          <div style={{ marginTop: "15px", display: "flex", justifyContent: "center", gap: "10px" }}>
+            <button onClick={goToPrevious} className="bg-primary" disabled={currentPage === 1}>⬅ Prev</button>
+            <span><strong>Page {currentPage} of {totalPages}</strong></span>
+            <button onClick={goToNext}className="bg-success" disabled={currentPage === totalPages}>Next ➡</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default ActivePropertyFilterTable;
