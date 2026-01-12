@@ -37,28 +37,28 @@ const CreateBill = () => {
 
 
 
-  useEffect(() => {
-    const fetchDefaultBillData = async () => {
-      try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/get-default-bill-data`);
-        if (res.data.success) {
-          setBillData(prev => ({
-            ...prev,
-            ...res.data.data
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching default bill data:', error);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchDefaultBillData = async () => {
+  //     try {
+  //       const res = await axios.get(`${process.env.REACT_APP_API_URL}/get-default-bill-data`);
+  //       if (res.data.success) {
+  //         setBillData(prev => ({
+  //           ...prev,
+  //           ...res.data.data
+  //         }));
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching default bill data:', error);
+  //     }
+  //   };
   
-    fetchDefaultBillData();
-  }, []);
+  //   fetchDefaultBillData();
+  // }, []);
 
-  useEffect(() => {
-    fetchPaymentTypes();
-    fetchPlans();
-  }, []);
+  // useEffect(() => {
+  //   fetchPaymentTypes();
+  //   fetchPlans();
+  // }, []);
 
 
 

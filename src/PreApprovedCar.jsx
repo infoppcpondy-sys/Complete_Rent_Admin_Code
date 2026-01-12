@@ -393,6 +393,8 @@ const handleUndo = async (rentId) => {
   };
 
   const handleEditBill = (rentId) => {
+
+     
     navigate(`/dashboard/edit-bill/${rentId}`);
   };
 

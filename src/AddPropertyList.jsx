@@ -54,7 +54,7 @@ const TABLE_COLUMNS = [
   { key: 'featureStatusToggle', header: 'Feature Status', exportable: false }, // UI-only
   { key: 'status', header: 'Status', exportable: true },
   { key: 'actions', header: 'Actions', exportable: false }, // UI-only
-  { key: 'activeOrPending', header: 'Active OR Pending', exportable: false }, // UI-only
+  // { key: 'activeOrPending', header: 'Active OR Pending', exportable: false }, // UI-only
   { key: 'permanentDelete', header: 'Permanent Delete', exportable: false }, // UI-only
 ];
 

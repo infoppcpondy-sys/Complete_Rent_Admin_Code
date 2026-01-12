@@ -1824,13 +1824,7 @@ const handleSubmit = async (e) => {
     
     const propertyStatus = isCommercialLand ? "complete" : "pending";
     formDataToSend.append("status", propertyStatus);
-
-    // 🔹 Add createdBy (admin name) from localStorage or Redux
-    const adminName = localStorage.getItem("adminName") || "Admin";
-    formDataToSend.append("createdBy", adminName);
-
-    // 🔹 Add createdAt timestamp
-    formDataToSend.append("createdAt", new Date().toISOString());
+ 
 
     // Append form fields (excluding null/undefined)
     Object.keys(formData).forEach((key) => {
@@ -1877,9 +1871,10 @@ const handleSubmit = async (e) => {
       formDataToSend,
       { headers: { "Content-Type": "multipart/form-data" } }
     );
+// console.log("datas", formDataToSend);
 
     alert(propertyResponse.data.message || "Property updated successfully.");
-    setIsProcessing(false); // Hide loading state
+   setIsProcessing(false); // Hide loading state
     navigate('/dashboard/preapproved-car');
   } catch (error) {
     setIsProcessing(false); // Hide loading state on error
