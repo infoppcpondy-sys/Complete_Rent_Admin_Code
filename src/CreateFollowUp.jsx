@@ -239,6 +239,7 @@ function CreateFollowUp() {
             <option value="Payment Followup">Payment Followup</option>
             <option value="Data Followup">Data Followup</option>
             <option value="Enquiry Followup">Enquiry Followup</option>
+            <option value="Enquiry Followup">Payment Closed</option>
           </select>
         </div>
 

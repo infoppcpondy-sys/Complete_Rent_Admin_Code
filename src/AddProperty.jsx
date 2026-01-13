@@ -133,6 +133,25 @@ const [compressionStatus, setCompressionStatus] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
 
+  // 🔥 Clear localStorage when leaving the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      localStorage.removeItem("rentId");
+    };
+
+    const handleUnload = () => {
+      localStorage.removeItem("rentId");
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("unload", handleUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("unload", handleUnload);
+    };
+  }, []);
+
     const handleCloseAddForm = () => {
       setshowPlans(false); // Close add property form
     };
@@ -398,30 +417,29 @@ const [compressionStatus, setCompressionStatus] = useState('');
     const coordRef = useRef(null);
 
   useEffect(() => {
-    if (isPreview || !window.google) return;
-  
-    const interval = setInterval(() => {
-      if (mapRef.current && inputRef.current) {
-          clearInterval(interval);
+    if (isPreview || !window.google || !mapRef.current || !inputRef.current) return;
+    
+    // Prevent double-initialization if map already rendered
+    if (mapRenderedRef.current) return;
 
-          // Prevent double-initialization if map already rendered
-          if (mapRenderedRef.current) return;
+    try {
+      mapRef.current.innerHTML = "";
 
-          mapRef.current.innerHTML = "";
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: { lat: 11.9416, lng: 79.8083 },
+        zoom: 10,
+      });
 
-          const map = new window.google.maps.Map(mapRef.current, {
-          center: { lat: 11.9416, lng: 79.8083 },
-            zoom: 10,
-          });
+      mapInstance.current = map;
+      mapRenderedRef.current = true;
 
-          mapInstance.current = map;
-          mapRenderedRef.current = true;
-     const geocoder = new window.google.maps.Geocoder();
+      const geocoder = new window.google.maps.Geocoder();
+      
       map.addListener("click", (e) => {
         const lat = e.latLng.lat();
         const lng = e.latLng.lng();
 
-        updateMap(lat, lng); // optional: show marker
+        updateMap(lat, lng);
 
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
           if (status === "OK" && results[0]) {
@@ -432,78 +450,66 @@ const [compressionStatus, setCompressionStatus] = useState('');
               return comp?.long_name || '';
             };
 
-           setFormData(prev => ({
-            ...prev,
-            rentalPropertyAddress: place.formatted_address,
-            latitude: lat,
-            longitude: lng,
-            pinCode: getComponent("postal_code"),
-            city: getComponent("locality") || getComponent("administrative_area_level_3"),
-            area: getComponent("sublocality") || getComponent("sublocality_level_1"),
-            streetName: getComponent("route") || getComponent("premise"),
-            district: getComponent("administrative_area_level_2"),
-            state: getComponent("administrative_area_level_1"),
-            country: getComponent("country"),
-            doorNumber: getComponent("street_number"), // ✅ added here
-          locationCoordinates: `${lat.toFixed(6)}° N, ${lng.toFixed(6)}° E`, // ✅ Add this
-
-          }));
+            setFormData(prev => ({
+              ...prev,
+              rentalPropertyAddress: place.formatted_address,
+              latitude: lat,
+              longitude: lng,
+              pinCode: getComponent("postal_code"),
+              city: getComponent("locality") || getComponent("administrative_area_level_3"),
+              area: getComponent("sublocality") || getComponent("sublocality_level_1"),
+              streetName: getComponent("route") || getComponent("premise"),
+              district: getComponent("administrative_area_level_2"),
+              state: getComponent("administrative_area_level_1"),
+              country: getComponent("country"),
+              doorNumber: getComponent("street_number"),
+              locationCoordinates: `${lat.toFixed(6)}° N, ${lng.toFixed(6)}° E`,
+            }));
           }
         });
       });
 
-        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          types: ['geocode'],
-        });
-  
-        autocomplete.bindTo('bounds', map);
-  
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (!place.geometry || !place.geometry.location) return;
-  
-          const lat = place.geometry.location.lat();
-          const lng = place.geometry.location.lng();
-  
-          updateMap(lat, lng);
-  
-          const getComponent = (type) => {
-            const comp = place.address_components?.find(c => c.types.includes(type));
-            return comp?.long_name || '';
-          };
-  
-          setFormData(prev => ({
-            ...prev,
-            rentalPropertyAddress: place.formatted_address || '',
-            latitude: lat,
-            longitude: lng,
-            pinCode: getComponent("postal_code"),
-          
-            // City is usually in 'locality', fallback to district-level if missing
-            city: getComponent("sublocality_level_1"),
-          
-            // Area is more granular, typically sublocality levels
-            area: getComponent("sublocality_level_2"),          
-            // Optional: Nagar name, generally from level 1
-            nagar: getComponent("sublocality"),
-          
-            // Street name or building/premise
-            streetName: getComponent("route") || getComponent("premise"),
-          
-            // District is administrative_area_level_2 in most cases
-            district: getComponent("administrative_area_level_2") || getComponent("locality"),
-                      locationCoordinates: `${lat.toFixed(6)}° N, ${lng.toFixed(6)}° E`, // ✅ Add this
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        types: ['geocode'],
+      });
 
-            state: getComponent("administrative_area_level_1"),
-            country: getComponent("country"),
-            doorNumber: getComponent("street_number"),    }));
-            
-        });
-      }
-    }, 100);
-  
-    return () => clearInterval(interval);
-  }, [isPreview]); // 👈 Re-run effect when preview mode changes
+      autocomplete.bindTo('bounds', map);
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry || !place.geometry.location) return;
+
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+
+        updateMap(lat, lng);
+
+        const getComponent = (type) => {
+          const comp = place.address_components?.find(c => c.types.includes(type));
+          return comp?.long_name || '';
+        };
+
+        setFormData(prev => ({
+          ...prev,
+          rentalPropertyAddress: place.formatted_address || '',
+          latitude: lat,
+          longitude: lng,
+          pinCode: getComponent("postal_code"),
+          city: getComponent("sublocality_level_1"),
+          area: getComponent("sublocality_level_2"),
+          nagar: getComponent("sublocality"),
+          streetName: getComponent("route") || getComponent("premise"),
+          district: getComponent("administrative_area_level_2") || getComponent("locality"),
+          locationCoordinates: `${lat.toFixed(6)}° N, ${lng.toFixed(6)}° E`,
+          state: getComponent("administrative_area_level_1"),
+          country: getComponent("country"),
+          doorNumber: getComponent("street_number"),
+        }));
+      });
+    } catch (error) {
+      console.error('Error initializing Google Map:', error);
+    }
+  }, [isPreview]);
  
 
 const updateMap = (lat, lng) => {
