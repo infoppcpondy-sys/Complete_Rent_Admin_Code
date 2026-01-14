@@ -33,15 +33,14 @@ const ApprovedCar = () => {
   const [phoneNumberSearch, setPhoneNumberSearch] = useState('');
   const [showMoveToModal, setShowMoveToModal] = useState(false);
   const [selectedPropertyForMove, setSelectedPropertyForMove] = useState(null);
-const [featureStatusFilter, setFeatureStatusFilter] = useState('');
- 
-const [sortOption, setSortOption] = useState('');
-const [hasLocation, setHasLocation] = useState('');
-const [hasPhoto, setHasPhoto] = useState('');
-const [notViewed, setNotViewed] = useState(false);
-const [bankLoan, setBankLoan] = useState('');
-const [priceFilter, setPriceFilter] = useState('');
-const [propertyTypeFilter, setPropertyTypeFilter] = useState('');
+  const [featureStatusFilter, setFeatureStatusFilter] = useState('');
+  const [sortOption, setSortOption] = useState('');
+  const [hasLocation, setHasLocation] = useState('');
+  const [hasPhoto, setHasPhoto] = useState('');
+  const [notViewed, setNotViewed] = useState(false);
+  const [bankLoan, setBankLoan] = useState('');
+  const [priceFilter, setPriceFilter] = useState('');
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState('');
   
 
 const navigate = useNavigate();
