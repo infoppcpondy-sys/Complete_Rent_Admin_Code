@@ -1146,33 +1146,3 @@ export default ApprovedCar;
 
 
  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -342,7 +342,7 @@ const BuyerAssistanceTable = () => {
   Print
 </button>
       <div className="mt-4">
-        <div className="d-flex align-items-center gap-2 mb-3">
+        <div className="d-flex align-items-center gap-2 mb-2">
           <h3 className="mb-0">Owner and Tenant App Menu</h3>
           <button 
             type="button"
@@ -352,7 +352,7 @@ const BuyerAssistanceTable = () => {
             }}
             className="btn btn-sm"
             title="Reset sorting to default (Approved Date - Recent to Old)"
-            style={{ padding: "0.25rem 0.5rem", fontSize: "14px", backgroundColor: "#6c757d", color: "white", border: "none" }}
+            style={{ padding: "0.7rem 0.5rem", fontSize: "18px", backgroundColor: "#6c757d", color: "white", border: "none" }}
           >
             🔄 Reset Sort
           </button>
@@ -368,7 +368,7 @@ const BuyerAssistanceTable = () => {
                   title="Click to sort by RP ID"
                 >
                   RP ID
-                  <span style={{ marginLeft: "6px", fontSize: "12px", opacity: sortColumn === "rpId" ? 1 : 0.4 }}>
+                  <span style={{ marginLeft: "6px", fontSize: "18px", opacity: sortColumn === "rpId" ? 1 : 0.4 }}>
                     {sortColumn === "rpId" && sortOrder === "desc" ? "⬆️" : "⬇️"}
                   </span>
                 </th>
@@ -378,7 +378,7 @@ const BuyerAssistanceTable = () => {
                   title="Click to sort by Approved Date"
                 >
                   Approved Date
-                  <span style={{ marginLeft: "6px", fontSize: "12px", opacity: sortColumn === "approvedDate" ? 1 : 0.4 }}>
+                  <span style={{ marginLeft: "6px", fontSize: "18px", opacity: sortColumn === "approvedDate" ? 1 : 0.4 }}>
                     {sortColumn === "approvedDate" && sortOrder === "desc" ? "⬆️" : "⬇️"}
                   </span>
                 </th>
@@ -390,7 +390,7 @@ const BuyerAssistanceTable = () => {
                   title="Click to sort by Property Created Date"
                 >
                   Property Created Date
-                  <span style={{ marginLeft: "6px", fontSize: "12px", opacity: sortColumn === "propertyCreatedDate" ? 1 : 0.4 }}>
+                  <span style={{ marginLeft: "6px", fontSize: "18px", opacity: sortColumn === "propertyCreatedDate" ? 1 : 0.4 }}>
                     {sortColumn === "propertyCreatedDate" && sortOrder === "desc" ? "⬆️" : "⬇️"}
                   </span>
                 </th>
@@ -400,7 +400,7 @@ const BuyerAssistanceTable = () => {
                   title="Click to sort by Bill Created Date"
                 >
                   Bill Created Date
-                  <span style={{ marginLeft: "6px", fontSize: "12px", opacity: sortColumn === "billCreatedDate" ? 1 : 0.4 }}>
+                  <span style={{ marginLeft: "6px", fontSize: "18px", opacity: sortColumn === "billCreatedDate" ? 1 : 0.4 }}>
                     {sortColumn === "billCreatedDate" && sortOrder === "desc" ? "⬆️" : "⬇️"}
                   </span>
                 </th>

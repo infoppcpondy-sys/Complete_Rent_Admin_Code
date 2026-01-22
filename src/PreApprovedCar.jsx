@@ -43,14 +43,53 @@ const PreApprovedCar = () => {
   useEffect(() => {
     const fetchPreApprovedProperties = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/properties/pre-approved-all-rent`);
-        const sortedUsers = res.data.users.sort(
+        // Fetch pre-approved properties
+        const preApprovedRes = await axios.get(`${process.env.REACT_APP_API_URL}/properties/pre-approved-all-rent`);
+        const preApprovedUsers = preApprovedRes.data.users || [];
+        console.log("📦 Pre-approved from API:", preApprovedUsers.length, preApprovedUsers);
+
+        // Fetch all properties and filter for expired status (properties moved to pre-approved)
+        const allPropertiesRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-alls-datas-all`);
+        const allProperties = allPropertiesRes.data.users || [];
+        console.log("🔄 All properties from API:", allProperties.length);
+
+        // Filter for expired status (which means moved to pre-approved in ApprovedCar)
+        const expiredProperties = allProperties.filter(
+          property => property.status === "expired"
+        );
+
+        console.log("✅ Expired properties count:", expiredProperties.length);
+        console.log("🔍 Expired properties:", expiredProperties);
+
+        // Merge both lists - avoid duplicates using rentId
+        const mergedMap = new Map();
+        
+        // Add pre-approved properties first
+        preApprovedUsers.forEach(property => {
+          mergedMap.set(property.rentId, property);
+        });
+
+        // Add expired properties (won't overwrite if already exists)
+        expiredProperties.forEach(property => {
+          if (!mergedMap.has(property.rentId)) {
+            mergedMap.set(property.rentId, property);
+          }
+        });
+
+        // Convert map back to array and sort by creation date
+        const mergedUsers = Array.from(mergedMap.values()).sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
-        setProperties(sortedUsers);
-        setFiltered(sortedUsers);
+
+        console.log("📦 Pre-approved count:", preApprovedUsers.length);
+        console.log("🔴 Expired count:", expiredProperties.length);
+        console.log("📊 Total merged count:", mergedUsers.length);
+        console.log("📋 Final merged properties:", mergedUsers);
+
+        setProperties(mergedUsers);
+        setFiltered(mergedUsers);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching pre-approved properties:", err);
       }
     };
     fetchPreApprovedProperties();
