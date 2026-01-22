@@ -518,8 +518,8 @@ const handleUndo = async (rentId) => {
         >
           <option value="">All Status</option>
           <option value="complete">Complete</option>
-          <option value="pending">Pending</option>
-          <option value="active">Active</option>
+          <option value="expired">Expired</option>
+          {/* <option value="active">Active</option> */}
           <option value="delete">Deleted</option>
         </select>
 
