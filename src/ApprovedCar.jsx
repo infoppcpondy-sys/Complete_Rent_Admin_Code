@@ -41,18 +41,102 @@ const ApprovedCar = () => {
   const [bankLoan, setBankLoan] = useState('');
   const [priceFilter, setPriceFilter] = useState('');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState('');
+  const [billMap, setBillMap] = useState({});
   
 
 const navigate = useNavigate();
   
+  // Fetch bills and create a map of rentId -> bill data
+  const fetchBills = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/bills`);
+      const map = {};
+
+      if (res.data.data && Array.isArray(res.data.data)) {
+        res.data.data.forEach(bill => {
+          // Find the related property
+          const relatedProperty = properties.find(p => String(p.rentId).trim() === String(bill.rentId).trim());
+          
+          if (relatedProperty) {
+            // Only add if bill was created after the property
+            const propertyTime = new Date(relatedProperty.createdAt).getTime();
+            const billTime = new Date(bill.createdAt).getTime();
+            
+            if (billTime >= propertyTime) {
+              // Only add to map if not already exists (first one wins)
+              if (!map[bill.rentId]) {
+                map[bill.rentId] = {
+                  billNo: bill.billNo,
+                  createdAt: bill.createdAt,
+                  validity: bill.validity,
+                  billExpiryDate: bill.billExpiryDate
+                };
+              }
+            }
+          }
+        });
+      }
+
+      setBillMap(map);
+    } catch (error) {
+      console.error("Error fetching bills:", error);
+    }
+  };
+  
   useEffect(() => {
     const fetchPendingProperties = async () => {
       try {
+        // Fetch main approved properties
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-active-users-datas-all-rent`);
         
-        const sortedUsers = res.data.users.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+        // Fetch free and paid plans to create a mapping
+        const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+        const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+        
+        // Fetch follow-up data to map admin names correctly
+        const followUpRes = await axios.get(`${process.env.REACT_APP_API_URL}/followup-list`);
+        
+        // Create a map of rentId -> follow-up admin name
+        const followUpAdminMap = {};
+        if (followUpRes.data.data && Array.isArray(followUpRes.data.data)) {
+          followUpRes.data.data.forEach(followUp => {
+            followUpAdminMap[followUp.rentId] = followUp.adminName;
+          });
+        }
+        
+        // Create a map of rentId -> plan type
+        const planTypeMap = {};
+        
+        // Map free properties
+        if (freeRes.data.data && Array.isArray(freeRes.data.data)) {
+          freeRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                planTypeMap[prop.rentId] = 'Free';
+              });
+            }
+          });
+        }
+        
+        // Map paid properties
+        if (paidRes.data.data && Array.isArray(paidRes.data.data)) {
+          paidRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                planTypeMap[prop.rentId] = 'Paid';
+              });
+            }
+          });
+        }
+        
+        // Update properties with correct plan names and follow-up admin names
+        const sortedUsers = res.data.users
+          .map(prop => ({
+            ...prop,
+            planName: planTypeMap[prop.rentId] || 'Free',
+            followUpAdminName: followUpAdminMap[prop.rentId] || 'N/A'
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         
         setProperties(sortedUsers);
         setFiltered(sortedUsers);
@@ -64,10 +148,18 @@ const navigate = useNavigate();
         setStatusProperties(statusMap);
         
       } catch (err) {
+        console.error('Error fetching properties:', err);
       }
     };
     fetchPendingProperties();
   }, []);
+
+  // Fetch bills after properties are loaded
+  useEffect(() => {
+    if (properties && properties.length > 0) {
+      fetchBills();
+    }
+  }, [properties]);
 
       const tableRef = useRef();
     
@@ -113,6 +205,39 @@ const navigate = useNavigate();
       const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
       saveAs(blob, `ApprovedProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
+
+  // Helper function to calculate bill expiry date
+  const calculateBillExpiryDate = (billDate, validityDays) => {
+    try {
+      // Validate inputs
+      if (!billDate || !validityDays) {
+        return '-';
+      }
+
+      // Convert to number
+      const days = Number(validityDays);
+      if (isNaN(days) || days <= 0) {
+        return '-';
+      }
+
+      // Create date object from bill date
+      const expiryDate = new Date(billDate);
+      
+      // Check if date is valid
+      if (isNaN(expiryDate.getTime())) {
+        return '-';
+      }
+
+      // Add validity days
+      expiryDate.setDate(expiryDate.getDate() + days);
+
+      // Format and return
+      return expiryDate.toLocaleDateString();
+    } catch (error) {
+      console.error('Error calculating bill expiry date:', error);
+      return '-';
+    }
+  };
 
   // Search and filter functionality
 const handleSearch = () => {
@@ -910,9 +1035,9 @@ const handlePrint = (prop) => {
                     </Button>
                   </td>
                   <td>{prop.followUpAdminName}</td>
-                  <td>{prop.billDate}</td>
-                  <td>{prop.validity}</td>
-                  <td>{prop.billExpiryDate}</td>
+                  <td>{billMap[prop.rentId] ? new Date(billMap[prop.rentId].createdAt).toLocaleDateString() : '-'}</td>
+                  <td>{billMap[prop.rentId]?.validity || prop.validity || '-'}</td>
+                  <td>{billMap[prop.rentId] ? calculateBillExpiryDate(billMap[prop.rentId].createdAt, billMap[prop.rentId].validity) : '-'}</td>
                   <td>         <Button
                     variant="secondary"
                     size="sm"

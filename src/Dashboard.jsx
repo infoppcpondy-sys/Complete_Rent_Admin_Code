@@ -176,6 +176,7 @@ import RentIdStatics from './RentIdStatics';
 import DetailDailyReport from './DetailDailyReport';
 import PropertyPaymentDailyReport from './PropertyPaymentDailyReport';
 import GetAllContactFormDatas from './GetAllContactFormDatas';
+import OwnerTenantMenu from './Tomenu.jsx';
 
 
 const routes = [
@@ -354,6 +355,7 @@ const routes = [
                 { path: "/property-payment-daily-report", element: < PropertyPaymentDailyReport /> },
 
                 { path: "/contact-form-datas", element: < GetAllContactFormDatas /> },
+    { path: "/owner-tenant-menu", element: <OwnerTenantMenu /> },
 
 
 ];

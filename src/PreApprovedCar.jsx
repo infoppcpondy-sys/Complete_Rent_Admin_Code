@@ -4,7 +4,7 @@ import axios from "axios";
 import moment from "moment";
 import { useSelector } from "react-redux";
 import { Table, Form, Button, Modal } from 'react-bootstrap';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaEdit, FaEye, FaUndo } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import { getFirstPhotoUrl, DEFAULT_IMAGE } from './utils/mediaHelper';
@@ -27,6 +27,7 @@ const PreApprovedCar = () => {
   const [followUpMap, setFollowUpMap] = useState({});
 
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Detect when returning to this page
   const reduxAdminName = useSelector((state) => state.admin.name);
   const reduxAdminRole = useSelector((state) => state.admin.role);
   const adminName = reduxAdminName || localStorage.getItem("adminName");
@@ -73,13 +74,22 @@ const PreApprovedCar = () => {
           console.log("Property createdAt:", relatedProperty.createdAt);
           console.log("FollowUp createdAt:", fu.createdAt);
 
-          // ✅ Only add to map if not already exists (first one wins)
-          if (!map[fu.rentId]) {
-            map[fu.rentId] = {
-              adminName: fu.adminName,
-              createdAt: fu.createdAt
-            };
-            console.log(`✅ Added followup for rentId ${fu.rentId}:`, map[fu.rentId]);
+          // ✅ CRITICAL: Only add if followup was created AFTER the property
+          // This prevents old followup records from being reused for new properties
+          const propertyTime = new Date(relatedProperty.createdAt).getTime();
+          const followUpTime = new Date(fu.createdAt).getTime();
+          
+          if (followUpTime >= propertyTime) {
+            // ✅ Only add to map if not already exists (first one wins)
+            if (!map[fu.rentId]) {
+              map[fu.rentId] = {
+                adminName: fu.adminName,
+                createdAt: fu.createdAt
+              };
+              console.log(`✅ Added followup for rentId ${fu.rentId}:`, map[fu.rentId]);
+            }
+          } else {
+            console.log(`⚠️ Skipped old followup for rentId ${fu.rentId} (created BEFORE property)`);
           }
         } else {
           console.log(`❌ No property found for followup rentId: ${fu.rentId}`);
@@ -111,14 +121,23 @@ const PreApprovedCar = () => {
           console.log("Property createdAt:", relatedProperty.createdAt);
           console.log("Bill createdAt:", bill.createdAt);
 
-          // ✅ Only add to map if not already exists (first one wins)
-          if (!map[bill.rentId]) {
-            map[bill.rentId] = {
-              adminName: bill.adminName,
-              billNo: bill.billNo,
-              createdAt: bill.createdAt
-            };
-            console.log(`✅ Added bill for rentId ${bill.rentId}:`, map[bill.rentId]);
+          // ✅ CRITICAL: Only add if bill was created AFTER the property
+          // This prevents old bill records from being reused for new properties
+          const propertyTime = new Date(relatedProperty.createdAt).getTime();
+          const billTime = new Date(bill.createdAt).getTime();
+          
+          if (billTime >= propertyTime) {
+            // ✅ Only add to map if not already exists (first one wins)
+            if (!map[bill.rentId]) {
+              map[bill.rentId] = {
+                adminName: bill.adminName,
+                billNo: bill.billNo,
+                createdAt: bill.createdAt
+              };
+              console.log(`✅ Added bill for rentId ${bill.rentId}:`, map[bill.rentId]);
+            }
+          } else {
+            console.log(`⚠️ Skipped old bill for rentId ${bill.rentId} (created BEFORE property)`);
           }
         } else {
           console.log(`❌ No property found for bill rentId: ${bill.rentId}`);
@@ -159,6 +178,39 @@ const PreApprovedCar = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [properties]);
+
+  // ✅ CRITICAL FIX: Always refresh maps when component mounts or comes back from navigation
+  // This ensures fresh followup/bill data from backend, not stale cached maps
+  useEffect(() => {
+    if (properties && properties.length > 0) {
+      // Clear old maps to force fresh fetch
+      setBillMap({});
+      setFollowUpMap({});
+      
+      console.log("🔄 Component mounted/returned, clearing maps and fetching fresh data...");
+      
+      // Small delay to ensure maps are cleared before fetching
+      setTimeout(() => {
+        fetchFollowUps();
+        fetchBills();
+      }, 100);
+    }
+  }, []); // Empty dependency - runs ONLY on component mount
+
+  // ✅ ADDED: Refresh data when user returns from another route (CreateBill, AddProperty, etc)
+  useEffect(() => {
+    console.log("📍 Location changed, refreshing followup/bill data...");
+    if (properties && properties.length > 0) {
+      // Clear maps on route change
+      setBillMap({});
+      setFollowUpMap({});
+      
+      setTimeout(() => {
+        fetchFollowUps();
+        fetchBills();
+      }, 200);
+    }
+  }, [location.pathname]); // Triggers when user navigates back to this page
     const tableRef = useRef();
   
   const handlePrint = () => {

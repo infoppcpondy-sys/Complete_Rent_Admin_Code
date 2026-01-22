@@ -408,12 +408,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { useSelector } from "react-redux";
 import moment from "moment";
 import { useNavigate } from "react-router-dom";
 import { Table } from "react-bootstrap";
 import { MdDeleteForever } from "react-icons/md";
-import pic from "./Assets/Mask Group 3.png";
 import { getFirstPhotoUrl } from './utils/mediaHelper';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -431,11 +429,6 @@ const PaidPlansWithProperties = () => {
   const navigate = useNavigate();
   const tableRef = useRef();
 
-  const reduxAdminName = useSelector((state) => state.admin.name);
-  const reduxAdminRole = useSelector((state) => state.admin.role);
-  const adminName = reduxAdminName || localStorage.getItem("adminName");
-  const adminRole = reduxAdminRole || localStorage.getItem("adminRole");
-
   // ✅ Fetch all paid plans
   useEffect(() => {
     const fetchData = async () => {
@@ -443,8 +436,16 @@ const PaidPlansWithProperties = () => {
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
         const rawData = response.data.data || [];
 
+        // Deduplicate properties by rentId within each item
+        const deduplicatedData = rawData.map((item) => ({
+          ...item,
+          properties: Array.from(
+            new Map(item.properties.map((prop) => [prop.rentId, prop])).values()
+          ),
+        }));
+
         // Sort based on latest property update
-        const sortedData = rawData.sort((a, b) => {
+        const sortedData = deduplicatedData.sort((a, b) => {
           const latestA = getLatestPropertyDate(a.properties);
           const latestB = getLatestPropertyDate(b.properties);
           return latestB - latestA;
@@ -526,7 +527,7 @@ const PaidPlansWithProperties = () => {
     saveAs(blob, `PaidProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
-  // ✅ Search Filter
+  // ✅ Search Filter with Deduplication
 const handleSearch = () => {
   const filtered = data
     .map((item) => {
@@ -554,6 +555,12 @@ const handleSearch = () => {
 
       return { ...item, properties: matchedProperties, billNoMatches };
     })
+    .map((item) => ({
+      ...item,
+      properties: Array.from(
+        new Map(item.properties.map((prop) => [prop.rentId, prop])).values()
+      ),
+    }))
     .filter(
       (item) =>
         item.properties.length > 0 &&
@@ -570,6 +577,26 @@ const handleSearch = () => {
     setStartDate("");
     setEndDate("");
     setFilteredData(data);
+  };
+
+  // Flatten all properties from all items and deduplicate by rentId
+  const getFlattenedUniqueProperties = () => {
+    const seenRentIds = new Set();
+    const uniqueProperties = [];
+
+    filteredData.forEach((item) => {
+      item.properties?.forEach((property) => {
+        if (!seenRentIds.has(property.rentId)) {
+          seenRentIds.add(property.rentId);
+          uniqueProperties.push({
+            ...property,
+            billInfo: item.bill || item.user, // Attach bill/user info from parent item
+          });
+        }
+      });
+    });
+
+    return uniqueProperties;
   };
 
   // ✅ Delete and Undo Delete
@@ -711,69 +738,59 @@ const handleSearch = () => {
             </tr>
           </thead>
           <tbody>
-            {(() => {
-              let serialNo = 0;
-              return filteredData.flatMap((item, i) =>
-                item.properties.map((p, j) => {
-                  serialNo++;
-                  return (
-                    <tr key={`${i}-${j}`}>
-                      <td>{serialNo}</td>
-                  <td>
-                    <img
-                      src={getFirstPhotoUrl(p.photos)}
-                      alt="Property"
-                      style={{ width: 50, height: 50, objectFit: "cover" }}
-                    />
-                  </td>
-                  <td
-                    className="text-primary"
-                    style={{ cursor: "pointer" }}
-                    onClick={() =>
-                      navigate("/dashboard/detail", {
-                        state: { rentId: p.rentId, phoneNumber: p.phoneNumber },
-                      })
-                    }
-                  >
-                    {p.rentId}
-                  </td>
-                  <td>{p.phoneNumber}</td>
-                  <td>{p.city || "N/A"}</td>
-                  <td>{p.propertyType || "N/A"}</td>
-                  <td>{p.propertyMode || "N/A"}</td>
-                  <td>₹{p.rentalAmount}</td>
-                  <td>{item.bill?.planName || item.user?.planName}</td>
-                  <td>{item.bill?.billNo || item.user?.billNo || "N/A"}</td>
-                  <td>{item.bill?.adminName || item.user?.adminName || "N/A"}</td>
-                  <td>{moment(p.createdAt).format("DD/MM/YYYY HH:mm")}</td>
-                  <td>{moment(p.updatedAt).format("DD/MM/YYYY HH:mm")}</td>
-                  <td>
-                    {moment(
-                      item.bill?.planExpiryDate || item.user?.planExpiryDate
-                    ).format("DD/MM/YYYY")}
-                  </td>
-                  <td>
-                    {p.isDeleted ? (
-                      <button
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleUndoDelete(p.rentId)}
-                      >
-                        Undo
-                      </button>
-                    ) : (
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDelete(p.rentId)}
-                      >
-                        <MdDeleteForever />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-                  );
-                })
-              );
-            })()}
+            {getFlattenedUniqueProperties().map((property, index) => (
+              <tr key={`${property.rentId}-${index}`}>
+                <td>{index + 1}</td>
+                <td>
+                  <img
+                    src={getFirstPhotoUrl(property.photos)}
+                    alt="Property"
+                    style={{ width: 50, height: 50, objectFit: "cover" }}
+                  />
+                </td>
+                <td
+                  className="text-primary"
+                  style={{ cursor: "pointer" }}
+                  onClick={() =>
+                    navigate("/dashboard/detail", {
+                      state: { rentId: property.rentId, phoneNumber: property.phoneNumber },
+                    })
+                  }
+                >
+                  {property.rentId}
+                </td>
+                <td>{property.phoneNumber}</td>
+                <td>{property.city || "N/A"}</td>
+                <td>{property.propertyType || "N/A"}</td>
+                <td>{property.propertyMode || "N/A"}</td>
+                <td>₹{property.rentalAmount}</td>
+                <td>{property.billInfo?.planName || "N/A"}</td>
+                <td>{property.billInfo?.billNo || "N/A"}</td>
+                <td>{property.billInfo?.adminName || "N/A"}</td>
+                <td>{moment(property.createdAt).format("DD/MM/YYYY HH:mm")}</td>
+                <td>{moment(property.updatedAt).format("DD/MM/YYYY HH:mm")}</td>
+                <td>
+                  {moment(property.billInfo?.planExpiryDate).format("DD/MM/YYYY")}
+                </td>
+                <td>
+                  {property.isDeleted ? (
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={() => handleUndoDelete(property.rentId)}
+                    >
+                      Undo
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => handleDelete(property.rentId)}
+                    >
+                      <MdDeleteForever />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </Table>
       </div>

@@ -33,7 +33,7 @@ import {
   FaMoneyBillAlt,
   FaPhone,
   FaRegQuestionCircle,
-  FaEye,FaCity,FaUserCog
+  FaEye,FaCity,FaUserCog,FaHome
 } from "react-icons/fa";
 import { RiAccountCircleFill, RiBankCard2Fill, RiBarChart2Fill, RiCaravanFill, RiCellphoneFill, RiDashboardHorizontalFill, RiExchangeFill, RiFileListFill, RiGroupFill, RiHandCoinFill, RiLayoutFill, RiNewspaperFill, RiQuestionAnswerFill, RiRoadMapFill, RiSettings5Fill, RiShieldUserFill, RiTicket2Fill, RiUserFill, RiUserSettingsFill } from "react-icons/ri";
 import { FcStatistics } from "react-icons/fc";
@@ -77,6 +77,13 @@ const menuItems = [
     icon: <FaBuilding  size={20} style={{ marginRight: '10px' }} />,
     subItems: [
       { label: 'Add Office', path: '/dashboard/add-office' },
+    ],
+  },
+  {
+    title: 'Owner-Tenant App Menu',
+    icon: <FaHome  size={20} style={{ marginRight: '10px', color: '#28a745' }} />,
+    subItems: [
+      { label: 'Owner-Tenant menu application', path: '/dashboard/owner-tenant-menu', icon: <FaUsers size={16} /> },
     ],
   },
   // Add more sections as needed
@@ -988,6 +995,24 @@ Tenant Assistant Pay Later
       RA Paid Bills
     </NavLink>
   </li>
+</ul>
+
+<li className="p-3 mt-2  text-white" 
+    onClick={() => toggleMenu('ownerTenant')}
+   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
+     
+          <FaHome style={{marginRight:'10px ', color: '#28a745'}}/>
+         Owner-Tenant App Menu
+      </li>
+
+<ul className={`collapse ${activeMenu === 'ownerTenant' ? 'show' : ''}`} id="ownerTenantMenu">
+    <li className="p-0 mt-2">
+      <NavLink to="/dashboard/owner-tenant-menu" 
+       onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+        <FaUsers />
+        Owner-Tenant menu Application
+      </NavLink>
+    </li>
 </ul>
 
   <li className="p-3 mt-2  text-white" 

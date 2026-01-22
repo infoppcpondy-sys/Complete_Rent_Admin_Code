@@ -30,7 +30,7 @@ const CreateBill = () => {
   // ✅ Track existing follow-up and bill from backend
   const [existingFollowUp, setExistingFollowUp] = useState(null);
   const [existingBill, setExistingBill] = useState(null);
-  const [loadingCheck, setLoadingCheck] = useState(true);
+  const [loadingCheck, setLoadingCheck] = useState(false); // Changed to false - no automatic check
 
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -100,67 +100,10 @@ const CreateBill = () => {
   const location = useLocation();
   const { rentId ,phoneNumber} = location.state || {};
   
-  // ✅ CRITICAL: Check if follow-up and bill already exist for this rentId on mount
-  // Wait for backend response before rendering anything
-  useEffect(() => {
-    const checkExistingData = async () => {
-      try {
-        if (!rentId) {
-          console.warn("[CreateBill] No rentId provided, skipping checks");
-          setLoadingCheck(false);
-          return;
-        }
-
-        console.log("[CreateBill] Checking for existing follow-up and bill for rentId:", rentId);
-
-        // Fetch all follow-ups from backend
-        const followUpResponse = await axios.get(`${process.env.REACT_APP_API_URL}/followup-list`);
-        const followUps = followUpResponse.data.data || [];
-        console.log("[CreateBill] Follow-ups fetched from backend:", followUps.length, "items");
-
-        // Find follow-up for THIS specific rentId
-        const existingFU = followUps.find(fu => {
-          const match = String(fu.rentId).trim() === String(rentId).trim();
-          if (match) {
-            console.log("[CreateBill] ✅ Found matching follow-up:", fu);
-          }
-          return match;
-        });
-
-        if (existingFU) {
-          console.log("[CreateBill] Setting existingFollowUp to:", existingFU);
-          setExistingFollowUp(existingFU);
-        } else {
-          console.warn("[CreateBill] No follow-up found for rentId:", rentId);
-          // Explicitly set to false to distinguish from loading state
-          setExistingFollowUp(null);
-        }
-
-        // Fetch all bills from backend
-        const billResponse = await axios.get(`${process.env.REACT_APP_API_URL}/bills`);
-        const bills = billResponse.data.data || [];
-        console.log("[CreateBill] Bills fetched from backend:", bills.length, "items");
-
-        // Find bill for THIS specific rentId
-        const existingB = bills.find(b => String(b.rentId).trim() === String(rentId).trim());
-        if (existingB) {
-          console.log("[CreateBill] Setting existingBill to:", existingB);
-          setExistingBill(existingB);
-        } else {
-          console.log("[CreateBill] No bill found for rentId:", rentId);
-          setExistingBill(null);
-        }
-      } catch (err) {
-        console.error("[CreateBill] Error checking existing data:", err);
-        // Don't set existingFollowUp on error - wait for retry
-      } finally {
-        console.log("[CreateBill] Data check complete, setting loadingCheck to false");
-        setLoadingCheck(false);
-      }
-    };
-
-    checkExistingData();
-  }, [rentId]);
+  // ✅ REMOVED: Automatic follow-up and bill check on mount
+  // Users must now manually verify and create followup/bill via buttons
+  // Previously this was running checkExistingData() automatically
+  // Now it's only called when user clicks the button
 
   useEffect(() => {
     if (adminName) {
@@ -179,6 +122,22 @@ const CreateBill = () => {
       ownerPhone: phoneNumber
     }));
   }, [rentId, phoneNumber]);
+
+  // ✅ FIX: Reset followup/bill state when rentId changes to avoid stale data
+  // When user navigates to a new property, clear old followup/bill details
+  useEffect(() => {
+    setExistingFollowUp(null);
+    setExistingBill(null);
+  }, [rentId]);
+
+  // ✅ NEW: Automatically check for existing followup/bill when rentId is available
+  // Show status directly instead of requiring user to click "Check Status" button
+  useEffect(() => {
+    if (rentId) {
+      console.log("[CreateBill] Auto-checking for existing followup/bill for rentId:", rentId);
+      handleRetryCheck();
+    }
+  }, [rentId]);
   
 
   const [loading, setLoading] = useState(false);
@@ -228,6 +187,22 @@ const CreateBill = () => {
     setBillData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Auto-calculate Net Amount when bill amount, featured amount, or discount changes
+  useEffect(() => {
+    const billAmount = Number(billData.billAmount || 0);
+    const featuredAmount = Number(billData.featuredAmount || 0);
+    const discount = Number(billData.discount || 0);
+
+    const totalAmount = billAmount + featuredAmount;
+    const discountAmount = totalAmount * (discount / 100);
+    const netAmount = totalAmount - discountAmount;
+
+    setBillData(prev => ({
+      ...prev,
+      netAmount: netAmount.toFixed(2)
+    }));
+  }, [billData.billAmount, billData.featuredAmount, billData.discount]);
+
   // ✅ Manual retry to refresh follow-up and bill data from backend
   const handleRetryCheck = async () => {
     console.log("[CreateBill] Manual retry triggered for rentId:", rentId);
@@ -248,7 +223,7 @@ const CreateBill = () => {
       if (existingFU) {
         console.log("[CreateBill] Retry: Found follow-up:", existingFU);
         setExistingFollowUp(existingFU);
-        alert("✅ Follow-up found! You can now create a bill.");
+        // alert("✅ Follow-up found! You can now create a bill.");
       } else {
         console.warn("[CreateBill] Retry: No follow-up found");
         setExistingFollowUp(null);
@@ -272,6 +247,44 @@ const CreateBill = () => {
     }
   };
 
+  // ✅ NEW: Handle manual followup creation
+  const handleCreateFollowup = async () => {
+    if (!rentId) {
+      alert("❌ Rent ID is missing. Please provide a valid rent ID.");
+      return;
+    }
+
+    setLoadingCheck(true);
+    try {
+      const followupData = {
+        rentId: rentId,
+        ownerPhone: phoneNumber || billData.ownerPhone,
+        adminName: adminName,
+        createdAt: new Date().toISOString(),
+      };
+
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/create-followup`, followupData);
+      
+      if (res.data.success) {
+        setExistingFollowUp(res.data.data);
+        alert("✅ Follow-up created successfully! You can now create a bill.");
+        setMessage('✅ Follow-up created successfully!');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        alert(`❌ Failed to create follow-up: ${res.data.message || 'Unknown error'}`);
+        setMessage(`❌ Failed to create follow-up: ${res.data.message || 'Unknown error'}`);
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error("[CreateBill] Error creating followup:", error);
+      alert(`❌ Error creating follow-up: ${error.response?.data?.message || error.message}`);
+      setMessage(`❌ Error creating follow-up: ${error.response?.data?.message || error.message}`);
+      setTimeout(() => setMessage(''), 3000);
+    } finally {
+      setLoadingCheck(false);
+    }
+  };
+
 
 
   const navigate = useNavigate();
@@ -279,21 +292,13 @@ const CreateBill = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ FIXED: Trust the already-loaded state from component mount
-    // The initial check (in useEffect) already verified follow-up using proper string comparison
-    // No need to re-check - just validate the states that are already loaded
-    
-    if (!existingFollowUp) {
-      alert("❌ Follow-up not loaded!\n\nPlease go back and create a follow-up first.");
-      navigate(-1);
-      return; // ✅ BLOCK API CALL
-    }
-
-    if (existingBill) {
-      alert(`❌ Bill already exists!\n\nCreated by: ${existingBill.adminName}\nBill No: ${existingBill.billNo}\nDate: ${new Date(existingBill.createdAt).toLocaleString()}`);
-      navigate(-1);
-      return; // ✅ BLOCK API CALL
-    }
+    // Check if bill already exists (optional - user can override if needed)
+    // if (existingBill) {
+    //   const proceed = window.confirm(`⚠️ Bill already exists!\n\nBill No: ${existingBill.billNo}\nCreated by: ${existingBill.adminName}\nDate: ${new Date(existingBill.createdAt).toLocaleString()}\n\nProceed to create another bill?`);
+    //   if (!proceed) {
+    //     return;
+    //   }
+    // }
 
     // Only proceed if validation passed
     setLoading(true);
@@ -389,233 +394,740 @@ const CreateBill = () => {
   };
 
 
+  // Styles object for consistent theming
+  const styles = {
+    container: {
+      minHeight: '100vh',
+      backgroundColor: '#f5f7fa',
+      padding: '30px 20px',
+      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
+    },
+    wrapper: {
+      maxWidth: '1200px',
+      margin: '0 auto'
+    },
+    header: {
+      marginBottom: '30px'
+    },
+    headerTitle: {
+      fontSize: '32px',
+      fontWeight: '600',
+      color: '#1a202c',
+      margin: 0,
+      marginBottom: '8px'
+    },
+    headerSubtitle: {
+      fontSize: '14px',
+      color: '#718096',
+      margin: 0
+    },
+    mainContent: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+      gap: '30px',
+      '@media (max-width: 768px)': {
+        gridTemplateColumns: '1fr'
+      }
+    },
+    formSection: {
+      backgroundColor: '#ffffff',
+      borderRadius: '12px',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+      padding: '30px'
+    },
+    statusBanner: (type) => {
+      const typeStyles = {
+        loading: {
+          backgroundColor: '#e0f2fe',
+          borderLeft: '4px solid #0284c7',
+          color: '#0c4a6e'
+        },
+        error: {
+          backgroundColor: '#fee2e2',
+          borderLeft: '4px solid #dc2626',
+          color: '#7f1d1d'
+        },
+        success: {
+          backgroundColor: '#dcfce7',
+          borderLeft: '4px solid #22c55e',
+          color: '#15803d'
+        },
+        warning: {
+          backgroundColor: '#fef08a',
+          borderLeft: '4px solid #eab308',
+          color: '#78350f'
+        }
+      };
+      return typeStyles[type] || typeStyles.loading;
+    },
+    banner: {
+      padding: '16px',
+      marginBottom: '20px',
+      borderRadius: '8px',
+      fontSize: '14px',
+      lineHeight: '1.5'
+    },
+    bannerTitle: {
+      fontSize: '15px',
+      fontWeight: '600',
+      marginTop: 0,
+      marginBottom: '8px'
+    },
+    bannerText: {
+      marginBottom: '10px'
+    },
+    formRow: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '20px',
+      marginBottom: '20px'
+    },
+    formGroup: {
+      display: 'flex',
+      flexDirection: 'column'
+    },
+    label: {
+      fontSize: '13px',
+      fontWeight: '600',
+      color: '#2d3748',
+      marginBottom: '8px',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px'
+    },
+    input: {
+      padding: '12px 14px',
+      fontSize: '14px',
+      border: '1px solid #e2e8f0',
+      borderRadius: '8px',
+      transition: 'all 0.2s ease',
+      backgroundColor: '#ffffff',
+      fontFamily: 'inherit'
+    },
+    inputFocus: {
+      outline: 'none',
+      borderColor: '#3182ce',
+      boxShadow: '0 0 0 3px rgba(49, 130, 206, 0.1)'
+    },
+    sectionTitle: {
+      fontSize: '16px',
+      fontWeight: '600',
+      color: '#1a202c',
+      marginBottom: '16px',
+      paddingBottom: '12px',
+      borderBottom: '2px solid #e2e8f0'
+    },
+    billSummary: {
+      backgroundColor: '#ffffff',
+      borderRadius: '12px',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+      padding: '30px',
+      position: 'sticky',
+      top: '30px',
+      height: 'fit-content'
+    },
+    summaryTitle: {
+      fontSize: '18px',
+      fontWeight: '600',
+      color: '#1a202c',
+      marginBottom: '20px',
+      paddingBottom: '12px',
+      borderBottom: '2px solid #e2e8f0'
+    },
+    summaryRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingBottom: '12px',
+      marginBottom: '12px',
+      borderBottom: '1px solid #edf2f7',
+      fontSize: '14px'
+    },
+    summaryLabel: {
+      color: '#718096',
+      fontWeight: '500'
+    },
+    summaryValue: {
+      color: '#2d3748',
+      fontWeight: '600'
+    },
+    summaryTotal: {
+      fontSize: '18px',
+      fontWeight: '700',
+      color: '#1a202c',
+      backgroundColor: '#f7fafc',
+      padding: '12px',
+      borderRadius: '6px',
+      marginTop: '12px'
+    },
+    buttonGroup: {
+      display: 'flex',
+      gap: '12px',
+      marginTop: '30px',
+      justifyContent: 'flex-end'
+    },
+    button: (variant) => {
+      const buttonStyles = {
+        primary: {
+          backgroundColor: '#3182ce',
+          color: '#ffffff',
+          border: 'none'
+        },
+        secondary: {
+          backgroundColor: '#e2e8f0',
+          color: '#2d3748',
+          border: 'none'
+        }
+      };
+      return {
+        ...buttonStyles[variant],
+        padding: '12px 28px',
+        fontSize: '14px',
+        fontWeight: '600',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        border: 'none'
+      };
+    },
+    buttonHover: (variant) => {
+      const hoverStyles = {
+        primary: {
+          backgroundColor: '#2c5aa0',
+          boxShadow: '0 4px 12px rgba(49, 130, 206, 0.3)'
+        },
+        secondary: {
+          backgroundColor: '#cbd5e0'
+        }
+      };
+      return hoverStyles[variant];
+    },
+    spinner: {
+      display: 'inline-block',
+      width: '14px',
+      height: '14px',
+      borderRadius: '50%',
+      border: '2px solid rgba(255, 255, 255, 0.3)',
+      borderTopColor: '#ffffff',
+      animation: 'spin 0.8s linear infinite',
+      marginRight: '8px',
+      verticalAlign: 'middle'
+    }
+  };
+
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <h2>Create Bill</h2>
+    <div style={styles.container}>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .create-bill-input:focus {
+          outline: none;
+          border-color: #3182ce;
+          box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+        }
+        .create-bill-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .create-bill-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        @media (max-width: 768px) {
+          .create-bill-summary {
+            position: static;
+            margin-top: 20px;
+          }
+        }
+      `}</style>
 
-      {loadingCheck && (
-        <div style={{
-          padding: '15px',
-          marginBottom: '20px',
-          backgroundColor: '#e7f3ff',
-          border: '1px solid #b3d9ff',
-          borderRadius: '4px',
-          color: '#004085'
-        }}>
-          ⏳ Loading bill information from server... Please wait.
+      <div style={styles.wrapper}>
+        {/* Header */}
+        <div style={styles.header}>
+          <h1 style={styles.headerTitle}>📋 Create New Bill</h1>
+          <p style={styles.headerSubtitle}>Admin Dashboard › Billing › Create New Bill</p>
         </div>
-      )}
 
-      {!existingFollowUp && !loadingCheck && (
+        {/* Loading Check Banner */}
+        {loadingCheck && (
+          <div style={{ ...styles.banner, ...styles.statusBanner('loading') }}>
+            <p style={styles.bannerTitle}>⏳ Processing Request</p>
+            <p style={styles.bannerText}>
+              Please wait...
+            </p>
+          </div>
+        )}
+
+        {/* Manual Action Buttons */}
         <div style={{
-          padding: '15px',
-          marginBottom: '20px',
-          backgroundColor: '#f8d7da',
-          border: '1px solid #f5c6cb',
-          borderRadius: '4px',
-          color: '#721c24'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '12px',
+          marginBottom: '20px'
         }}>
-          <h5 style={{ marginTop: 0 }}>❌ Follow-up Required</h5>
-          <p style={{ marginBottom: '10px' }}>
-            A follow-up must be created before you can create a bill.
-          </p>
-          <p style={{ marginBottom: '10px', fontSize: '0.9em' }}>
-            <strong>Note:</strong> If you just created a follow-up, there may be a delay. Click "Refresh" below to reload the data.
-          </p>
-          <button
+          {/* <button
             type="button"
-            className="btn btn-warning btn-sm"
-            onClick={handleRetryCheck}
-            disabled={loadingCheck}
+            style={{
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              padding: '12px 20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              borderRadius: '8px',
+              cursor: loadingCheck || !rentId ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              border: 'none',
+              opacity: loadingCheck || !rentId ? 0.6 : 1
+            }}
+            onClick={handleCreateFollowup}
+            disabled={loadingCheck || !rentId}
+            onMouseEnter={(e) => !loadingCheck && !rentId === false && Object.assign(e.target.style, { backgroundColor: '#059669', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' })}
+            onMouseLeave={(e) => Object.assign(e.target.style, { backgroundColor: '#10b981', boxShadow: 'none' })}
           >
-            🔄 Refresh Follow-up Status
-          </button>
+            {loadingCheck ? '⏳ Creating...' : '➕ Create Followup'}
+          </button> */}
         </div>
-      )}
 
-      {existingFollowUp && !loadingCheck && (
+        {/* Status Indicators */}
+        {existingFollowUp && (
+          <div style={{ ...styles.banner, ...styles.statusBanner('success'), marginBottom: '20px' }}>
+            <p style={styles.bannerTitle}>✅ Follow-up Created</p>
+            <p style={styles.bannerText}>
+              <strong>Created by:</strong> {existingFollowUp.adminName}
+            </p>
+            <p style={{ ...styles.bannerText, fontSize: '13px', marginBottom: 0 }}>
+              <strong>Date:</strong> {new Date(existingFollowUp.createdAt).toLocaleString()}
+            </p>
+          </div>
+        )}
+
+        {/* {existingBill && ( */}
+          {/* <div style={{ ...styles.banner, ...styles.statusBanner('warning'), marginBottom: '20px' }}> */}
+            {/* <p style={styles.bannerTitle}>⚠️ Bill Already Exists</p> */}
+            {/* <p style={styles.bannerText}> */}
+              {/* <strong>Bill No:</strong> {existingBill.billNo} */}
+            {/* </p> */}
+            {/* <p style={styles.bannerText}> */}
+              {/* <strong>Created by:</strong> {existingBill.adminName}
+            </p>
+            <p style={{ ...styles.bannerText, fontSize: '13px', marginBottom: 0 }}>
+              <strong>Date:</strong> {new Date(existingBill.createdAt).toLocaleString()}
+            </p>
+          </div>
+        )} */}
+
+        {/* Global Success/Error Message */}
+        {message && (
+          <div style={{
+            ...styles.banner,
+            ...styles.statusBanner(message.includes('successfully') ? 'success' : 'error'),
+            marginBottom: '20px'
+          }}>
+            <p style={{ margin: 0, fontSize: '14px', fontWeight: '500' }}>
+              {message}
+            </p>
+          </div>
+        )}
+
+        {/* Main Content Grid */}
         <div style={{
-          padding: '15px',
-          marginBottom: '20px',
-          backgroundColor: '#d1ecf1',
-          border: '1px solid #bee5eb',
-          borderRadius: '4px',
-          color: '#0c5460'
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 350px',
+          gap: '30px',
+          '@media (max-width: 1024px)': {
+            gridTemplateColumns: '1fr'
+          }
         }}>
-          <h5 style={{ marginTop: 0 }}>✅ Follow-up Verified</h5>
-          <p style={{ marginBottom: '5px' }}>
-            <strong>Created by:</strong> {existingFollowUp.adminName}
-          </p>
-          <p style={{ marginBottom: 0, fontSize: '0.9em' }}>
-            <strong>Date:</strong> {new Date(existingFollowUp.createdAt).toLocaleString()}
-          </p>
-        </div>
-      )}
-
-      {existingBill && !loadingCheck && (
-        <div style={{
-          padding: '15px',
-          marginBottom: '20px',
-          backgroundColor: '#d4edda',
-          border: '1px solid #c3e6cb',
-          borderRadius: '4px',
-          color: '#155724'
-        }}>
-          <h5 style={{ marginTop: 0 }}>✅ Bill Already Exists</h5>
-          <p style={{ marginBottom: '5px' }}>
-            <strong>Bill No:</strong> {existingBill.billNo}
-          </p>
-          <p style={{ marginBottom: '5px' }}>
-            <strong>Created by:</strong> {existingBill.adminName}
-          </p>
-          <p style={{ marginBottom: '5px' }}>
-            <strong>Date:</strong> {new Date(existingBill.createdAt).toLocaleString()}
-          </p>
-          <p style={{ marginBottom: 0, fontSize: '0.9em', color: '#1a4620' }}>
-            Only one bill per property is allowed.
-          </p>
-        </div>
-      )}
-
-      {message && <div style={{ marginBottom: '10px', color: message.includes('successfully') ? 'green' : 'red' }}>{message}</div>}
-
-      <form onSubmit={handleSubmit} style={{ opacity: (existingBill || !existingFollowUp) ? 0.5 : 1, pointerEvents: (existingBill || !existingFollowUp) ? 'none' : 'auto' }}>
-
-        <div className="form-group">
-          <label>Admin Office</label>
-          <input type="text" name="adminOffice" value={billData.adminOffice} onChange={handleChange} className="form-control" readOnly disabled={existingBill || !existingFollowUp} />
-        </div>
-
-  
-
-<div className="form-group">
-  <label>Admin Name</label>
-  <input
-    type="text"
-    name="adminName"
-    value={billData.adminName}
-    onChange={handleChange}
-    className="form-control"
-    readOnly
-    disabled={existingBill || !existingFollowUp}
-  />
-</div>
-
-
-        <div className="form-group">
-          <label>Bill No</label>
-          <input type="text" name="billNo" value={billData.billNo} onChange={handleChange} className="form-control" readOnly disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Bill Date</label>
-        
-       <input
-  type="date"
-  name="billDate"
-  className="form-control"
-  value={billData.billDate}
-  onChange={handleChange}
-  min={new Date().toISOString().split('T')[0]} // disables past dates
-  required
-  disabled={existingBill || !existingFollowUp}
-/>
-
-        </div>
-
-        <div className="form-group">
-          <label>Rent Id</label>
-          <input type="text" name="ppId" value={billData.rentId} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Owner Phone</label>
-          <input type="text" name="ownerPhone" value={billData.ownerPhone} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Payment Type</label>
-          <select
-            name="paymentType"
-            value={billData.paymentType}
-            onChange={handleChange}
-            className="form-control"
-            required
-            disabled={existingBill || !existingFollowUp}
+          {/* Form Section - Always Enabled */}
+          <form
+            onSubmit={handleSubmit}
+            style={{
+              ...styles.formSection
+            }}
           >
-            <option value="">Select Payment Type</option>
-            {paymentTypes.map((payment, index) => (
-              <option key={index} value={payment.paymentType}>
-                {payment.paymentType}
-              </option>
-            ))}
-          </select>
+            {/* Admin Information Section */}
+            <h3 style={styles.sectionTitle}>📝 Admin Information</h3>
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Admin Office</label>
+                <input
+                  type="text"
+                  name="adminOffice"
+                  value={billData.adminOffice}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  readOnly
+                  
+                  placeholder="Auto-filled"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Admin Name</label>
+                <input
+                  type="text"
+                  name="adminName"
+                  value={billData.adminName}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  readOnly
+                  
+                  placeholder="Auto-filled"
+                />
+              </div>
+            </div>
+
+            {/* Bill Information Section */}
+            <h3 style={styles.sectionTitle}>🧾 Bill Information</h3>
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Bill No</label>
+                <input
+                  type="text"
+                  name="billNo"
+                  value={billData.billNo}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  readOnly
+                  
+                  placeholder="Auto-generated"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Bill Date</label>
+                <input
+                  type="date"
+                  name="billDate"
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  value={billData.billDate}
+                  onChange={handleChange}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                  
+                />
+              </div>
+            </div>
+
+            {/* Tenant Information Section */}
+            <h3 style={styles.sectionTitle}>👤 Customer Information</h3>
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Rent ID</label>
+                <input
+                  type="text"
+                  name="ppId"
+                  value={billData.rentId}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="Enter rent ID"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Owner Phone</label>
+                <input
+                  type="text"
+                  name="ownerPhone"
+                  value={billData.ownerPhone}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="Enter phone number"
+                />
+              </div>
+            </div>
+
+            {/* Payment Details Section */}
+            <h3 style={styles.sectionTitle}>💳 Payment Details</h3>
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Payment Type</label>
+                <select
+                  name="paymentType"
+                  value={billData.paymentType}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                >
+                  <option value="">Select Payment Type</option>
+                  {paymentTypes.map((payment, index) => (
+                    <option key={index} value={payment.paymentType}>
+                      {payment.paymentType}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Plan Name</label>
+                <select
+                  name="planName"
+                  value={billData.planName}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                >
+                  <option value="">Select Plan</option>
+                  {plans.map((plan, index) => (
+                    <option key={index} value={plan.name.trim()}>
+                      {plan.name.trim()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Main Charges Section */}
+            <h3 style={styles.sectionTitle}>💰 Main Charges</h3>
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Bill Amount</label>
+                <input
+                  type="number"
+                  name="billAmount"
+                  value={billData.billAmount}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="0.00"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Validity (Days)</label>
+                <input
+                  type="number"
+                  name="validity"
+                  value={billData.validity}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="0"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>No of Ads</label>
+                <input
+                  type="number"
+                  name="noOfAds"
+                  value={billData.noOfAds}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Featured Section */}
+            <h3 style={styles.sectionTitle}>⭐ Featured Charges</h3>
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Featured Amount</label>
+                <input
+                  type="number"
+                  name="featuredAmount"
+                  value={billData.featuredAmount}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="0.00"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Featured Validity (Days)</label>
+                <input
+                  type="number"
+                  name="featuredValidity"
+                  value={billData.featuredValidity}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="0"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Featured Max Ads</label>
+                <input
+                  type="number"
+                  name="featuredMaxAds"
+                  value={billData.featuredMaxAds}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Final Calculations Section */}
+            <h3 style={styles.sectionTitle}>📊 Final Calculations</h3>
+            <div style={styles.formRow}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Discount (%)</label>
+                <input
+                  type="number"
+                  name="discount"
+                  value={billData.discount}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  
+                  placeholder="0"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Net Amount</label>
+                <input
+                  type="number"
+                  name="netAmount"
+                  value={billData.netAmount}
+                  onChange={handleChange}
+                  className="form-control create-bill-input"
+                  style={{ ...styles.input }}
+                  required
+                  
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            {/* Button Group */}
+            <div style={styles.buttonGroup}>
+              <button
+                type="button"
+                style={{
+                  ...styles.button('secondary')
+                }}
+                onClick={() => navigate(-1)}
+                onMouseEnter={(e) => Object.assign(e.target.style, styles.buttonHover('secondary'))}
+                onMouseLeave={(e) => Object.assign(e.target.style, { backgroundColor: '#e2e8f0' })}
+              >
+                ← Cancel
+              </button>
+              <button
+                type="submit"
+                style={{
+                  ...styles.button('primary'),
+                  opacity: loading ? 0.6 : 1,
+                  cursor: loading ? 'not-allowed' : 'pointer'
+                }}
+                disabled={loading}
+                onMouseEnter={(e) => !e.target.disabled && Object.assign(e.target.style, styles.buttonHover('primary'))}
+                onMouseLeave={(e) => Object.assign(e.target.style, { backgroundColor: '#3182ce', boxShadow: 'none' })}
+              >
+                {loading ? (
+                  <>
+                    <span style={styles.spinner}></span>
+                    Creating Bill...
+                  </>
+                ) : (
+                  '✓ Create Bill'
+                )}
+              </button>
+            </div>
+          </form>
+
+          {/* Bill Summary Panel */}
+          <div className="create-bill-summary" style={styles.billSummary}>
+            <h3 style={styles.summaryTitle}>📋 Bill Summary</h3>
+
+            <div style={styles.summaryRow}>
+              <span style={styles.summaryLabel}>Bill Amount:</span>
+              <span style={styles.summaryValue}>₹{Number(billData.billAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+
+            <div style={styles.summaryRow}>
+              <span style={styles.summaryLabel}>Featured Amount:</span>
+              <span style={styles.summaryValue}>₹{Number(billData.featuredAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+
+            <div style={styles.summaryRow}>
+              <span style={styles.summaryLabel}>Discount:</span>
+              <span style={styles.summaryValue}>-{billData.discount || 0}%</span>
+            </div>
+
+            <div style={styles.summaryRow}>
+              <span style={styles.summaryLabel}>Validity (Days):</span>
+              <span style={styles.summaryValue}>{billData.validity || 0}</span>
+            </div>
+
+            <div style={styles.summaryRow}>
+              <span style={styles.summaryLabel}>Number of Ads:</span>
+              <span style={styles.summaryValue}>{billData.noOfAds || 0}</span>
+            </div>
+
+            <div style={styles.summaryTotal}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Total Amount:</span>
+                <span>₹{Number(billData.netAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+
+            {billData.billDate && (
+              <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#f7fafc',
+                borderRadius: '6px',
+                fontSize: '13px',
+                textAlign: 'center',
+                color: '#4a5568'
+              }}>
+                <strong>Bill Date:</strong>
+                <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                  {new Date(billData.billDate).toLocaleDateString('en-IN', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Summary Info Box */}
+            <div style={{
+              marginTop: '20px',
+              padding: '12px',
+              backgroundColor: '#eff6ff',
+              borderLeft: '3px solid #3182ce',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#1e40af',
+              lineHeight: '1.5'
+            }}>
+              <strong>💡 Quick Tips:</strong>
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '16px' }}>
+                <li>Ensure all mandatory fields are filled</li>
+                <li>Bill summary updates automatically</li>
+                <li>Review amounts before submission</li>
+              </ul>
+            </div>
+          </div>
         </div>
-
-        <div className="form-group">
-          <label>Plan Name</label>
-          <select
-            name="planName"
-            value={billData.planName}
-            onChange={handleChange}
-            className="form-control"
-            required
-            disabled={existingBill || !existingFollowUp}
-          >
-            <option value="">Select Plan</option>
-            {plans.map((plan, index) => (
-              <option key={index} value={plan.name.trim()}>
-                {plan.name.trim()}
-              </option>
-            ))}
-          </select>
-        </div>
-
-
-        <div className="form-group">
-          <label>Bill Amount</label>
-          <input type="number" name="billAmount" value={billData.billAmount} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Validity (Days)</label>
-          <input type="number" name="validity" value={billData.validity} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>No of Ads</label>
-          <input type="number" name="noOfAds" value={billData.noOfAds} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Featured Amount</label>
-          <input type="number" name="featuredAmount" value={billData.featuredAmount} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Featured Validity (Days)</label>
-          <input type="number" name="featuredValidity" value={billData.featuredValidity} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Featured Max Ads</label>
-          <input type="number" name="featuredMaxAds" value={billData.featuredMaxAds} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Discount (%)</label>
-          <input type="number" name="discount" value={billData.discount} onChange={handleChange} className="form-control" disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <div className="form-group">
-          <label>Net Amount</label>
-          <input type="number" name="netAmount" value={billData.netAmount} onChange={handleChange} className="form-control" required disabled={existingBill || !existingFollowUp} />
-        </div>
-
-        <button type="submit" className="btn btn-primary" disabled={loading || existingBill || !existingFollowUp || loadingCheck}>
-          {loading ? 'Creating Bill...' : 'Create Bill'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 };

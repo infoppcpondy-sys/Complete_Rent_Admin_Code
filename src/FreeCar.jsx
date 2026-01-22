@@ -386,8 +386,16 @@ const FreePlansWithProperties = () => {
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
         const rawData = res.data.data || [];
 
+        // Deduplicate properties by rentId within each item
+        const deduplicatedData = rawData.map((item) => ({
+          ...item,
+          properties: Array.from(
+            new Map(item.properties.map((prop) => [prop.rentId, prop])).values()
+          ),
+        }));
+
         // Sort based on latest property update/creation date
-        const sortedData = rawData.sort((a, b) => {
+        const sortedData = deduplicatedData.sort((a, b) => {
           const latestA = getLatestPropertyDate(a.properties);
           const latestB = getLatestPropertyDate(b.properties);
           return latestB - latestA;
@@ -463,6 +471,12 @@ const FreePlansWithProperties = () => {
           return (rentIdMatch || phoneNumberMatch || statusMatch || planMatch || billMatch) && startMatch && endMatch;
         }),
       }))
+      .map((item) => ({
+        ...item,
+        properties: Array.from(
+          new Map(item.properties.map((prop) => [prop.rentId, prop])).values()
+        ),
+      }))
       .filter((item) => item.properties.length > 0);
 
     setFilteredData(filtered);
@@ -473,6 +487,26 @@ const FreePlansWithProperties = () => {
     setStartDate("");
     setEndDate("");
     setFilteredData(data);
+  };
+
+  // Flatten all properties from all items and deduplicate by rentId
+  const getFlattenedUniqueProperties = () => {
+    const seenRentIds = new Set();
+    const uniqueProperties = [];
+
+    filteredData.forEach((item) => {
+      item.properties?.forEach((property) => {
+        if (!seenRentIds.has(property.rentId)) {
+          seenRentIds.add(property.rentId);
+          uniqueProperties.push({
+            ...property,
+            billInfo: item.billInfo, // Attach billInfo from parent item
+          });
+        }
+      });
+    });
+
+    return uniqueProperties;
   };
 
   const handlePrint = () => {
@@ -614,59 +648,57 @@ const FreePlansWithProperties = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((item, index) =>
-              item.properties.map((property, propertyIndex) => (
-                <tr key={`${index}-${propertyIndex}`}>
-                  <td>{propertyIndex + 1}</td>
-                  <td>
-                    <img
-                      src={getFirstPhotoUrl(property.photos)}
-                      alt="Property"
-                      style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                    />
-                  </td>
-                  <td
-                    style={{ cursor: "pointer" }}
-                    onClick={() =>
-                      navigate(`/dashboard/detail`, {
-                        state: { rentId: property.rentId, phoneNumber: property.phoneNumber },
-                      })
-                    }
-                  >
-                    {property.rentId}
-                  </td>
-                  <td>{property.phoneNumber}</td>
-                  <td>{property.propertyMode || "N/A"}</td>
-                  <td>{property.propertyType || "N/A"}</td>
-                  <td>₹{property.rentalAmount}</td>
-                  <td>{property.city || "N/A"}</td>
-                  <td>{property.createdBy}</td>
-                  <td>{new Date(property.createdAt).toLocaleString()}</td>
-                  <td>{new Date(property.updatedAt).toLocaleString()}</td>
-                  <td>{property.required}</td>
-                  <td>{item.billInfo.adsCount}</td>
-                  <td>{property.status}</td>
-                  <td>{item.billInfo.planName}</td>
-                  <td>{item.billInfo.adminName}</td>
-                  <td>{item.billInfo.billNo}</td>
-                  <td>{property.featureStatus}</td>
-                  <td>{item.billInfo.billCreatedBy}</td>
-                  <td>{item.billInfo.billCreatedAt}</td>
-                  <td>{item.billInfo.planExpiryDate}</td>
-                  <td>
-                    {property.isDeleted ? (
-                      <button className="btn btn-success btn-sm" onClick={() => handleUndoDelete(property.rentId)}>
-                        Undo
-                      </button>
-                    ) : (
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(property.rentId)}>
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
+            {getFlattenedUniqueProperties().map((property, index) => (
+              <tr key={`${property.rentId}-${index}`}>
+                <td>{index + 1}</td>
+                <td>
+                  <img
+                    src={getFirstPhotoUrl(property.photos)}
+                    alt="Property"
+                    style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                  />
+                </td>
+                <td
+                  style={{ cursor: "pointer" }}
+                  onClick={() =>
+                    navigate(`/dashboard/detail`, {
+                      state: { rentId: property.rentId, phoneNumber: property.phoneNumber },
+                    })
+                  }
+                >
+                  {property.rentId}
+                </td>
+                <td>{property.phoneNumber}</td>
+                <td>{property.propertyMode || "N/A"}</td>
+                <td>{property.propertyType || "N/A"}</td>
+                <td>₹{property.rentalAmount}</td>
+                <td>{property.city || "N/A"}</td>
+                <td>{property.createdBy}</td>
+                <td>{new Date(property.createdAt).toLocaleString()}</td>
+                <td>{new Date(property.updatedAt).toLocaleString()}</td>
+                <td>{property.required}</td>
+                <td>{property.billInfo?.adsCount}</td>
+                <td>{property.status}</td>
+                <td>{property.billInfo?.planName}</td>
+                <td>{property.billInfo?.adminName}</td>
+                <td>{property.billInfo?.billNo}</td>
+                <td>{property.featureStatus}</td>
+                <td>{property.billInfo?.billCreatedBy}</td>
+                <td>{property.billInfo?.billCreatedAt}</td>
+                <td>{property.billInfo?.planExpiryDate}</td>
+                <td>
+                  {property.isDeleted ? (
+                    <button className="btn btn-success btn-sm" onClick={() => handleUndoDelete(property.rentId)}>
+                      Undo
+                    </button>
+                  ) : (
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(property.rentId)}>
+                      Delete
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </Table>
       </div>
