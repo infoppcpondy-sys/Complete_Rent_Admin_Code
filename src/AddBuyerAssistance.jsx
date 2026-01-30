@@ -755,7 +755,7 @@ const handleConfirmSubmit = async () => {
  
 
       </div>
-      <h4 className="form-title mt-3" style={{color: '#4F4B7E', fontSize:"15px", fontWeight:"bold"}}>Buyer Assistance</h4>
+      <h4 className="form-title mt-3" style={{color: '#4F4B7E', fontSize:"15px", fontWeight:"bold"}}>Tenant Assistance</h4>
       <div>
       {message && <div className="alert text-success text-bold">{message}</div>}
       {/* Your existing component structure goes here */}

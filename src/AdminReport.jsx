@@ -37,6 +37,8 @@ const AdminReport = () => {
       const statusRes = await axios.get(`${process.env.REACT_APP_API_URL}/properties/status-counts-rent`);
       const { totalCount, counts } = statusRes.data;
 
+      
+
       setReportData({
         webLogin: webLoginCount,
         appLogin: appLoginCount,
@@ -55,6 +57,8 @@ const AdminReport = () => {
       console.error("Error fetching admin report data:", error);
     }
   };
+
+ 
 
   useEffect(() => {
     fetchData();
@@ -115,6 +119,10 @@ const AdminReport = () => {
       </div>
     );
   }
+
+
+ 
+
 
   return (
     <div className="container mt-4">

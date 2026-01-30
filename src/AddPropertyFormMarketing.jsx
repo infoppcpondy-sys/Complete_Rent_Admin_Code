@@ -96,7 +96,7 @@ import { motion } from 'framer-motion';
 
 
 
-function AddProperty() {
+function AddPropertyFormMarketing() {
   const location = useLocation();
     const [rentId, setRentId] = useState(location.state?.rentId || ""); 
 
@@ -1893,53 +1893,7 @@ const handleSubmit = async (e) => {
       if (to.length >= 12) {
         await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
           to,
-          message: `🎉 *YOUR PROPERTY ADDED SUCCESSFULLY!*
-
-*Status:* ✅ ${propertyStatus === 'complete' ? 'Pre-Approved' : 'Pending'}
-*Rent ID:* 🆔 ${newRentId}
-━━━━━━━━━━━━━━━━━━━━━━
-
-*OWNER INFO*
-📛 Name: ${ownerName} ⚡
-📱 Phone: ${rawPhone} ⚡ 
-✉️ Email: ${formData?.email || 'N/A'} ⚡
-
-━━━━━━━━━━━━━━━━━━━━━━
-*PROPERTY INFO*
-🏢 Property Mode: ${formData?.propertyMode || 'N/A'} ⚡ 
-🏠 Property Type: ${formData?.propertyType || 'N/A'} ⚡ 
-💰 Rental Amount: ₹${formData?.rentalAmount || 'N/A'}/mo ⚡ 
-🔑 Rent Type: ${formData?.rentType || 'N/A'} ⚡ 
-
-━━━━━━━━━━━━━━━━━━━━━━
-*SPECIFICATIONS*
-🛏️ Bedrooms: ${formData?.bedrooms || 'Not Applicable'} ⚡
-📏 Area: ${formData?.totalArea || 'N/A'} ${formData?.areaUnit || 'Sq.ft'} ⚡
-🏗️ Floor: ${formData?.floorNo || 'Not Applicable'} ⚡
-🚗 Parking: ${formData?.carParking || 'N/A'} ⚡
-🛗 Elevator: ${formData?.lift || 'N/A'} ⚡
-🛋️ Furnished: ${formData?.furnished || 'N/A'} ⚡
-
-━━━━━━━━━━━━━━━━━━━━━━
-*LOCATION*
-📍 Address: ${formData?.doorNumber || 'N/A'}, ${formData?.streetName || 'N/A'} ⚡
-🌆 City: ${formData?.city || 'N/A'} ⚡
-📌 State: ${formData?.state || 'N/A'} ⚡
-🔢 Pincode: ${formData?.pinCode || 'N/A'} ⚡
-
-━━━━━━━━━━━━━━━━━━━━━━
-*AVAILABLE FROM:* ${formData?.availableDate || 'Immediately'} ⚡
-
-━━━━━━━━━━━━━━━━━━━━━━
-*PAYMENT LINK*
-💳 *PAY NOW* for Instant Activation
-https://rentpondy.com/pay-now
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-⚡ Mandatory Fields
-📸 Verification may be requested
-Thank you for Rent Pondy! 🙏`
+          message: `Hello ${ownerName}, Great news! Your property has been successfully listed on Rent Pondy. 🏡✅`
         });
         console.log("✅ WhatsApp message sent successfully to", to);
       }
@@ -6239,7 +6193,7 @@ return (
   );
 }
 
-export default AddProperty;
+export default AddPropertyFormMarketing;
 
 
 

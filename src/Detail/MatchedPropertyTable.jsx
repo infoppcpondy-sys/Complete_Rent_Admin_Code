@@ -20,6 +20,8 @@ import moment from 'moment';
 import * as XLSX from "xlsx";
 import { useNavigate } from 'react-router-dom';
 
+
+
 // ===== CENTRALIZED COLUMN CONFIGURATION =====
 const TABLE_COLUMNS = [
   { key: 'rentId', header: 'Rent ID', exportable: true },
@@ -38,6 +40,7 @@ const TABLE_COLUMNS = [
   { key: 'raArea', header: 'RA AREA', exportable: true },
   { key: 'raCity', header: 'RA CITY', exportable: true },
   { key: 'status', header: 'Status', exportable: true },
+  { key: 'whatsappStatus', header: 'Whatsapp Status', exportable: true },
   { key: 'actions', header: 'Action', exportable: false },
   { key: 'viewDetails', header: 'View Details', exportable: false },
 ];
@@ -55,8 +58,11 @@ const MatchedDataTable = () => {
   const [message, setMessage] = useState(null);
   const [filters, setFilters] = useState({
     propertyId: '',
+    raId: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    ownerPhoneNumber: '',
+    raPhoneNumber: ''
   });
   const navigate = useNavigate();
   const tableRef = useRef();
@@ -106,6 +112,8 @@ const MatchedDataTable = () => {
         return item.buyerAssistanceCard?.city || 'N/A';
       case 'status':
         return property.isDeleted ? 'Deleted' : 'Active';
+      case 'whatsappStatus':
+        return property.Whatsappstatus || '-';
       default:
         return '';
     }
@@ -196,8 +204,48 @@ const handleUndoDelete = async (id) => {
   }
 };
 
+const handleRestoreAllDeleted = async () => {
+  if (!window.confirm("Are you sure you want to restore ALL deleted requests? This action cannot be undone.")) {
+    return;
+  }
 
+  try {
+    setLoading(true);
+    
+    // Get all deleted records from current data
+    const deletedRecords = matchedData
+      .filter(item => item.buyerAssistanceCard?.isDeleted === true)
+      .map(item => item.buyerAssistanceCard._id);
+    
+    if (deletedRecords.length === 0) {
+      setMessage("No deleted records found to restore.");
+      setLoading(false);
+      return;
+    }
 
+    // Restore each deleted record
+    let restoredCount = 0;
+    for (const id of deletedRecords) {
+      try {
+        await axios.put(`${process.env.REACT_APP_API_URL}/undo-delete-buyer-assistance-rent/${id}`);
+        restoredCount++;
+      } catch (error) {
+        console.error(`Failed to restore record ${id}:`, error);
+      }
+    }
+
+    setMessage(`Successfully restored ${restoredCount} deleted request(s)`);
+    fetchMatchedData();
+  } catch (error) {
+    console.error("Error restoring deleted records:", error);
+    setMessage("Error restoring deleted records");
+  } finally {
+    setLoading(false);
+  }
+};
+
+      
+  
   
   useEffect(() => {
     fetchMatchedData();
@@ -232,12 +280,27 @@ const applyFilters = () => {
         ? (property.rentId && property.rentId.toString().toLowerCase().includes(filters.propertyId.toLowerCase()))
         : true;
 
+      // Check RA_ID
+      const matchesRaId = filters.raId
+        ? (item.buyerAssistanceCard?.Ra_Id && item.buyerAssistanceCard.Ra_Id.toString().toLowerCase().includes(filters.raId.toLowerCase()))
+        : true;
+
+      // Check Owner Phone Number (Contact)
+      const matchesOwnerPhone = filters.ownerPhoneNumber
+        ? (property.postedByUser && property.postedByUser.toString().toLowerCase().includes(filters.ownerPhoneNumber.toLowerCase()))
+        : true;
+
+      // Check RA Phone Number (Tenant Phone)
+      const matchesRaPhone = filters.raPhoneNumber
+        ? (item.buyerAssistanceCard?.phoneNumber && item.buyerAssistanceCard.phoneNumber.toString().toLowerCase().includes(filters.raPhoneNumber.toLowerCase()))
+        : true;
+
       // Check date range with proper time handling
       const createdDate = new Date(property.createdAt);
       const startMatch = filters.startDate ? createdDate >= new Date(filters.startDate + 'T00:00:00') : true;
       const endMatch = filters.endDate ? createdDate <= new Date(filters.endDate + 'T23:59:59') : true;
 
-      return matchesId && startMatch && endMatch;
+      return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch;
     });
 
     return { ...item, matchedProperties: matched };
@@ -257,7 +320,7 @@ const getFilteredMatchedPropertiesCount = () => {
 
 
 const handleResetFilters = () => {
-  setFilters({ propertyId: '', startDate: '', endDate: '' });
+  setFilters({ propertyId: '', raId: '', startDate: '', endDate: '', ownerPhoneNumber: '', raPhoneNumber: '' });
 };
 
 // ===== FLATTEN MATCHED DATA FOR EXPORT =====
@@ -499,14 +562,47 @@ const handlePrintPDF = () => {
         boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
         backgroundColor: '#fff'
       }}>
-        <div className="d-flex flex-row gap-2 align-items-center flex-nowrap">
+        <div className="d-flex flex-row gap-2 align-items-center flex-wrap">
           <div className="mb-0">
-            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Search RENT ID</label>
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Search Owner RENT ID</label>
             <input
               type="text"
               placeholder="Enter RENT ID"
               value={filters.propertyId}
               onChange={e => setFilters({ ...filters, propertyId: e.target.value })}
+              className="form-control"
+            />
+          </div>
+
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Search Tenant ID</label>
+            <input
+              type="text"
+              placeholder="Enter Tenant ID"
+              value={filters.raId}
+              onChange={e => setFilters({ ...filters, raId: e.target.value })}
+              className="form-control"
+            />
+          </div>
+
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Owner Phone Number</label>
+            <input
+              type="text"
+              placeholder="Enter Owner Phone"
+              value={filters.ownerPhoneNumber}
+              onChange={e => setFilters({ ...filters, ownerPhoneNumber: e.target.value })}
+              className="form-control"
+            />
+          </div>
+
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Tenant Phone Number</label>
+            <input
+              type="text"
+              placeholder="Enter Tenant Phone"
+              value={filters.raPhoneNumber}
+              onChange={e => setFilters({ ...filters, raPhoneNumber: e.target.value })}
               className="form-control"
             />
           </div>
@@ -567,6 +663,7 @@ const handlePrintPDF = () => {
       <button className="btn btn-danger" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={handlePrint}>Print</button>
       <button className="btn btn-success" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={downloadExcel}>Download Excel</button>
       <button className="btn btn-warning" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={handlePrintPDF}>Download PDF</button>
+      <button className="btn btn-info" style={{width: '180px', fontSize: '15px', padding: '6px 10px'}} onClick={handleRestoreAllDeleted}>Restore All Deleted</button>
     </div>
   </div>
     
@@ -592,6 +689,7 @@ const handlePrintPDF = () => {
               <th><FaMapMarkerAlt className="me-1" /> RA AREA</th>
               <th><FaMapMarkerAlt className="me-1" /> RA CITY</th>
               <th>Status</th>
+              <th>Whatsapp Status</th>
               <th>Action</th>
                <th>Views Details</th>
             </tr>
@@ -646,6 +744,13 @@ const handlePrintPDF = () => {
                       <Badge bg="success" className="d-flex align-items-center">
                         <FaInfoCircle className="me-1" /> Active
                       </Badge>
+                    )}
+                  </td>
+                  <td>
+                    {property.Whatsappstatus ? (
+                      <Badge bg="info">{property.Whatsappstatus}</Badge>
+                    ) : (
+                      <span>Not Send</span>
                     )}
                   </td>
     

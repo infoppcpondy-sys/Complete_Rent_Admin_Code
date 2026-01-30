@@ -178,11 +178,11 @@ const handleReset = () => {
       <Table striped bordered hover responsive className="table-sm align-middle">
       <thead className="sticky-top">
           <tr>
-            <th>#</th>
+            <th>SI.No</th>
             <th>Message</th>
             <th>Type</th>
-            <th>Recipient Phone</th>
-            <th>Sender Phone</th>
+            <th>Owner Phone Number</th>
+            <th>Tenant Phone Number</th>
             <th>Status</th>
             <th>Created At</th>
           </tr>

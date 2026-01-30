@@ -486,6 +486,87 @@ const menuItems = [
 </ul>
 
 
+{/* Marketing Team */}
+<li className="p-3 mt-2  text-white" 
+    onClick={() => toggleMenu('marketingTeam')}
+   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
+      <FaUser style={{marginRight:'10px '}}/>
+      Marketing Team
+  </li>
+  <ul className={`collapse ${activeMenu === 'marketingTeam' ? 'show' : ''}`} id="MarketingTeamMenu">
+    <li className="p-0 mt-2">
+      <NavLink to="/dashboard/add-property-marketing"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+        <FaUsers />
+        Add Property (Marketing) 
+      </NavLink>
+    </li>
+  </ul>
+
+
+
+
+
+
+ <li className="p-3 mt-2  text-white" 
+    onClick={() => toggleMenu('buyerAssistant')}
+   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
+      <FaUser style={{marginRight:'10px '}}/>
+      Tenant Assistant
+  </li>
+  <ul className={`collapse ${activeMenu === 'buyerAssistant' ? 'show' : ''}`} id="BuyerAssistantMenu">
+
+
+<li className="p-0 mt-2">
+    <NavLink to="/dashboard/get-matched-properties" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUser />
+      Matched Properties
+    </NavLink>
+  </li>
+
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/add-buyer-assistance"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+     Add Tenant Assistantce
+    </NavLink>
+  </li>
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/get-buyer-assistance"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+     Manage All Tenant Assistantce
+    </NavLink>
+  </li>
+   <li className="p-0 mt-2">
+    <NavLink to="/dashboard/active-buyer-assistant" 
+     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+      Active - Tenant Assistant
+    </NavLink>
+  </li>
+
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/pending-assistant"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+      Pending - Tenant Assistant
+    </NavLink>
+  </li>
+
+   <li className="p-0 mt-2">
+    <NavLink to="/dashboard/get-all-buyerlist-viewed"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+      Tenant Assistant Viewed User
+    </NavLink>
+  </li>
+
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/expired-assistant" 
+     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+      Expired Assistant
+    </NavLink>
+  </li>
+
+</ul>
+
 
 
       <li className="p-3 mt-2  text-white" 
@@ -529,6 +610,17 @@ const menuItems = [
         Manage Properties
       </NavLink>
     </li>
+
+    {/* <li className="p-0 mt-2">
+      <NavLink
+        to="/dashboard/add-property-marketing"
+        onClick={toggleSidebar}
+        className={({ isActive }) => (isActive ? "active-link rounded" : "")}
+      >
+        <FaPlusCircle />
+        Add Property 
+      </NavLink>
+    </li> */}
  
 
       
@@ -883,7 +975,7 @@ Customer Care
       </li>
 </ul>
 
-  <li className="p-3 mt-2  text-white" 
+  {/* <li className="p-3 mt-2  text-white" 
     onClick={() => toggleMenu('buyerAssistant')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
       <FaUser style={{marginRight:'10px '}}/>
@@ -933,7 +1025,7 @@ Customer Care
     </NavLink>
   </li>
 
-</ul>
+</ul> */}
 
   <li className="p-3 mt-2  text-white" 
     onClick={() => toggleMenu('buyerPayU')}
@@ -997,13 +1089,13 @@ Tenant Assistant Pay Later
   </li>
 </ul>
 
-<li className="p-3 mt-2  text-white" 
+{/* <li className="p-3 mt-2  text-white" 
     onClick={() => toggleMenu('ownerTenant')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
      
           <FaHome style={{marginRight:'10px ', color: '#28a745'}}/>
          Owner-Tenant App Menu
-      </li>
+      </li> */}
 
 <ul className={`collapse ${activeMenu === 'ownerTenant' ? 'show' : ''}`} id="ownerTenantMenu">
     <li className="p-0 mt-2">
@@ -1084,12 +1176,12 @@ Tenant Assistant Pay Later
   </li>
   
 
-  <li className="p-0 mt-2">
+  {/* <li className="p-0 mt-2">
     <NavLink to="/dashboard/get-matched-properties" onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUser />
       Matched Properties
     </NavLink>
-  </li>
+  </li> */}
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/last-viewed-property"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>

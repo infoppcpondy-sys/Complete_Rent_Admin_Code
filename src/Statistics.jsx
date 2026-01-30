@@ -78,12 +78,16 @@ useEffect(() => {
       });
     } catch (err) {
     }
+ 
+
   };
 
   if (adminName && adminRole) {
     recordDashboardView();
   }
 }, [adminName, adminRole]);
+
+
 
 // Fetch role-based permissions
 useEffect(() => {
@@ -276,6 +280,7 @@ if (!allowedRoles.includes(fileName)) {
 }
 
 
+ 
   return (
     <Container fluid>
      

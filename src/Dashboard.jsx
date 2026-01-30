@@ -177,6 +177,7 @@ import DetailDailyReport from './DetailDailyReport';
 import PropertyPaymentDailyReport from './PropertyPaymentDailyReport';
 import GetAllContactFormDatas from './GetAllContactFormDatas';
 import OwnerTenantMenu from './Tomenu.jsx';
+import AddPropertyFormMarketing from './AddPropertyFormMarketing';
 
 
 const routes = [
@@ -356,6 +357,8 @@ const routes = [
 
                 { path: "/contact-form-datas", element: < GetAllContactFormDatas /> },
     { path: "/owner-tenant-menu", element: <OwnerTenantMenu /> },
+    { path: "/add-property-marketing", element: <AddPropertyFormMarketing /> },
+    
 
 
 ];

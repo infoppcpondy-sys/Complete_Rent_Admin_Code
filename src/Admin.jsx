@@ -68,17 +68,29 @@ const Admin = () => {
 
     // Check if login was successful
     if (loginRes.status === 200 && loginMessage?.includes("login successful")) {
-      // Send OTP after successful login
-      const otpRes = await axios.post(
-        `${process.env.REACT_APP_API_URL}/admin-send-otp-login-rent`,
-        { officeName }
-      );
-
-      if (otpRes?.data?.success) {
-        toast.success("OTP sent to registered contact");
-        setStep('verify');
+      // Skip OTP for Marketing role
+      if (role.toLowerCase() === 'marketing') {
+        dispatch(setAdminData({
+          name: name,
+          role: role,
+          userType: userType,
+          isVerified: true,
+        }));
+        toast.success("Login Successful");
+        navigate('/dashboard/statistics');
       } else {
-        toast.error(otpRes?.data?.message || "OTP service error");
+        // Send OTP after successful login for other roles
+        const otpRes = await axios.post(
+          `${process.env.REACT_APP_API_URL}/admin-send-otp-login-rent`,
+          { officeName }
+        );
+
+        if (otpRes?.data?.success) {
+          toast.success("OTP sent to registered contact");
+          setStep('verify');
+        } else {
+          toast.error(otpRes?.data?.message || "OTP service error");
+        }
       }
     } else {
       // Handle login failure
@@ -220,6 +232,7 @@ const Admin = () => {
                       <option value="manager">Manager</option>
                       <option value="admin">Admin</option>
                       <option value="accountant">Accountant</option>
+                      <option value="marketing">Marketing</option>
                     </Form.Control>
                   </Form.Group>
 
