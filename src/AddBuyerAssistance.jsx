@@ -130,6 +130,86 @@ const suggestionItemStyle = {
 const suggestionItemHoverStyle = {
   backgroundColor: "#f0f0f0",
 };
+
+  // Area to Pincode mapping for Pondicherry
+  const areaPincodeMap = {
+    "Abishegapakkam": "605007",
+    "Ariyankuppam": "605007",
+    "Arumbarthapuram" : "605110",
+    "Bahour": "605101",
+    "Bommaiyarpalayam": "605106",
+    "Cathedral": "605001",
+    "Chinna Kalapet": "605014",
+    "Chinna Veerampatinam": "605007",
+    "Dharmapuri": "605003",
+    "Dupleix Nagar": "605001",
+    "Embalam": "605106",
+    "Heritage Town": "605001",
+    "Iyyanar Koil": "605013",
+    "Jipmer Campus": "605006",
+    "Kadirkamam": "605009",
+    "Kalapet": "605014",
+    "Kanniakoil": "605010",
+    "Karayamputhur": "605106",
+    "Karuvadikuppam": "605008",
+    "Katterikuppam": "605009",
+    "Kirumampakkam": "605502",
+    "Koodapakkam": "605502",
+    "Korkadu": "605501",
+    "Kottakuppam": "605104",
+    "Kottakuppam Puduthurai": "605007",
+    "Kunichempet": "605006",
+    "Kuruvinatham": "605007",
+    "Kurusukuppam": "605012",
+    "Lawspet": "605008",
+    "Madukarai": "605107",
+    "Madagadipet": "605107",
+    "Manalipet": "605010",
+    "Manapattu": "605105",
+    "Mangalam": "605004",
+    "Mannadipet": "605501",
+    "Mettupalayam": "605009",
+    "MG Road": "605001",
+    "Mission Street": "605001",
+    "Moolakulam": "605010",
+    "Mudaliarpet": "605004",
+    "Murungapakkam": "605004",
+    "Nallambal": "605006",
+    "Natesan Nagar": "605005",
+    "Nellithope": "605005",
+    "Olandai Keerapalayam": "605010",
+    "Orleanpet": "605001",
+    "Osudu": "605110",
+    "Ousteri": "605009",
+    "Pillaiyarkuppam (Ariyankuppam)": "605007",
+    "Pillaiyarkuppam (Bahour)": "605101",
+    "Pondicherry University": "605014",
+    "Pudhu Nagar": "605010",
+    "Rainbow Nagar": "605011",
+    "Reddiarpalayam": "605010",
+    "Sanjay Gandhi Nagar": "605005",
+    "Saram": "605013",
+    "Seedhankuppam": "605005",
+    "Seliamedu": "605106",
+    "Sita Nagar": "605013",
+    "Solai Nagar": "605010",
+    "Sri Aurobindo Ashram": "605002",
+    "Subbaiah Salai": "605001",
+    "Sultanpet": "605003",
+    "Thavalakuppam": "605009",
+    "Thengaithittu": "605004",
+    "Thondamanatham": "605502",
+    "Thirubuvanai": "605107",
+    "Thirukanchi": "605009",
+    "Thiruthani": "605006",
+    "Vaithikuppam": "605012",
+    "Vadhanur": "605111",
+    "Veerampattinam": "605007",
+    "Velrampet": "605004",
+    "Villianur": "605110",
+    "White Town": "605001"
+  };
+
   // Function to handle price selection
   const handlePriceSelect = (priceType, price) => {
     setFormData((prevState) => ({
@@ -144,6 +224,7 @@ const suggestionItemHoverStyle = {
     altPhoneNumber: "",
     city: "",
     area: "",
+    pinCode: "",
     minPrice: "",
     maxPrice: "",
     facing:"",
@@ -602,25 +683,115 @@ const navigate = useNavigate();
   const [message, setMessage] = useState("");
 const [showPopup, setShowPopup] = useState(false);
 const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+const [missingFields, setMissingFields] = useState([]);
+const [showValidationError, setShowValidationError] = useState(false);
+const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
 
+
+// Helper function to check if a field is empty (including whitespace)
+const isFieldEmpty = (value) => {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string' && value.trim() === '') return true;
+  if (value === '') return true;
+  return false;
+};
 
 const handleSubmit = (e) => {
   e.preventDefault();
 
-  const errors = [];
+  // Define mandatory fields
+  const mandatoryFieldsList = [
+    'state',
+    'propertyType',
+    'propertyMode',
+    'minPrice',
+    'maxPrice',
+    'phoneNumber',
+    'area',
+    'rentType',
+    'bedrooms',
+    'floorNo'
+  ];
 
-  if (!formData.state) errors.push("State is required");
-  if (!formData.propertyType) errors.push("Property Type is required");
-  if (!formData.propertyMode) errors.push("Property Mode is required");
-  if (!formData.minPrice) errors.push("Min Price is required");
-  if (!formData.maxPrice) errors.push("Max Price is required");
+  // Check which fields are missing
+  const missing = [];
+  mandatoryFieldsList.forEach((field) => {
+    if (isFieldEmpty(formData[field])) {
+      missing.push(field);
+    }
+  });
 
-  if (errors.length > 0) {
-    alert(errors.join("\n"));
-    return;
+  // If there are missing fields, show validation error popup and highlight fields
+  if (missing.length > 0) {
+    setMissingFields(missing);
+    setShowValidationError(true);
+    return; // Stop submission
   }
 
-  setShowConfirmPopup(true); // all fields are valid
+  // All fields are valid, proceed to confirmation
+  setMissingFields([]);
+  setShowConfirmPopup(true);
+};
+
+// Handle area input change with smart sorting (starting letters first)
+const handleAreaInputChange = (e) => {
+  const value = e.target.value;
+  setFormData(prev => ({ ...prev, area: value }));
+
+  if (value.trim().length > 0) {
+    const allAreas = Object.keys(areaPincodeMap);
+    const lowerValue = value.toLowerCase();
+    
+    // Areas that START with the typed letter (priority)
+    const startsWithFilter = allAreas.filter(a => 
+      a.toLowerCase().startsWith(lowerValue)
+    );
+    
+    // Areas that CONTAIN but don't start with the typed letter
+    const containsFilter = allAreas.filter(a => 
+      !a.toLowerCase().startsWith(lowerValue) && 
+      a.toLowerCase().includes(lowerValue)
+    );
+    
+    // Combine: starting first, then containing
+    const sortedSuggestions = [...startsWithFilter, ...containsFilter];
+    
+    setAreaSuggestions(sortedSuggestions);
+    setShowAreaSuggestions(sortedSuggestions.length > 0);
+  } else {
+    // Show all areas when input is empty but focused
+    setAreaSuggestions(Object.keys(areaPincodeMap));
+    setShowAreaSuggestions(true);
+  }
+};
+
+// Handle area selection from dropdown
+const handleAreaSelect = (selectedArea) => {
+  setFormData(prev => ({
+    ...prev,
+    area: selectedArea,
+    pinCode: areaPincodeMap[selectedArea] || prev.pinCode
+  }));
+  setShowAreaSuggestions(false);
+  setAreaSuggestions([]);
+};
+
+// Handle area input focus
+const handleAreaFocus = () => {
+  if (formData.area.trim().length === 0) {
+    setAreaSuggestions(Object.keys(areaPincodeMap));
+    setShowAreaSuggestions(true);
+  } else {
+    handleAreaInputChange({ target: { value: formData.area } });
+  }
+};
+
+// Handle area input blur
+const handleAreaBlur = () => {
+  // Delay to allow click on suggestion
+  setTimeout(() => {
+    setShowAreaSuggestions(false);
+  }, 200);
 };
 
 
@@ -729,7 +900,7 @@ const handleConfirmSubmit = async () => {
     setShowPopup(true);
      
   } catch (error) {
-    setMessage({ text: "Please fill all required fields correctly.", type: "error" });
+    setMessage("Please fill all required fields correctly.");
     setShowPopup(true);
     setTimeout(() => {
       setShowPopup(false);
@@ -755,11 +926,81 @@ const handleConfirmSubmit = async () => {
  
 
       </div>
-      <h4 className="form-title mt-3" style={{color: '#4F4B7E', fontSize:"15px", fontWeight:"bold"}}>Tenant Assistance</h4>
+      <h4 className="form-title mt-3" style={{color: '#4F4B7E', fontSize:"15px", fontWeight:"bold"}}>Add Tenant Assistance</h4>
       <div>
       {message && <div className="alert text-success text-bold">{message}</div>}
       {/* Your existing component structure goes here */}
     </div>
+
+    {/* Validation Error Popup Modal */}
+    {showValidationError && (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}
+      >
+        <div
+          style={{
+            background: 'white',
+            padding: '30px',
+            borderRadius: '8px',
+            width: '340px',
+            textAlign: 'center',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          }}
+        >
+          <div style={{ fontSize: '48px', marginBottom: '16px', color: '#ff6b6b' }}>✕</div>
+          <h5 style={{ color: '#4F4B7E', fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>
+            Please fill mandatory fields
+          </h5>
+          <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px', lineHeight: '1.5' }}>
+            The following required fields are empty:
+          </p>
+          <ul style={{
+            textAlign: 'left',
+            color: '#d32f2f',
+            fontSize: '13px',
+            marginBottom: '20px',
+            paddingLeft: '20px',
+            listStyleType: 'disc'
+          }}>
+            {missingFields.map((field) => (
+              <li key={field} style={{ marginBottom: '6px' }}>
+                {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={() => {
+              setShowValidationError(false);
+              setMissingFields([]);
+            }}
+            style={{
+              marginTop: '20px',
+              padding: '10px 24px',
+              backgroundColor: '#4F4B7E',
+              border: 'none',
+              color: '#fff',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+            }}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    )}
 
       {showConfirmPopup && (
   <div
@@ -816,8 +1057,57 @@ const handleConfirmSubmit = async () => {
       </div>
     </div>
   </div>
-)} 
-         <form onSubmit={handleSubmit} className="p-3">
+)}
+
+{showPopup && (
+  <div
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }}
+  >
+    <div
+      style={{
+        background: 'white',
+        padding: '40px 30px',
+        borderRadius: '12px',
+        width: '320px',
+        textAlign: 'center',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+      }}
+    >
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
+      <h5 style={{ color: '#4F4B7E', fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>
+        Tenant created successfully
+      </h5>
+      <button
+        onClick={() => navigate('/dashboard/Pending-assistant')}
+        style={{
+          marginTop: '20px',
+          padding: '10px 24px',
+          backgroundColor: '#4F4B7E',
+          border: 'none',
+          color: '#fff',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: '500',
+        }}
+      >
+        OK
+      </button>
+    </div>
+  </div>
+)}
+         <form onSubmit={handleSubmit} className="p-3" noValidate>
         
           
       
@@ -834,6 +1124,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('minPrice') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >
         <span
@@ -856,7 +1148,6 @@ const handleConfirmSubmit = async () => {
             onChange={handleFieldChange}
             className="form-control"
             style={{ display: "none" }}
-            required
           >
             <option value="">Select minPrice</option>
             {dataList.minPrice?.map((option, index) => (
@@ -915,6 +1206,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('maxPrice') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >
         <span
@@ -999,7 +1292,9 @@ const handleConfirmSubmit = async () => {
           width: '100%',  
           boxShadow: '0 4px 10px rgba(38, 104, 190, 0.1)',
           background: "#fff",
-          paddingRight: "10px"
+          paddingRight: "10px",
+          border: missingFields.includes('phoneNumber') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }}>
     <div
         style={{
@@ -1019,9 +1314,10 @@ const handleConfirmSubmit = async () => {
           }}
         >
         <img src={phone} alt="" style={{ width: 20, height: 20 ,marginLeft:"10px"}} />
-       </span>    {/* <FaPhone className="input-icon" style={{ color: '#4F4B7E', marginLeft:"10px"}} /> */}
-          
- 
+        <sup style={{ color: 'red' }}>*</sup>
+       </span>
+        <div style={{ display: 'flex', alignItems: 'center', flex: '1', paddingLeft: '8px' }}>
+          <span style={{ color: '#4F4B7E', fontWeight: 'bold', marginRight: '4px' }}>+91</span>
         <input
             type="number"
             name="phoneNumber"
@@ -1031,6 +1327,7 @@ const handleConfirmSubmit = async () => {
             placeholder="Phone Number"
               style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
           />
+        </div>
         </div>
  {formData.phoneNumber && (
             <GoCheckCircleFill style={{ color: "green", margin: "5px" }} />
@@ -1066,11 +1363,9 @@ const handleConfirmSubmit = async () => {
           }}
         >
         <img src={altphone} alt="" style={{ width: 20, height: 20 ,marginLeft:"10px"}} />
-      </span>     {/* <FaPhone className="input-icon" style={{ color: '#4F4B7E',marginLeft:"10px" }} /> */}
-          
-    
-       
-      
+      </span>
+        <div style={{ display: 'flex', alignItems: 'center', flex: '1', paddingLeft: '8px' }}>
+          <span style={{ color: '#4F4B7E', fontWeight: 'bold', marginRight: '4px' }}>+91</span>
         <input
             type="number"
             name="alternatePhone"
@@ -1080,6 +1375,7 @@ const handleConfirmSubmit = async () => {
             placeholder="Alternate Phone Number"
               style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
           />
+        </div>
         </div>
          {formData.alternatePhone && (
             <GoCheckCircleFill style={{ color: "green", margin: "5px" }} />
@@ -1097,6 +1393,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('propertyMode') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >
         <span
@@ -1177,6 +1475,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('propertyType') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >           <span
           style={{
@@ -1250,6 +1550,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('rentType') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >           <span
           style={{
@@ -1261,7 +1563,7 @@ const handleConfirmSubmit = async () => {
             background: "#fff", // optional
           }}
         >
-                  {fieldIcons.rentType} 
+                  {fieldIcons.rentType} <sup style={{ color: 'red' }}>*</sup>
                 </span>
             <div style={{ flex: "1" }}>
               <select
@@ -1269,8 +1571,7 @@ const handleConfirmSubmit = async () => {
                 value={formData.rentType || ""}
                 onChange={handleFieldChange}
                 className="form-control"
-                style={{ display: "none" }} 
-                
+                style={{ display: "none" }}
               >
                 <option value="">Select renty Type</option>
                 {dataList.rentType?.map((option, index) => (
@@ -1323,6 +1624,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('bedrooms') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >       <span
           style={{
@@ -1334,7 +1637,7 @@ const handleConfirmSubmit = async () => {
             background: "#fff", // optional
           }}
         >
-                    {fieldIcons.bedrooms || <FaHome />}
+                    {fieldIcons.bedrooms || <FaHome />} <sup style={{ color: 'red' }}>*</sup>
                   </span> <div style={{ flex: "1" }}>
                 <select
                 
@@ -1342,7 +1645,7 @@ const handleConfirmSubmit = async () => {
                   value={formData.bedrooms || ""}
                   onChange={handleFieldChange}
                   className="form-control"
-                  style={{ display: "none" }} // Hide the default <select> dropdown
+                  style={{ display: "none" }}
                 >
                   <option value="">Select bedrooms</option>
                   {dataList.bedrooms?.map((option, index) => (
@@ -1584,6 +1887,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('floorNo') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >       <span
           style={{
@@ -1595,14 +1900,14 @@ const handleConfirmSubmit = async () => {
             background: "#fff", // optional
           }}
         >
-                    {fieldIcons.floorNo}
+                    {fieldIcons.floorNo} <sup style={{ color: 'red' }}>*</sup>
                   </span>  <div style={{ flex: "1" }}>
                 <select
                   name="floorNo"
                   value={formData.floorNo || ""}
                   onChange={handleFieldChange}
                   className="form-control"
-                  style={{ display: "none" }} // Hide the default <select> dropdown
+                  style={{ display: "none" }}
                 >
                   <option value="">Select floorNo</option>
                   {dataList.floorNo?.map((option, index) => (
@@ -1725,6 +2030,8 @@ const handleConfirmSubmit = async () => {
           alignItems: "stretch", // <- Stretch children vertically
           width: "100%",
           boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          border: missingFields.includes('state') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }} className="rounded-2"
       >       <span
           style={{
@@ -1736,7 +2043,7 @@ const handleConfirmSubmit = async () => {
             background: "#fff", // optional
           }}
         >
-                    {fieldIcons.state || <FaHome />}
+                    {fieldIcons.state || <FaHome />} <sup style={{ color: 'red' }}>*</sup>
                   </span>    <div style={{ flex: "1" }}>
                 <select
                   name="state"
@@ -1744,7 +2051,6 @@ const handleConfirmSubmit = async () => {
                   onChange={handleFieldChange}
                   className="form-control"
                   style={{ display: "none" }} // Hide the default <select> dropdown
-                  required
                   >
                   <option value="">Select state</option>
                   {dataList.state?.map((option, index) => (
@@ -1866,7 +2172,9 @@ const handleConfirmSubmit = async () => {
           width: '100%',  
           boxShadow: '0 4px 10px rgba(38, 104, 190, 0.1)',
           background: "#fff",
-          paddingRight: "10px"
+          paddingRight: "10px",
+          border: missingFields.includes('area') ? '2px solid #ff6b6b' : 'none',
+          borderRadius: '5px',
         }}>
           
         
@@ -1887,12 +2195,14 @@ const handleConfirmSubmit = async () => {
             background: "#fff", // optional
           }}
         >
-       {fieldIcons.area}</span>
+       {fieldIcons.area} <sup style={{ color: 'red' }}>*</sup></span>
         <input
             type="text"
             name="area"
             value={formData.area}
-            onChange={handleFieldChange}
+            onChange={handleAreaInputChange}
+            onFocus={handleAreaFocus}
+            onBlur={handleAreaBlur}
             className="form-input m-0"
             placeholder="Area"
               style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
@@ -1914,10 +2224,7 @@ const handleConfirmSubmit = async () => {
               }}
               onMouseEnter={() => setHoveredAreaIndex(index)}
               onMouseLeave={() => setHoveredAreaIndex(null)}
-              onClick={() => {
-                setFormData({ ...formData, area });
-                setAreaSuggestions([]);
-              }}
+              onClick={() => handleAreaSelect(area)}
             >
               {area}
             </li>

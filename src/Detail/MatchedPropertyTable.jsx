@@ -675,7 +675,7 @@ const handlePrintPDF = () => {
             <tr>
               <th><FaIdBadge className="me-1" /> Rent ID</th>
               <th><FaUser className="me-1" /> Posted By</th>
-              <th><FaPhone className="me-1" /> Contact</th>
+              <th><FaPhone className="me-1" /> Owner Contact</th>
               <th><FaMoneyBillWave className="me-1" /> Rental Amount</th>
               <th><FaMapMarkerAlt className="me-1" /> Location</th>
               <th><FaHome className="me-1" /> Type</th>
@@ -683,11 +683,11 @@ const handlePrintPDF = () => {
               <th>Bedrooms</th>
               <th>Area</th>
               <th><FaCalendarAlt className="me-1" /> Posted On</th>
-              <th><FaIdBadge className="me-1" /> RA_ID</th>
-              <th><FaUserTag className="me-1" /> RA_NAME</th>
-              <th><FaPhone className="me-1" /> RA PHONE</th>
-              <th><FaMapMarkerAlt className="me-1" /> RA AREA</th>
-              <th><FaMapMarkerAlt className="me-1" /> RA CITY</th>
+              <th><FaIdBadge className="me-1" /> Tenant ID</th>
+              <th><FaUserTag className="me-1" /> Posted by</th>
+              <th><FaPhone className="me-1" /> Tenant Contact</th>
+              <th><FaMapMarkerAlt className="me-1" /> Tenant Area</th>
+              <th><FaMapMarkerAlt className="me-1" /> Tenant City</th>
               <th>Status</th>
               <th>Whatsapp Status</th>
               <th>Action</th>
