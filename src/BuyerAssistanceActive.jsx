@@ -20,8 +20,13 @@ const [baId, setBaId] = useState('');
   const fetchData = async () => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/raActive-buyerAssistance-all-plans-rent`);
-      setData(res.data.data);
-      setFilteredData(res.data.data);
+      const sortedData = [...res.data.data].sort((a, b) => {
+        const idA = parseInt(a.Ra_Id) || 0;
+        const idB = parseInt(b.Ra_Id) || 0;
+        return idB - idA; // Descending order
+      });
+      setData(sortedData);
+      setFilteredData(sortedData);
     } catch (error) {
     }
   };
@@ -78,7 +83,14 @@ const [baId, setBaId] = useState('');
       });
     }
 
-    setFilteredData(filtered);
+    // Sort by Ra_Id in descending order
+    const sortedData = [...filtered].sort((a, b) => {
+      const idA = parseInt(a.Ra_Id) || 0;
+      const idB = parseInt(b.Ra_Id) || 0;
+      return idB - idA;
+    });
+
+    setFilteredData(sortedData);
   };
 
 const handleReset = () => {
@@ -86,7 +98,12 @@ const handleReset = () => {
   setBaId('');
   setStartDate('');
   setEndDate('');
-  setFilteredData(data); // Reset to original data
+  const sortedData = [...data].sort((a, b) => {
+    const idA = parseInt(a.Ra_Id) || 0;
+    const idB = parseInt(b.Ra_Id) || 0;
+    return idB - idA;
+  });
+  setFilteredData(sortedData);
 };
 
 

@@ -130,8 +130,13 @@ useEffect(() => {
   const fetchPendingAssistance = async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-buyerAssistance-pending-rent`);
-      setData(response.data.data);
-      setFiltered(response.data.data);
+      const sortedData = [...response.data.data].sort((a, b) => {
+        const idA = parseInt(a.Ra_Id) || 0;
+        const idB = parseInt(b.Ra_Id) || 0;
+        return idB - idA; // Descending order
+      });
+      setData(sortedData);
+      setFiltered(sortedData);
     } catch (error) {
     }
   };
@@ -185,14 +190,26 @@ useEffect(() => {
       );
     }
 
-    setFiltered(filteredData);
+    // Sort by Ra_Id in descending order
+    const sortedData = [...filteredData].sort((a, b) => {
+      const idA = parseInt(a.Ra_Id) || 0;
+      const idB = parseInt(b.Ra_Id) || 0;
+      return idB - idA;
+    });
+
+    setFiltered(sortedData);
   };
 const handleReset = () => {
   setSearchBaId('');
   setSearchPhoneNumber('');
   setStartDate('');
   setEndDate('');
-  setFiltered(data);
+  const sortedData = [...data].sort((a, b) => {
+    const idA = parseInt(a.Ra_Id) || 0;
+    const idB = parseInt(b.Ra_Id) || 0;
+    return idB - idA;
+  });
+  setFiltered(sortedData);
 };
  
   const reduxAdminName = useSelector((state) => state.admin.name);

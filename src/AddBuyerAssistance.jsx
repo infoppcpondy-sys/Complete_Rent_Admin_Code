@@ -220,6 +220,7 @@ const suggestionItemHoverStyle = {
   };
 
   const [formData, setFormData] = useState({
+    tenantName: "",
     phoneNumber: "",
     altPhoneNumber: "",
     city: "",
@@ -267,6 +268,7 @@ const formatPrice = (price) => {
   const [paymentTypes, setPaymentTypes] = useState([]);
  const fieldIcons = {
   // Contact Details
+  tenantName: <img src={ownerName} alt="" style={{ width: 20, height: 20 }} />,
   phoneNumber: <img src={phone} alt="" style={{ width: 20, height: 20 }} />,
   alternatePhone: <img src={altphone} alt="" style={{ width: 20, height: 20 }} />,
   email: <img src={email} alt="" style={{ width: 20, height: 20 }} />,
@@ -381,6 +383,7 @@ const formatPrice = (price) => {
     paymentType: "payment Type",
 
   email: "Email",
+  tenantName: "Tenant Name",
   phoneNumber: "Phone Number",
   phoneNumberCountryCode: "Phone Country Code",
   alternatePhone: "Alternate Phone",
@@ -611,6 +614,7 @@ const renderDropdown = (field) => {
 const dropdownFieldOrder = [
       "minPrice",
   "maxPrice",
+   "tenantName",
    "altPhoneNumber",
    "propertyMode",
   "propertyType",
@@ -635,6 +639,7 @@ const dropdownFieldOrder = [
 
     // "totalArea",
   "raName",
+  "tenantName",
   "phoneNumber"
 ];
 
@@ -708,6 +713,7 @@ const handleSubmit = (e) => {
     'maxPrice',
     'phoneNumber',
     'area',
+    'pinCode',
     'rentType',
     'bedrooms',
     'floorNo'
@@ -791,6 +797,7 @@ const handleAreaBlur = () => {
   // Delay to allow click on suggestion
   setTimeout(() => {
     setShowAreaSuggestions(false);
+    setAreaSuggestions([]);
   }, 200);
 };
 
@@ -895,6 +902,26 @@ const handleConfirmSubmit = async () => {
       );
       setFormData(response.data.data); // Save returned formData with IDs etc.
       setMessage("Buyer Assistance request added successfully!");
+
+      // 🔹 Send WhatsApp message after successful tenant assistant creation
+      try {
+        const tenantName = formData?.tenantName || "Tenant";
+        const rawPhone = formData?.phoneNumber || "";
+
+        // Format phone number: Remove all non-digits, ensure country code
+        const cleanPhone = String(rawPhone).replace(/\D/g, "").slice(-10); // Get last 10 digits
+        const to = `91${cleanPhone}`; // Add country code for India
+
+        if (cleanPhone.length === 10) {
+          await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+            to,
+            message: `Hello ${tenantName}!\n\nYour Tenant Assistance request has been submitted successfully!\n\nWe will process your requirements and connect you with matching properties soon.\n\nProperty Requirements:\nBudget: Rs.${formData?.minPrice || '0'} - Rs.${formData?.maxPrice || '0'}\nProperty Type: ${formData?.propertyType || 'N/A'}\nBedrooms: ${formData?.bedrooms || 'Any'}\nLocation: ${formData?.area || 'Any'}, ${formData?.city || formData?.state}\n\nThank you for choosing Rent Pondy!`
+          });
+          console.log("✅ WhatsApp message sent successfully to", to);
+        }
+      } catch (whatsErr) {
+        console.log("⚠️ WhatsApp message failed (non-blocking):", whatsErr.message);
+      }
     }
 
     setShowPopup(true);
@@ -958,7 +985,7 @@ const handleConfirmSubmit = async () => {
             boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
           }}
         >
-          <div style={{ fontSize: '48px', marginBottom: '16px', color: '#ff6b6b' }}>✕</div>
+          {/* <div style={{ fontSize: '48px', marginBottom: '16px', color: '#ff6b6b' }}>✕</div> */}
           <h5 style={{ color: '#4F4B7E', fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>
             Please fill mandatory fields
           </h5>
@@ -1282,6 +1309,54 @@ const handleConfirmSubmit = async () => {
           </div>
       
      
+      <div className="form-group mb-1">
+      {/* <label>Tenant Name:</label> */}
+      
+        <div className="input-card p-0 rounded-2" style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          width: '100%',  
+          boxShadow: '0 4px 10px rgba(38, 104, 190, 0.1)',
+          background: "#fff",
+          paddingRight: "10px",
+          borderRadius: '5px',
+        }}>
+    <div
+        style={{
+          display: "flex",
+          alignItems: "stretch", // <- Stretch children vertically
+          width: "100%",
+        }}
+      > 
+            <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 14px",
+            borderRight: "1px solid #4F4B7E",
+            background: "#fff", // optional
+          }}
+        >
+        <img src={ownerName} alt="" style={{ width: 20, height: 20 ,marginLeft:"10px"}} />
+       </span>
+        <div style={{ display: 'flex', alignItems: 'center', flex: '1', paddingLeft: '8px' }}>
+        <input
+            type="text"
+            name="tenantName"
+            value={formData.tenantName}
+            onChange={handleFieldChange}
+            className="form-input m-0"
+            placeholder="Tenant Name"
+              style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
+          />
+        </div>
+        </div>
+ {formData.tenantName && (
+            <GoCheckCircleFill style={{ color: "green", margin: "5px" }} />
+          )}          </div>
+      </div>
       <div className="form-group mb-1">
       {/* <label>Phone Number:</label> */}
       
@@ -2224,14 +2299,55 @@ const handleConfirmSubmit = async () => {
               }}
               onMouseEnter={() => setHoveredAreaIndex(index)}
               onMouseLeave={() => setHoveredAreaIndex(null)}
-              onClick={() => handleAreaSelect(area)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleAreaSelect(area);
+              }}
             >
               {area}
             </li>
           ))}
         </ul>
       )}</div>
-      
+
+      {/* PinCode Field - Auto-filled from Area but Editable - MANDATORY */}
+      <div className="form-group">
+      <label style={{ width: '100%'}}>
+        <div
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          width: "100%",
+          boxShadow: "0 4px 10px rgba(38, 104, 190, 0.1)",
+          borderRadius: '5px',
+          border: missingFields.includes('pinCode') ? '2px solid #ff6b6b' : 'none',
+        }} className="rounded-2"
+      >
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 14px",
+            borderRight: "1px solid #4F4B7E",
+            background: "#fff",
+          }}
+        >
+        <TbMapPinCode color="#4F4B7E" size={20}/>
+        <sup style={{ color: 'red' }}>*</sup>
+       </span>
+        <input
+            type="text"
+            name="pinCode"
+            value={formData.pinCode}
+            onChange={handleFieldChange}
+            className="form-input m-0"
+            placeholder="Pincode (Auto-filled or Enter manually)"
+              style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
+          />
+        </div>
+      </label>
+      </div>
       
       <h6 style={{ color: "#4F4B7E", fontWeight: "bold", marginBottom: "10px" }}> Description   </h6>             
       

@@ -41,6 +41,7 @@ const TABLE_COLUMNS = [
   { key: 'raCity', header: 'RA CITY', exportable: true },
   { key: 'status', header: 'Status', exportable: true },
   { key: 'whatsappStatus', header: 'Whatsapp Status', exportable: true },
+  { key: 'whatsapp', header: 'Send WhatsApp', exportable: false },
   { key: 'actions', header: 'Action', exportable: false },
   { key: 'viewDetails', header: 'View Details', exportable: false },
 ];
@@ -52,6 +53,7 @@ const MatchedDataTable = () => {
   const [matchedData, setMatchedData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sendingAll, setSendingAll] = useState(false);
   const [searchBaId, setSearchBaId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -244,6 +246,191 @@ const handleRestoreAllDeleted = async () => {
   }
 };
 
+// ===== WHATSAPP SEND FUNCTION: Send messages to both owner and tenant =====
+const handleSendWhatsApp = async (item, property) => {
+  try {
+    const ownerPhone = property.postedByUser;
+    const tenantPhone = item.buyerAssistanceCard.phoneNumber;
+    const ownerName = property.postedBy || 'Owner';
+    const tenantName = item.buyerAssistanceCard.name || 'Tenant';
+    const propertyDetails = `${property.bedrooms} BHK in ${property.city}`;
+
+    // Validate phone numbers
+    if (!ownerPhone || !tenantPhone) {
+      setMessage('Missing phone numbers for owner or tenant.');
+      return;
+    }
+
+    // Format phone numbers: remove non-digits, take last 10, prepend 91
+    const formatPhoneNumber = (phone) => {
+      const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
+      return cleanPhone.length === 10 ? `91${cleanPhone}` : null;
+    };
+
+    const formattedOwnerPhone = formatPhoneNumber(ownerPhone);
+    const formattedTenantPhone = formatPhoneNumber(tenantPhone);
+
+    if (!formattedOwnerPhone || !formattedTenantPhone) {
+      setMessage('Invalid phone number format. Please ensure 10-digit phone numbers.');
+      return;
+    }
+
+    // Message to owner
+    const ownerMessage = `Hello ${ownerName},\n\nYour property (${propertyDetails}) has been successfully matched with a potential tenant. They are interested in renting your property. Please contact them at your earliest convenience to arrange a viewing.\n\nTenant Contact: ${formattedTenantPhone}\n\nThank you for using RENT PONDY!`;
+
+    // Message to tenant
+    const tenantMessage = `Hello ${tenantName},\n\nGreat news! We have found a potential property match for you - ${propertyDetails} matching your requirements.\n\nProperty Owner: ${ownerName}\nOwner Contact: ${formattedOwnerPhone}\n\nPlease connect with the owner to schedule a viewing.\n\nBest regards,\nRENT PONDY Team!`;
+
+    // Send message to owner
+    await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+      to: formattedOwnerPhone,
+      message: ownerMessage
+    });
+
+    // Send message to tenant
+    await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+      to: formattedTenantPhone,
+      message: tenantMessage
+    });
+
+    // Update the matched property's WhatsApp status
+    setMatchedData((prevData) =>
+      prevData.map((dataItem) =>
+        dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id
+          ? {
+              ...dataItem,
+              matchedProperties: dataItem.matchedProperties.map((prop) =>
+                prop.rentId === property.rentId
+                  ? { ...prop, Whatsappstatus: 'Sent' }
+                  : prop
+              ),
+            }
+          : dataItem
+      )
+    );
+
+    setMessage(`WhatsApp messages sent successfully to both ${tenantName} and ${ownerName}!`);
+  } catch (error) {
+    console.error('Error sending WhatsApp message:', error);
+    setMessage(`Error sending WhatsApp message: ${error.message}`);
+  }
+};
+
+// ===== WHATSAPP SEND ALL FUNCTION: Send messages to all owners and tenants in filtered data =====
+const handleSendAllWhatsApp = async () => {
+  if (!window.confirm('Are you sure you want to send WhatsApp messages to all owners and tenants in the current view? This action cannot be undone.')) {
+    return;
+  }
+
+  try {
+    setSendingAll(true);
+    const filteredResults = applyFilters();
+    
+    if (filteredResults.length === 0) {
+      setMessage('No matched properties to send messages to.');
+      setSendingAll(false);
+      return;
+    }
+
+    // Collect all owner-tenant pairs that need messages sent
+    const messagePairs = [];
+    filteredResults.forEach((item) => {
+      item.matchedProperties.forEach((property) => {
+        // Skip if already sent
+        if (property.Whatsappstatus !== 'Sent') {
+          messagePairs.push({ item, property });
+        }
+      });
+    });
+
+    if (messagePairs.length === 0) {
+      setMessage('All matched properties have already had messages sent.');
+      setSendingAll(false);
+      return;
+    }
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    // Send messages to all pairs
+    for (const { item, property } of messagePairs) {
+      try {
+        const ownerPhone = property.postedByUser;
+        const tenantPhone = item.buyerAssistanceCard.phoneNumber;
+        const ownerName = property.postedBy || 'Owner';
+        const tenantName = item.buyerAssistanceCard.name || 'Tenant';
+        const propertyDetails = `${property.bedrooms} BHK in ${property.city}`;
+
+        // Validate phone numbers
+        if (!ownerPhone || !tenantPhone) {
+          failureCount++;
+          continue;
+        }
+
+        // Format phone numbers: remove non-digits, take last 10, prepend 91
+        const formatPhoneNumber = (phone) => {
+          const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
+          return cleanPhone.length === 10 ? `91${cleanPhone}` : null;
+        };
+
+        const formattedOwnerPhone = formatPhoneNumber(ownerPhone);
+        const formattedTenantPhone = formatPhoneNumber(tenantPhone);
+
+        if (!formattedOwnerPhone || !formattedTenantPhone) {
+          failureCount++;
+          continue;
+        }
+
+        // Message to owner
+        const ownerMessage = `Hello ${ownerName},\n\nYour property (${propertyDetails}) has been successfully matched with a potential tenant. They are interested in renting your property. Please contact them at your earliest convenience to arrange a viewing.\n\nTenant Contact: ${formattedTenantPhone}\n\nThank you for using RENT PONDY!`;
+
+        // Message to tenant
+        const tenantMessage = `Hello ${tenantName},\n\nGreat news! We have found a potential property match for you - ${propertyDetails} matching your requirements.\n\nProperty Owner: ${ownerName}\nOwner Contact: ${formattedOwnerPhone}\n\nPlease connect with the owner to schedule a viewing.\n\nBest regards,\nRENT PONDY Team!`;
+
+        // Send message to owner
+        await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+          to: formattedOwnerPhone,
+          message: ownerMessage
+        });
+
+        // Send message to tenant
+        await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+          to: formattedTenantPhone,
+          message: tenantMessage
+        });
+
+        // Update the matched property's WhatsApp status
+        setMatchedData((prevData) =>
+          prevData.map((dataItem) =>
+            dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id
+              ? {
+                  ...dataItem,
+                  matchedProperties: dataItem.matchedProperties.map((prop) =>
+                    prop.rentId === property.rentId
+                      ? { ...prop, Whatsappstatus: 'Sent' }
+                      : prop
+                  ),
+                }
+              : dataItem
+          )
+        );
+
+        successCount++;
+      } catch (error) {
+        console.error('Error sending WhatsApp message to pair:', error);
+        failureCount++;
+      }
+    }
+
+    setMessage(`WhatsApp messages sent successfully to ${successCount} matches. ${failureCount > 0 ? `${failureCount} failed.` : ''}`);
+  } catch (error) {
+    console.error('Error in send all WhatsApp:', error);
+    setMessage(`Error sending all WhatsApp messages: ${error.message}`);
+  } finally {
+    setSendingAll(false);
+  }
+};
+
       
   
   
@@ -307,6 +494,18 @@ const applyFilters = () => {
   }).filter(item => item.matchedProperties.length > 0);
 };
 
+// ===== RESET FILTERS FUNCTION =====
+const handleResetFilters = () => {
+  setFilters({
+    propertyId: '',
+    raId: '',
+    startDate: '',
+    endDate: '',
+    ownerPhoneNumber: '',
+    raPhoneNumber: ''
+  });
+};
+
 // ===== HELPER FUNCTION: Calculate total matched properties count =====
 const getTotalMatchedPropertiesCount = () => {
   return matchedData.reduce((total, item) => total + (item.matchedProperties?.length || 0), 0);
@@ -318,9 +517,32 @@ const getFilteredMatchedPropertiesCount = () => {
   return filtered.reduce((total, item) => total + (item.matchedProperties?.length || 0), 0);
 };
 
+  // ===== HELPER FUNCTION: Calculate WhatsApp Sent count =====
+const getWhatsAppSentCount = () => {
+  const filtered = applyFilters();
+  let count = 0;
+  filtered.forEach(item => {
+    if (item.matchedProperties && Array.isArray(item.matchedProperties)) {
+      item.matchedProperties.forEach(prop => {
+        if (prop.Whatsappstatus === 'Sent') count++;
+      });
+    }
+  });
+  return count;
+};
 
-const handleResetFilters = () => {
-  setFilters({ propertyId: '', raId: '', startDate: '', endDate: '', ownerPhoneNumber: '', raPhoneNumber: '' });
+  // ===== HELPER FUNCTION: Calculate WhatsApp Not Sent count =====
+const getWhatsAppNotSentCount = () => {
+  const filtered = applyFilters();
+  let count = 0;
+  filtered.forEach(item => {
+    if (item.matchedProperties && Array.isArray(item.matchedProperties)) {
+      item.matchedProperties.forEach(prop => {
+        if (prop.Whatsappstatus !== 'Sent') count++;
+      });
+    }
+  });
+  return count;
 };
 
 // ===== FLATTEN MATCHED DATA FOR EXPORT =====
@@ -636,8 +858,6 @@ const handlePrintPDF = () => {
       </div>
 
       
-
-      
   <div className='mb-4'>
     <div className="d-flex justify-content-start mb-3 gap-2 align-items-center flex-wrap">
       <div style={{ 
@@ -660,6 +880,41 @@ const handlePrintPDF = () => {
       }}>
         Showing: {getFilteredMatchedPropertiesCount()} Records
       </div>
+      <div style={{ 
+        background: '#28a745', 
+        color: 'white', 
+        padding: '8px 16px', 
+        borderRadius: '4px', 
+        fontWeight: 'bold',
+        fontSize: '14px'
+      }}>
+        Sent: {getWhatsAppSentCount()}
+      </div>
+      <div style={{ 
+        background: '#ffc107', 
+        color: 'black', 
+        padding: '8px 16px', 
+        borderRadius: '4px', 
+        fontWeight: 'bold',
+        fontSize: '14px'
+      }}>
+        Not Sent: {getWhatsAppNotSentCount()}
+      </div>
+      <button 
+        className="btn btn-primary" 
+        style={{fontSize: '15px', padding: '6px 10px'}} 
+        onClick={handleSendAllWhatsApp}
+        disabled={sendingAll || getWhatsAppNotSentCount() === 0}
+      >
+        {sendingAll ? (
+          <>
+            <Spinner animation="border" size="sm" className="me-2" />
+            Sending...
+          </>
+        ) : (
+          'Send All WhatsApp'
+        )}
+      </button>
       <button className="btn btn-danger" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={handlePrint}>Print</button>
       <button className="btn btn-success" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={downloadExcel}>Download Excel</button>
       <button className="btn btn-warning" style={{width: '110px', fontSize: '15px', padding: '6px 10px'}} onClick={handlePrintPDF}>Download PDF</button>
@@ -690,6 +945,7 @@ const handlePrintPDF = () => {
               <th><FaMapMarkerAlt className="me-1" /> Tenant City</th>
               <th>Status</th>
               <th>Whatsapp Status</th>
+              <th>Send WhatsApp</th>
               <th>Action</th>
                <th>Views Details</th>
             </tr>
@@ -747,11 +1003,27 @@ const handlePrintPDF = () => {
                     )}
                   </td>
                   <td>
-                    {property.Whatsappstatus ? (
-                      <Badge bg="info">{property.Whatsappstatus}</Badge>
+                    {property.Whatsappstatus === 'Sent' ? (
+                      <Badge bg="success" className="d-flex align-items-center">
+                        ✓ Sent
+                      </Badge>
                     ) : (
-                      <span>Not Send</span>
+                      <Badge bg="warning" className="d-flex align-items-center">
+                        ✗ Not Sent
+                      </Badge>
                     )}
+                  </td>
+                  <td>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => handleSendWhatsApp(item, property)}
+                      disabled={property.Whatsappstatus === 'Sent'}
+                      className="d-flex align-items-center"
+                      title={property.Whatsappstatus === 'Sent' ? 'Already sent' : 'Send WhatsApp to Owner & Tenant'}
+                    >
+                      Send WhatsApp
+                    </Button>
                   </td>
     
 
