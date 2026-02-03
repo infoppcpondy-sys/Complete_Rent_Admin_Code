@@ -565,6 +565,21 @@ const menuItems = [
     </NavLink>
   </li>
 
+    <li className="p-0 mt-2">
+    <NavLink to="/dashboard/expired-assistant" 
+     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+      Removed Tenant Assistant
+    </NavLink>
+  </li>
+
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/expired-assistant" 
+     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+      Permenantly Deleted Tenant Assistant
+    </NavLink>
+  </li>
 </ul>
 
 

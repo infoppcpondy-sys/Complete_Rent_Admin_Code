@@ -17,6 +17,8 @@ const NotificationsTable = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [statusFilter, setStatusFilter] = useState(""); // "Read", "Unread", or ""
+  const [ownerPhoneFilter, setOwnerPhoneFilter] = useState("");
+  const [tenantPhoneFilter, setTenantPhoneFilter] = useState("");
 
   const itemsPerPage = 50;
 
@@ -78,7 +80,17 @@ const fetchNotifications = async () => {
         ? notification.isRead
         : !notification.isRead;
 
-    return isWithinDate && matchesStatus;
+    const matchesOwnerPhone =
+      ownerPhoneFilter === ""
+        ? true
+        : notification.recipientPhoneNumber.includes(ownerPhoneFilter);
+
+    const matchesTenantPhone =
+      tenantPhoneFilter === ""
+        ? true
+        : notification.senderPhoneNumber.includes(tenantPhoneFilter);
+
+    return isWithinDate && matchesStatus && matchesOwnerPhone && matchesTenantPhone;
   });
 
   setFilteredNotifications(filtered);
@@ -90,7 +102,9 @@ const fetchNotifications = async () => {
 const handleReset = () => {
   setStartDate("");
   setEndDate("");
-  setStatusFilter(""); // Reset status
+  setStatusFilter("");
+  setOwnerPhoneFilter("");
+  setTenantPhoneFilter("");
   setFilteredNotifications(notifications);
   setCurrentPage(1);
 };
@@ -114,6 +128,58 @@ const handleReset = () => {
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Smart pagination: Generate page numbers array with ellipsis
+  const generatePaginationArray = () => {
+    const pages = [];
+    const siblingsCount = 2; // Pages on each side of current page
+    const showAlwaysCount = 1; // Always show first and last page
+
+    // Calculate range around current page
+    const leftSiblingIndex = Math.max(
+      currentPage - siblingsCount,
+      1
+    );
+    const rightSiblingIndex = Math.min(
+      currentPage + siblingsCount,
+      totalPages
+    );
+
+    // Add first page(s)
+    for (let i = 1; i <= Math.min(showAlwaysCount, totalPages); i++) {
+      pages.push(i);
+    }
+
+    // Add ellipsis or range before current page range
+    if (leftSiblingIndex > showAlwaysCount + 1) {
+      pages.push(null); // null represents ellipsis
+    }
+
+    // Add pages around current page
+    for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
+      if (!pages.includes(i)) {
+        pages.push(i);
+      }
+    }
+
+    // Add ellipsis or range after current page range
+    if (rightSiblingIndex < totalPages - showAlwaysCount) {
+      pages.push(null); // null represents ellipsis
+    }
+
+    // Add last page(s)
+    if (totalPages > 1) {
+      for (let i = Math.max(totalPages - showAlwaysCount + 1, 1); i <= totalPages; i++) {
+        if (!pages.includes(i)) {
+          pages.push(i);
+        }
+      }
+    }
+
+    return pages;
+  };
+
+  const paginationPages = generatePaginationArray();
+
   
    if (loading) return <p>Loading...</p>;
   
@@ -126,7 +192,7 @@ const handleReset = () => {
   boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)', 
   padding: '20px', 
   backgroundColor: '#fff' 
-}}  className="d-flex flex-row gap-2 align-items-center flex-nowrap">
+}}  className="d-flex flex-row gap-2 align-items-center flex-wrap">
         <div className="mb-3">
           
   <label className="form-label fw-bold">Filter by Status</label>
@@ -141,9 +207,30 @@ const handleReset = () => {
   </select>
 </div>
         
+        <div className="mb-3">
+          <label className="form-label fw-bold">Owner Phone Number</label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search owner phone..."
+            value={ownerPhoneFilter}
+            onChange={(e) => setOwnerPhoneFilter(e.target.value)}
+          />
+        </div>
 
         <div className="mb-3">
-          <label>Start Date</label>
+          <label className="form-label fw-bold">Tenant Phone Number</label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search tenant phone..."
+            value={tenantPhoneFilter}
+            onChange={(e) => setTenantPhoneFilter(e.target.value)}
+          />
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label fw-bold">Start Date</label>
           <input
             type="date"
             className="form-control"
@@ -152,7 +239,7 @@ const handleReset = () => {
           />
         </div>
         <div className="mb-3">
-          <label>End Date</label>
+          <label className="form-label fw-bold">End Date</label>
           <input
             type="date"
             className="form-control"
@@ -160,14 +247,14 @@ const handleReset = () => {
             onChange={(e) => setEndDate(e.target.value)}
           />
         </div>
-        <div className="col-md-3 d-flex align-items-end">
-          <button className="btn btn-primary me-2" onClick={handleFilter}>
+        <div className="col-md-3 d-flex align-items-end gap-2">
+          <button className="btn btn-primary" onClick={handleFilter}>
             Filter
           </button>
           <button className="btn btn-secondary" onClick={handleReset}>
             Reset
           </button>
-                        <button className="btn btn-secondary ms-2 " style={{background:"tomato"}} onClick={handlePrint}>
+          <button className="btn btn-secondary" style={{background:"tomato"}} onClick={handlePrint}>
   Print
 </button>
         </div>
@@ -210,24 +297,57 @@ const handleReset = () => {
       </Table>
 </div>
       {/* Pagination */}
-      <div className="pagination mt-3">
+      <div 
+        className="pagination mt-3" 
+        style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '8px', 
+          maxWidth: '100%',
+          justifyContent: 'center',
+          padding: '10px 0'
+        }}
+      >
         <button
-          className="btn btn-primary me-1"
+          className="btn btn-primary"
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
         >
           Previous
         </button>
 
-        {Array.from({ length: totalPages }, (_, index) => (
-          <button
-            key={index}
-            className={`btn btn-secondary me-1 ${currentPage === index + 1 ? "active" : ""}`}
-            onClick={() => handlePageChange(index + 1)}
-          >
-            {index + 1}
-          </button>
-        ))}
+        {paginationPages.map((pageNum, index) => {
+          if (pageNum === null) {
+            // Render ellipsis
+            return (
+              <span
+                key={`ellipsis-${index}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 4px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ...
+              </span>
+            );
+          }
+
+          // Render page button
+          return (
+            <button
+              key={pageNum}
+              className={`btn btn-secondary ${
+                currentPage === pageNum ? "active" : ""
+              }`}
+              onClick={() => handlePageChange(pageNum)}
+              style={{ minWidth: '40px' }}
+            >
+              {pageNum}
+            </button>
+          );
+        })}
 
         <button
           className="btn btn-primary"
