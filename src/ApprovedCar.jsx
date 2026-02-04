@@ -41,6 +41,7 @@ const ApprovedCar = () => {
   const [bankLoan, setBankLoan] = useState('');
   const [priceFilter, setPriceFilter] = useState('');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState('');
+  const [propertyModeFilter, setPropertyModeFilter] = useState('');
   const [billMap, setBillMap] = useState({});
   
 
@@ -54,25 +55,14 @@ const navigate = useNavigate();
 
       if (res.data.data && Array.isArray(res.data.data)) {
         res.data.data.forEach(bill => {
-          // Find the related property
-          const relatedProperty = properties.find(p => String(p.rentId).trim() === String(bill.rentId).trim());
-          
-          if (relatedProperty) {
-            // Only add if bill was created after the property
-            const propertyTime = new Date(relatedProperty.createdAt).getTime();
-            const billTime = new Date(bill.createdAt).getTime();
-            
-            if (billTime >= propertyTime) {
-              // Only add to map if not already exists (first one wins)
-              if (!map[bill.rentId]) {
-                map[bill.rentId] = {
-                  billNo: bill.billNo,
-                  createdAt: bill.createdAt,
-                  validity: bill.validity,
-                  billExpiryDate: bill.billExpiryDate
-                };
-              }
-            }
+          // Only add to map if not already exists (first one wins)
+          if (!map[bill.rentId]) {
+            map[bill.rentId] = {
+              billNo: bill.billNo || '',
+              createdAt: bill.createdAt || bill.billDate || '',
+              validity: bill.validity || '',
+              billExpiryDate: bill.billExpiryDate || ''
+            };
           }
         });
       }
@@ -187,17 +177,43 @@ const navigate = useNavigate();
 
     const handleExcel = () => {
       const worksheet = XLSX.utils.json_to_sheet(
-        filtered.map((property, idx) => ({
-          'S.No': idx + 1,
-          'Rent ID': property.rentId,
-          'Phone Number': property.phoneNumber,
-          'Property Type': property.propertyType,
-          'Property Mode': property.propertyMode,
-          'Rental Amount': property.rentalAmount,
-          'City': property.city,
-          'Status': statusProperties[property.rentId] || property.status,
-          'Created At': moment(property.createdAt).format('YYYY-MM-DD')
-        }))
+        filtered.map((property, idx) => {
+          const bill = billMap[property.rentId];
+          
+          // Get bill date - first from billMap, then from property itself
+          let billDate = '-';
+          if (bill && bill.createdAt) {
+            billDate = new Date(bill.createdAt).toLocaleDateString();
+          } else if (property.billDate) {
+            billDate = new Date(property.billDate).toLocaleDateString();
+          }
+          
+          // Get bill expiry date - first from billMap calculation, then from property
+          let billExpiryDate = '-';
+          if (bill && bill.createdAt && bill.validity) {
+            billExpiryDate = calculateBillExpiryDate(bill.createdAt, bill.validity);
+          } else if (bill && bill.billExpiryDate) {
+            billExpiryDate = bill.billExpiryDate;
+          } else if (property.billExpiryDate) {
+            billExpiryDate = property.billExpiryDate;
+          }
+          
+          return {
+            'S.No': idx + 1,
+            'Rent ID': property.rentId,
+            'Phone Number': property.phoneNumber,
+            'Property Type': property.propertyType,
+            'Property Mode': property.propertyMode,
+            'Rental Amount': property.rentalAmount,
+            'City': property.city,
+            'Plan Name': property.planName || 'N/A',
+            'Bill Date': billDate,
+            'Validity (days)': (bill && bill.validity) ? bill.validity : (property.validity || '-'),
+            'Bill Expiry Date': billExpiryDate,
+            'Status': statusProperties[property.rentId] || property.status,
+            'Created At': moment(property.createdAt).format('YYYY-MM-DD')
+          };
+        })
       );
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'ApprovedProperties');
@@ -205,6 +221,15 @@ const navigate = useNavigate();
       const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
       saveAs(blob, `ApprovedProperties_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
+
+  // Helper functions for property count
+  const getTotalMatchedPropertiesCount = () => {
+    return properties.length;
+  };
+
+  const getFilteredMatchedPropertiesCount = () => {
+    return filtered.length;
+  };
 
   // Helper function to calculate bill expiry date
   const calculateBillExpiryDate = (billDate, validityDays) => {
@@ -338,6 +363,14 @@ if (priceFilter === 'house30') {
       (prop) => String(prop.propertyType) === 'Agricultural Land'
     );
   }
+
+  // Property mode filter
+  if (propertyModeFilter && propertyModeFilter !== '') {
+    result = result.filter(
+      (prop) => String(prop.propertyMode) === propertyModeFilter
+    );
+  }
+
 const parseAmount = (val) => Number(String(val).replace(/,/g, '') || 0);
 
   // Sorting
@@ -363,7 +396,7 @@ useEffect(() => {
 }, [
   properties,
   rentIdSearch,
-  phoneNumberSearch, // <-- Added missing dependency
+  phoneNumberSearch,
   startDate,
   endDate,
   featureStatusFilter,
@@ -373,7 +406,8 @@ useEffect(() => {
   notViewed,
   bankLoan,
   priceFilter,
-  propertyTypeFilter
+  propertyTypeFilter,
+  propertyModeFilter
 ]);
 
 // Reset all filters
@@ -389,6 +423,7 @@ const handleReset = () => {
   setBankLoan('');
   setPriceFilter('');
   setPropertyTypeFilter('');
+  setPropertyModeFilter('');
   setSortOption('');
   setFiltered(properties);
 };
@@ -802,7 +837,13 @@ const handlePrint = (prop) => {
   <option value="yes">Yes</option>
   <option value="no">No </option>
 </select>
-
+</div>
+<div className="col-md-3">
+<select value={propertyModeFilter} onChange={(e) => setPropertyModeFilter(e.target.value)}>
+  <option value="">All Property Mode</option>
+  <option value="Residential">Residential</option>
+  <option value="Commercial">Commercial</option>
+</select>
 </div>
         <div className="col-md-2">
           <Form.Control
@@ -859,6 +900,32 @@ const handlePrint = (prop) => {
               <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
   Excel
 </button>
+      <div style={{ 
+        background: '#6c757d', 
+        color: 'white', 
+        padding: '8px 16px', 
+        borderRadius: '4px', 
+        fontWeight: 'bold',
+        fontSize: '14px',
+        marginBottom: '12px',
+        marginLeft: '8px',
+        display: 'inline-block'
+      }}>
+        Total: {getTotalMatchedPropertiesCount()} Records
+      </div>
+      <div style={{ 
+        background: '#007bff', 
+        color: 'white', 
+        padding: '8px 16px', 
+        borderRadius: '4px', 
+        fontWeight: 'bold',
+        fontSize: '14px',
+        marginBottom: '12px',
+        marginLeft: '8px',
+        display: 'inline-block'
+      }}>
+        Showing: {getFilteredMatchedPropertiesCount()} Records
+      </div>
       {/* Property Table */}
 <div ref={tableRef}>        <Table striped bordered hover responsive className="table-sm align-middle">
           <thead className="sticky-top">

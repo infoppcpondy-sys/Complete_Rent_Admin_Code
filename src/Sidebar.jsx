@@ -565,6 +565,22 @@ const menuItems = [
     </NavLink>
   </li>
 
+
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/ba-free-bills" 
+    className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaFileAlt />
+      RA Free Bills
+    </NavLink>
+  </li>
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/ba-paid-bills" 
+    className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaFileAlt />
+      RA Paid Bills
+    </NavLink>
+  </li>
+  
     <li className="p-0 mt-2">
     <NavLink to="/dashboard/expired-assistant" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
@@ -1088,20 +1104,6 @@ Tenant Assistant Pay Later
     </NavLink>
   </li>
 
-  <li className="p-0 mt-2">
-    <NavLink to="/dashboard/ba-free-bills" 
-    className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-      <FaFileAlt />
-      RA Free Bills
-    </NavLink>
-  </li>
-  <li className="p-0 mt-2">
-    <NavLink to="/dashboard/ba-paid-bills" 
-    className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-      <FaFileAlt />
-      RA Paid Bills
-    </NavLink>
-  </li>
 </ul>
 
 {/* <li className="p-3 mt-2  text-white" 
