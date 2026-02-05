@@ -64,7 +64,10 @@ const MatchedDataTable = () => {
     startDate: '',
     endDate: '',
     ownerPhoneNumber: '',
-    raPhoneNumber: ''
+    raPhoneNumber: '',
+    minRentalAmount: '',
+    maxRentalAmount: '',
+    whatsappStatus: ''
   });
   const navigate = useNavigate();
   const tableRef = useRef();
@@ -282,37 +285,167 @@ const handleSendWhatsApp = async (item, property) => {
     const tenantMessage = `Hello ${tenantName},\n\nGreat news! We have found a potential property match for you - ${propertyDetails} matching your requirements.\n\nProperty Owner: ${ownerName}\nOwner Contact: ${formattedOwnerPhone}\n\nPlease connect with the owner to schedule a viewing.\n\nBest regards,\nRENT PONDY Team!`;
 
     // Send message to owner
-    await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
-      to: formattedOwnerPhone,
-      message: ownerMessage
-    });
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+        to: formattedOwnerPhone,
+        message: ownerMessage
+      });
+    } catch (sendError) {
+      console.error('Error sending message to owner:', sendError.response?.data || sendError.message);
+      setMessage(`Error sending message to owner: ${sendError.response?.data?.message || sendError.message}`);
+      return;
+    }
 
     // Send message to tenant
-    await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
-      to: formattedTenantPhone,
-      message: tenantMessage
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+        to: formattedTenantPhone,
+        message: tenantMessage
+      });
+    } catch (sendError) {
+      console.error('Error sending message to tenant:', sendError.response?.data || sendError.message);
+      setMessage(`Error sending message to tenant: ${sendError.response?.data?.message || sendError.message}`);
+      return;
+    }
+
+    // Update the matched property's WhatsApp status in database
+    console.log('Attempting to update WhatsApp status for BA ID:', item.buyerAssistanceCard._id);
+    
+    const updateResponse = await axios.put(`${process.env.REACT_APP_API_URL}/update-whatsapp-status-matched-property/${item.buyerAssistanceCard._id}`, {
+      rentId: property.rentId,
+      whatsappStatus: 'Send'
     });
 
-    // Update the matched property's WhatsApp status
-    setMatchedData((prevData) =>
-      prevData.map((dataItem) =>
-        dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id
-          ? {
-              ...dataItem,
-              matchedProperties: dataItem.matchedProperties.map((prop) =>
-                prop.rentId === property.rentId
-                  ? { ...prop, Whatsappstatus: 'Sent' }
-                  : prop
-              ),
-            }
-          : dataItem
-      )
-    );
+    console.log('WhatsApp status update response:', updateResponse.data);
+    console.log('Update response status:', updateResponse.status);
+
+    if (!updateResponse.data.success && updateResponse.status !== 200) {
+      console.error('Update API returned non-success status');
+      setMessage(`Warning: Message sent but status update may have failed`);
+      return;
+    }
+
+    // Immediately update the matched property's WhatsApp status in local state
+    setMatchedData((prevData) => {
+      console.log('Previous data length:', prevData.length);
+      const updated = prevData.map((dataItem) => {
+        if (dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id) {
+          console.log('Found matching buyer assistance card, updating properties');
+          return {
+            ...dataItem,
+            matchedProperties: dataItem.matchedProperties.map((prop) => {
+              if (prop.rentId === property.rentId) {
+                console.log('Found matching property, updating Whatsappstatus to Send');
+                return { ...prop, Whatsappstatus: 'Send' };
+              }
+              return prop;
+            }),
+          };
+        }
+        return dataItem;
+      });
+      console.log('Updated data:', updated);
+      return updated;
+    });
+
+    // Add a small delay then refresh data from backend to ensure status is persisted
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      setLoading(true);
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-matched-datas-rent`);
+      console.log('Refreshed data from backend:', res.data);
+      if (res.data.success) {
+        setMatchedData(res.data.data);
+        setFilteredData(res.data.data);
+        console.log('Data refreshed successfully');
+      }
+    } catch (refreshError) {
+      console.error('Error refreshing data:', refreshError);
+    } finally {
+      setLoading(false);
+    }
 
     setMessage(`WhatsApp messages sent successfully to both ${tenantName} and ${ownerName}!`);
+    setTimeout(() => {
+      setMessage("");
+    }, 3000);
   } catch (error) {
     console.error('Error sending WhatsApp message:', error);
     setMessage(`Error sending WhatsApp message: ${error.message}`);
+  }
+};
+
+// ===== UNDO WHATSAPP SEND FUNCTION: Revert status from Send to Not Send =====
+const handleUndoWhatsApp = async (item, property) => {
+  if (!window.confirm('Are you sure you want to undo this WhatsApp status? Status will be reset to "Not Send".')) {
+    return;
+  }
+
+  try {
+    console.log('Attempting to undo WhatsApp status for BA ID:', item.buyerAssistanceCard._id, 'rentId:', property.rentId);
+    
+    // Update the WhatsApp status in database - SEND rentId as required parameter
+    const updateResponse = await axios.put(`${process.env.REACT_APP_API_URL}/update-whatsapp-status-matched-property/${item.buyerAssistanceCard._id}`, {
+      rentId: property.rentId,
+      whatsappStatus: 'Not Send'
+    });
+
+    console.log('WhatsApp undo response:', updateResponse.data);
+    console.log('Update response status:', updateResponse.status);
+
+    if (!updateResponse.data.success && updateResponse.status !== 200) {
+      console.error('Update API returned non-success status');
+      setMessage(`Warning: Undo request may have failed`);
+      return;
+    }
+
+    // Immediately update the WhatsApp status in local state - ONLY for the specific item
+    setMatchedData((prevData) => {
+      console.log('Previous data length:', prevData.length);
+      const updated = prevData.map((dataItem) => {
+        if (dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id) {
+          console.log('Found matching buyer assistance card, reverting Whatsappstatus to Not Send');
+          return {
+            ...dataItem,
+            buyerAssistanceCard: { ...dataItem.buyerAssistanceCard, Whatsappstatus: 'Not Send' },
+            matchedProperties: dataItem.matchedProperties.map((prop) => ({
+              ...prop,
+              Whatsappstatus: 'Not Send'
+            })),
+          };
+        }
+        return dataItem;
+      });
+      console.log('Updated data:', updated);
+      return updated;
+    });
+
+    // Add a small delay then refresh data from backend to ensure status is persisted
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      setLoading(true);
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-matched-datas-rent`);
+      console.log('Refreshed data from backend:', res.data);
+      if (res.data.success) {
+        setMatchedData(res.data.data);
+        setFilteredData(res.data.data);
+        console.log('Data refreshed successfully');
+      }
+    } catch (refreshError) {
+      console.error('Error refreshing data:', refreshError);
+    } finally {
+      setLoading(false);
+    }
+
+    setMessage(`WhatsApp status reverted to "Not Send"!`);
+    setTimeout(() => {
+      setMessage("");
+    }, 3000);
+  } catch (error) {
+    console.error('Error undoing WhatsApp status:', error);
+    setMessage(`Error undoing WhatsApp status: ${error.message}`);
   }
 };
 
@@ -337,7 +470,7 @@ const handleSendAllWhatsApp = async () => {
     filteredResults.forEach((item) => {
       item.matchedProperties.forEach((property) => {
         // Skip if already sent
-        if (property.Whatsappstatus !== 'Sent') {
+        if (property.Whatsappstatus !== 'Send') {
           messagePairs.push({ item, property });
         }
       });
@@ -388,18 +521,36 @@ const handleSendAllWhatsApp = async () => {
         const tenantMessage = `Hello ${tenantName},\n\nGreat news! We have found a potential property match for you - ${propertyDetails} matching your requirements.\n\nProperty Owner: ${ownerName}\nOwner Contact: ${formattedOwnerPhone}\n\nPlease connect with the owner to schedule a viewing.\n\nBest regards,\nRENT PONDY Team!`;
 
         // Send message to owner
-        await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
-          to: formattedOwnerPhone,
-          message: ownerMessage
-        });
+        try {
+          await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+            to: formattedOwnerPhone,
+            message: ownerMessage
+          });
+        } catch (ownerSendError) {
+          console.error('Error sending message to owner:', ownerSendError.response?.data || ownerSendError.message);
+          failureCount++;
+          continue;
+        }
 
         // Send message to tenant
-        await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
-          to: formattedTenantPhone,
-          message: tenantMessage
+        try {
+          await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, {
+            to: formattedTenantPhone,
+            message: tenantMessage
+          });
+        } catch (tenantSendError) {
+          console.error('Error sending message to tenant:', tenantSendError.response?.data || tenantSendError.message);
+          failureCount++;
+          continue;
+        }
+
+        // Update the matched property's WhatsApp status in database
+        await axios.put(`${process.env.REACT_APP_API_URL}/update-whatsapp-status-matched-property/${item.buyerAssistanceCard._id}`, {
+          rentId: property.rentId,
+          whatsappStatus: 'Send'
         });
 
-        // Update the matched property's WhatsApp status
+        // Update the matched property's WhatsApp status in local state
         setMatchedData((prevData) =>
           prevData.map((dataItem) =>
             dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id
@@ -407,7 +558,7 @@ const handleSendAllWhatsApp = async () => {
                   ...dataItem,
                   matchedProperties: dataItem.matchedProperties.map((prop) =>
                     prop.rentId === property.rentId
-                      ? { ...prop, Whatsappstatus: 'Sent' }
+                      ? { ...prop, Whatsappstatus: 'Send' }
                       : prop
                   ),
                 }
@@ -423,6 +574,9 @@ const handleSendAllWhatsApp = async () => {
     }
 
     setMessage(`WhatsApp messages sent successfully to ${successCount} matches. ${failureCount > 0 ? `${failureCount} failed.` : ''}`);
+    
+    // Refresh data from backend to ensure status is persisted
+    fetchMatchedData();
   } catch (error) {
     console.error('Error in send all WhatsApp:', error);
     setMessage(`Error sending all WhatsApp messages: ${error.message}`);
@@ -436,14 +590,6 @@ const handleSendAllWhatsApp = async () => {
   
   useEffect(() => {
     fetchMatchedData();
-    
-    // Set up polling interval to refresh data every 15 seconds for real-time count updates
-    const refreshInterval = setInterval(() => {
-      fetchMatchedData();
-    }, 15000);
-    
-    // Cleanup interval on component unmount
-    return () => clearInterval(refreshInterval);
   }, []);
 
   const fetchMatchedData = async () => {
@@ -461,6 +607,11 @@ const handleSendAllWhatsApp = async () => {
   };
 const applyFilters = () => {
   return filteredData.map(item => {
+    // Check WhatsApp Status filter
+    const matchesWhatsappStatus = filters.whatsappStatus
+      ? item.buyerAssistanceCard?.Whatsappstatus === filters.whatsappStatus
+      : true;
+
     const matched = item.matchedProperties.filter(property => {
       // Check Rent ID (fixed: was propertyId, should be rentId)
       const matchesId = filters.propertyId
@@ -487,7 +638,15 @@ const applyFilters = () => {
       const startMatch = filters.startDate ? createdDate >= new Date(filters.startDate + 'T00:00:00') : true;
       const endMatch = filters.endDate ? createdDate <= new Date(filters.endDate + 'T23:59:59') : true;
 
-      return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch;
+      // Check Rental Amount range
+      const minMatch = filters.minRentalAmount 
+        ? property.rentalAmount >= parseFloat(filters.minRentalAmount) 
+        : true;
+      const maxMatch = filters.maxRentalAmount 
+        ? property.rentalAmount <= parseFloat(filters.maxRentalAmount) 
+        : true;
+
+      return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch && minMatch && maxMatch && matchesWhatsappStatus;
     });
 
     return { ...item, matchedProperties: matched };
@@ -502,7 +661,10 @@ const handleResetFilters = () => {
     startDate: '',
     endDate: '',
     ownerPhoneNumber: '',
-    raPhoneNumber: ''
+    raPhoneNumber: '',
+    minRentalAmount: '',
+    maxRentalAmount: '',
+    whatsappStatus: ''
   });
 };
 
@@ -519,13 +681,10 @@ const getFilteredMatchedPropertiesCount = () => {
 
   // ===== HELPER FUNCTION: Calculate WhatsApp Sent count =====
 const getWhatsAppSentCount = () => {
-  const filtered = applyFilters();
   let count = 0;
-  filtered.forEach(item => {
-    if (item.matchedProperties && Array.isArray(item.matchedProperties)) {
-      item.matchedProperties.forEach(prop => {
-        if (prop.Whatsappstatus === 'Sent') count++;
-      });
+  applyFilters().forEach(item => {
+    if (item.buyerAssistanceCard && item.buyerAssistanceCard.Whatsappstatus === 'Send') {
+      count += item.matchedProperties?.length || 0;
     }
   });
   return count;
@@ -533,13 +692,10 @@ const getWhatsAppSentCount = () => {
 
   // ===== HELPER FUNCTION: Calculate WhatsApp Not Sent count =====
 const getWhatsAppNotSentCount = () => {
-  const filtered = applyFilters();
   let count = 0;
-  filtered.forEach(item => {
-    if (item.matchedProperties && Array.isArray(item.matchedProperties)) {
-      item.matchedProperties.forEach(prop => {
-        if (prop.Whatsappstatus !== 'Sent') count++;
-      });
+  applyFilters().forEach(item => {
+    if (item.buyerAssistanceCard && item.buyerAssistanceCard.Whatsappstatus !== 'Send') {
+      count += item.matchedProperties?.length || 0;
     }
   });
   return count;
@@ -829,6 +985,29 @@ const handlePrintPDF = () => {
             />
           </div>
 
+          
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Min Rental Amount</label>
+            <input
+              type="number"
+              placeholder="Enter Minimum Rental Amount"
+              value={filters.minRentalAmount}
+              onChange={e => setFilters({ ...filters, minRentalAmount: e.target.value })}
+              className="form-control"
+            />
+          </div>
+
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Max Rental Amount</label>
+            <input
+              type="number"
+              placeholder="Enter Maximum Rental Amount"
+              value={filters.maxRentalAmount}
+              onChange={e => setFilters({ ...filters, maxRentalAmount: e.target.value })}
+              className="form-control"
+            />
+          </div>
+
           <div className="mb-0">
             <label className="form-label fw-bold" style={{marginBottom: '5px'}}>From Date</label>
             <input
@@ -849,6 +1028,19 @@ const handlePrintPDF = () => {
               onChange={e => setFilters({ ...filters, endDate: e.target.value })}
               className="form-control"
             />
+          </div>
+
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>WhatsApp Status</label>
+            <select
+              value={filters.whatsappStatus}
+              onChange={e => setFilters({ ...filters, whatsappStatus: e.target.value })}
+              className="form-control"
+            >
+              <option value="">All</option>
+              <option value="Send">Send</option>
+              <option value="Not Send">Not Send</option>
+            </select>
           </div>
 
           <button onClick={handleResetFilters} className="btn btn-primary" style={{marginTop: '20px'}}>
@@ -888,7 +1080,7 @@ const handlePrintPDF = () => {
         fontWeight: 'bold',
         fontSize: '14px'
       }}>
-        Sent: {getWhatsAppSentCount()}
+        Send: {getWhatsAppSentCount()}
       </div>
       <div style={{ 
         background: '#ffc107', 
@@ -898,7 +1090,7 @@ const handlePrintPDF = () => {
         fontWeight: 'bold',
         fontSize: '14px'
       }}>
-        Not Sent: {getWhatsAppNotSentCount()}
+        Not Send: {getWhatsAppNotSentCount()}
       </div>
       <button 
         className="btn btn-primary" 
@@ -946,6 +1138,7 @@ const handlePrintPDF = () => {
               <th>Status</th>
               <th>Whatsapp Status</th>
               <th>Send WhatsApp</th>
+              <th>Undo WhatsApp</th>
               <th>Action</th>
                <th>Views Details</th>
             </tr>
@@ -1003,13 +1196,13 @@ const handlePrintPDF = () => {
                     )}
                   </td>
                   <td>
-                    {property.Whatsappstatus === 'Sent' ? (
+                    {item.buyerAssistanceCard.Whatsappstatus === 'Send' ? (
                       <Badge bg="success" className="d-flex align-items-center">
-                        ✓ Sent
+                        ✓ Send
                       </Badge>
                     ) : (
                       <Badge bg="warning" className="d-flex align-items-center">
-                        ✗ Not Sent
+                        ✗ Not Send
                       </Badge>
                     )}
                   </td>
@@ -1018,11 +1211,23 @@ const handlePrintPDF = () => {
                       variant="outline-primary"
                       size="sm"
                       onClick={() => handleSendWhatsApp(item, property)}
-                      disabled={property.Whatsappstatus === 'Sent'}
+                      disabled={item.buyerAssistanceCard.Whatsappstatus === 'Send'}
                       className="d-flex align-items-center"
-                      title={property.Whatsappstatus === 'Sent' ? 'Already sent' : 'Send WhatsApp to Owner & Tenant'}
+                      title={item.buyerAssistanceCard.Whatsappstatus === 'Send' ? 'Already sent' : 'Send WhatsApp to Owner & Tenant'}
                     >
                       Send WhatsApp
+                    </Button>
+                  </td>
+                  <td>
+                    <Button
+                      variant="outline-warning"
+                      size="sm"
+                      onClick={() => handleUndoWhatsApp(item)}
+                      disabled={item.buyerAssistanceCard.Whatsappstatus !== 'Send'}
+                      className="d-flex align-items-center"
+                      title={item.buyerAssistanceCard.Whatsappstatus === 'Send' ? 'Revert to Not Send' : 'Already Not Send'}
+                    >
+                      Undo WhatsApp
                     </Button>
                   </td>
     
