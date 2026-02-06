@@ -724,9 +724,11 @@ const applyFilters = () => {
         : true;
 
       // Check WhatsApp Status filter on individual property (not buyer assistance card)
-      const matchesWhatsappStatus = filters.whatsappStatus
-        ? property.Whatsappstatus === filters.whatsappStatus
-        : true;
+      let matchesWhatsappStatus = true;
+      if (filters.whatsappStatus) {
+        const whatsappStatus = property.Whatsappstatus || 'Not Send';
+        matchesWhatsappStatus = whatsappStatus === filters.whatsappStatus;
+      }
 
       return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch && minMatch && maxMatch && matchesWhatsappStatus;
     });

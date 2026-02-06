@@ -119,6 +119,14 @@ const BuyerAssistanceTable = () => {
     return date.toLocaleDateString();
   };
 
+  const getTotalMatchedPropertiesCount = () => {
+    return buyerRequests.length;
+  };
+
+  const getFilteredMatchedPropertiesCount = () => {
+    return filteredRequests.length;
+  };
+
   return (
     <div className="mt-5">
       <div className="container mt-3">
@@ -167,9 +175,31 @@ const BuyerAssistanceTable = () => {
           </div>
         </form>
       </div>
-              <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
-  Print
-</button>
+      <div className="d-flex justify-content-start mb-3 gap-2 align-items-center flex-wrap">
+        <button className="btn btn-secondary" style={{background:"tomato"}} onClick={handlePrint}>
+          Print
+        </button>
+        <div style={{ 
+          background: '#6c757d', 
+          color: 'white', 
+          padding: '8px 16px', 
+          borderRadius: '4px', 
+          fontWeight: 'bold',
+          fontSize: '14px'
+        }}>
+          Total: {getTotalMatchedPropertiesCount()} Records
+        </div>
+        <div style={{ 
+          background: '#007bff', 
+          color: 'white', 
+          padding: '8px 16px', 
+          borderRadius: '4px', 
+          fontWeight: 'bold',
+          fontSize: '14px'
+        }}>
+          Showing: {getFilteredMatchedPropertiesCount()} Records
+        </div>
+      </div>
       <div className="mt-4">
         <h3 className="mb-3">Tentant Assistance Records</h3>
 <div ref={tableRef}>
