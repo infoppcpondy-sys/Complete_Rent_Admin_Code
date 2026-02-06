@@ -254,7 +254,7 @@ const handleUndoDelete = async (Ra_Id) => {
   Print
 </button>
 
-      <h2 className="mb-4 text-center">Ba Free Bills Datas</h2>
+      <h2 className="mb-4 text-center">Tenant Free Bills Data</h2>
     <div ref={tableRef}>  <Table striped bordered hover responsive className="table-sm align-middle">
         <thead className="sticky-top">
           <tr>
