@@ -58,6 +58,10 @@ const MatchedDataTable = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [message, setMessage] = useState(null);
+  const [freeProperties, setFreeProperties] = useState([]);
+  const [paidProperties, setPaidProperties] = useState([]);
+  const [freeTenants, setFreeTenants] = useState([]);
+  const [paidTenants, setPaidTenants] = useState([]);
   const [filters, setFilters] = useState({
     propertyId: '',
     raId: '',
@@ -67,7 +71,9 @@ const MatchedDataTable = () => {
     raPhoneNumber: '',
     minRentalAmount: '',
     maxRentalAmount: '',
-    whatsappStatus: ''
+    whatsappStatus: '',
+    ownerPlan: '',
+    tenantPlan: ''
   });
   const navigate = useNavigate();
   const tableRef = useRef();
@@ -670,6 +676,8 @@ const handleSendAllWhatsApp = async () => {
 
   useEffect(() => {
     fetchMatchedData();
+    fetchOwnerPlanData();
+    fetchTenantPlanData();
   }, []);
 
   const fetchMatchedData = async () => {
@@ -686,6 +694,120 @@ const handleSendAllWhatsApp = async () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchOwnerPlanData = async () => {
+    try {
+      // Fetch free properties - same structure as FreeCar.jsx
+      const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+      const freeData = freeRes.data.data || [];
+      const freeProps = [];
+      
+      freeData.forEach(item => {
+        if (item.properties && Array.isArray(item.properties)) {
+          item.properties.forEach(prop => {
+            if (prop.rentId) {
+              freeProps.push(String(prop.rentId).trim());
+            }
+          });
+        }
+      });
+      
+      console.log("Free properties loaded successfully:", freeProps);
+      setFreeProperties(freeProps);
+    } catch (error) {
+      console.error("Error fetching free properties:", error.message);
+    }
+
+    try {
+      // Fetch paid properties - same structure as PaidCar.jsx
+      const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+      const paidData = paidRes.data.data || [];
+      const paidProps = [];
+      
+      paidData.forEach(item => {
+        if (item.properties && Array.isArray(item.properties)) {
+          item.properties.forEach(prop => {
+            if (prop.rentId) {
+              paidProps.push(String(prop.rentId).trim());
+            }
+          });
+        }
+      });
+      
+      console.log("Paid properties loaded successfully:", paidProps);
+      setPaidProperties(paidProps);
+    } catch (error) {
+      console.error("Error fetching paid properties:", error.message);
+    }
+  };
+
+  const getOwnerPlan = (rentId) => {
+    const cleanRentId = String(rentId).trim();
+    
+    if (freeProperties && freeProperties.length > 0 && freeProperties.includes(cleanRentId)) {
+      console.log("Found in FREE:", cleanRentId);
+      return 'Free';
+    } else if (paidProperties && paidProperties.length > 0 && paidProperties.includes(cleanRentId)) {
+      console.log("Found in PAID:", cleanRentId);
+      return 'Paid';
+    }
+    
+    console.log("Not found in either:", cleanRentId, "Free list:", freeProperties, "Paid list:", paidProperties);
+    return '-';
+  };
+
+  const fetchTenantPlanData = async () => {
+    try {
+      // Fetch free tenant bills - same structure as BaFreeBills.jsx
+      const freeBillsRes = await axios.get(`${process.env.REACT_APP_API_URL}/buyer-bills/free-with-assistance-rent`);
+      const freeBillsData = freeBillsRes.data.data || [];
+      const freeTenantsList = [];
+      
+      freeBillsData.forEach(item => {
+        if (item.buyerAssistance && item.buyerAssistance.Ra_Id) {
+          freeTenantsList.push(String(item.buyerAssistance.Ra_Id).trim());
+        }
+      });
+      
+      console.log("Free tenants loaded successfully:", freeTenantsList);
+      setFreeTenants(freeTenantsList);
+    } catch (error) {
+      console.error("Error fetching free tenant bills:", error.message);
+    }
+
+    try {
+      // Fetch paid tenant bills - same structure as BaPaidBill.jsx
+      const paidBillsRes = await axios.get(`${process.env.REACT_APP_API_URL}/buyer-bills/non-free-with-assistance-rent`);
+      const paidBillsData = paidBillsRes.data.data || [];
+      const paidTenantsList = [];
+      
+      paidBillsData.forEach(item => {
+        if (item.buyerAssistance && item.buyerAssistance.Ra_Id) {
+          paidTenantsList.push(String(item.buyerAssistance.Ra_Id).trim());
+        }
+      });
+      
+      console.log("Paid tenants loaded successfully:", paidTenantsList);
+      setPaidTenants(paidTenantsList);
+    } catch (error) {
+      console.error("Error fetching paid tenant bills:", error.message);
+    }
+  };
+
+  const getTenantPlan = (raId) => {
+    const cleanRaId = String(raId).trim();
+    
+    if (freeTenants && freeTenants.length > 0 && freeTenants.includes(cleanRaId)) {
+      console.log("Found tenant in FREE:", cleanRaId);
+      return 'Free';
+    } else if (paidTenants && paidTenants.length > 0 && paidTenants.includes(cleanRaId)) {
+      console.log("Found tenant in PAID:", cleanRaId);
+      return 'Paid';
+    }
+    
+    console.log("Tenant not found in either:", cleanRaId, "Free list:", freeTenants, "Paid list:", paidTenants);
+    return '-';
   };
 const applyFilters = () => {
   return filteredData.map(item => {
@@ -730,7 +852,21 @@ const applyFilters = () => {
         matchesWhatsappStatus = whatsappStatus === filters.whatsappStatus;
       }
 
-      return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch && minMatch && maxMatch && matchesWhatsappStatus;
+      // Check Owner Plan filter
+      let matchesOwnerPlan = true;
+      if (filters.ownerPlan) {
+        const ownerPlan = getOwnerPlan(property.rentId);
+        matchesOwnerPlan = ownerPlan === filters.ownerPlan;
+      }
+
+      // Check Tenant Plan filter
+      let matchesTenantPlan = true;
+      if (filters.tenantPlan) {
+        const tenantPlan = getTenantPlan(item.buyerAssistanceCard.Ra_Id);
+        matchesTenantPlan = tenantPlan === filters.tenantPlan;
+      }
+
+      return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch && minMatch && maxMatch && matchesWhatsappStatus && matchesOwnerPlan && matchesTenantPlan;
     });
 
     return { ...item, matchedProperties: matched };
@@ -748,7 +884,9 @@ const handleResetFilters = () => {
     raPhoneNumber: '',
     minRentalAmount: '',
     maxRentalAmount: '',
-    whatsappStatus: ''
+    whatsappStatus: '',
+    ownerPlan: '',
+    tenantPlan: ''
   });
 };
 
@@ -1137,6 +1275,32 @@ const handlePrintPDF = () => {
             </select>
           </div>
 
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Owner Plan</label>
+            <select
+              value={filters.ownerPlan}
+              onChange={e => setFilters({ ...filters, ownerPlan: e.target.value })}
+              className="form-control"
+            >
+              <option value="">All</option>
+              <option value="Free">Free</option>
+              <option value="Paid">Paid</option>
+            </select>
+          </div>
+
+          <div className="mb-0">
+            <label className="form-label fw-bold" style={{marginBottom: '5px'}}>Tenant Plan</label>
+            <select
+              value={filters.tenantPlan}
+              onChange={e => setFilters({ ...filters, tenantPlan: e.target.value })}
+              className="form-control"
+            >
+              <option value="">All</option>
+              <option value="Free">Free</option>
+              <option value="Paid">Paid</option>
+            </select>
+          </div>
+
           <button onClick={handleResetFilters} className="btn btn-primary" style={{marginTop: '20px'}}>
             Reset All
           </button>
@@ -1229,6 +1393,8 @@ const handlePrintPDF = () => {
               <th><FaPhone className="me-1" /> Tenant Contact</th>
               <th><FaMapMarkerAlt className="me-1" /> Tenant Area</th>
               <th><FaMapMarkerAlt className="me-1" /> Tenant City</th>
+              <th>Owner Plan</th>
+              <th>Tenant Plan</th>
               <th>Status</th>
               <th>Whatsapp Status</th>
               <th>Send WhatsApp</th>
@@ -1278,6 +1444,24 @@ const handlePrintPDF = () => {
                   </td>
                   <td>{item.buyerAssistanceCard.area || 'N/A'}</td>
                   <td>{item.buyerAssistanceCard.city || 'N/A'}</td>
+                  <td>
+                    {getOwnerPlan(property.rentId) === 'Free' ? (
+                      <Badge bg="info">{getOwnerPlan(property.rentId)}</Badge>
+                    ) : getOwnerPlan(property.rentId) === 'Paid' ? (
+                      <Badge bg="success">{getOwnerPlan(property.rentId)}</Badge>
+                    ) : (
+                      <span>{getOwnerPlan(property.rentId)}</span>
+                    )}
+                  </td>
+                  <td>
+                    {getTenantPlan(item.buyerAssistanceCard.Ra_Id) === 'Free' ? (
+                      <Badge bg="info">{getTenantPlan(item.buyerAssistanceCard.Ra_Id)}</Badge>
+                    ) : getTenantPlan(item.buyerAssistanceCard.Ra_Id) === 'Paid' ? (
+                      <Badge bg="success">{getTenantPlan(item.buyerAssistanceCard.Ra_Id)}</Badge>
+                    ) : (
+                      <span>{getTenantPlan(item.buyerAssistanceCard.Ra_Id)}</span>
+                    )}
+                  </td>
                   <td>
                     {property.isDeleted ? (
                       <Badge bg="danger" className="d-flex align-items-center">
