@@ -6,6 +6,7 @@ import { Table } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import { useSelector } from "react-redux";
+import * as XLSX from "xlsx";
 
 const FreePlansWithProperties = () => {
   const [data, setData] = useState([]);
@@ -83,6 +84,81 @@ const handleDelete = async (Ra_Id) => {
     `);
     printWindow.document.close();
     printWindow.print();
+  };
+
+  const handleExcelExport = () => {
+    try {
+      // Filter data the same way as display
+      const filteredData = data.filter((item) => {
+        const prop = item.buyerAssistance;
+        if (!prop) return false;
+
+        const matchesBaId = String(prop.Ra_Id || "").toLowerCase().includes(filters.Ra_Id.toLowerCase());
+        const matchesBillNo = item.bill.billNo?.toLowerCase().includes(filters.billNo.toLowerCase());
+        const matchesPlanName = item.bill.planName?.toLowerCase().includes(filters.planName.toLowerCase());
+        const matchesExpiryDate = filters.planExpiryDate
+          ? moment(item.bill.planExpiryDate).format("YYYY-MM-DD") === filters.planExpiryDate
+          : true;
+
+        return matchesBaId && matchesBillNo && matchesPlanName && matchesExpiryDate;
+      });
+
+      // Prepare data for Excel
+      const excelData = filteredData.map((item, index) => {
+        const prop = item.buyerAssistance;
+        return {
+          "Serial No": index + 1,
+          "RA ID": prop.Ra_Id,
+          "Phone Number": prop.phoneNumber,
+          "Price": `₹${prop.minPrice} - ₹${prop.maxPrice}`,
+          "Property Mode": prop.propertyMode,
+          "Property Type": prop.propertyType,
+          "Status": prop.ra_status,
+          "Created By": prop.ra_postBy,
+          "Created At": moment(prop.createdAt).format("YYYY-MM-DD HH:mm"),
+          "Updated At": moment(prop.updatedAt).format("YYYY-MM-DD HH:mm"),
+          "Plan Name": item.bill.planName,
+          "Bill No": item.bill.billNo,
+          "Admin": item.bill.adminName,
+          "Office": item.bill.adminOffice,
+          "Plan Expiry": moment(item.bill.planExpiryDate).format("YYYY-MM-DD"),
+          "Is Deleted": prop.isDeleted ? "Yes" : "No"
+        };
+      });
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Paid Bills");
+
+      // Set column widths
+      const colWidths = [
+        { wch: 10 }, // Serial No
+        { wch: 12 }, // RA ID
+        { wch: 15 }, // Phone Number
+        { wch: 20 }, // Price
+        { wch: 15 }, // Property Mode
+        { wch: 15 }, // Property Type
+        { wch: 12 }, // Status
+        { wch: 15 }, // Created By
+        { wch: 18 }, // Created At
+        { wch: 18 }, // Updated At
+        { wch: 15 }, // Plan Name
+        { wch: 12 }, // Bill No
+        { wch: 15 }, // Admin
+        { wch: 15 }, // Office
+        { wch: 15 }, // Plan Expiry
+        { wch: 12 }  // Is Deleted
+      ];
+      ws["!cols"] = colWidths;
+
+      // Write file
+      XLSX.writeFile(wb, `Tenant_Paid_Bills_${moment().format("YYYY-MM-DD_HH-mm-ss")}.xlsx`);
+      alert("Excel file exported successfully!");
+    } catch (error) {
+      console.error("Excel export error:", error);
+      alert("Failed to export Excel file");
+    }
   };
 const handleUndoDelete = async (Ra_Id) => {
   const confirmed = window.confirm(`Are you sure you want to undo delete for BA ID: ${Ra_Id}?`);
@@ -243,6 +319,9 @@ const handleUndoDelete = async (Ra_Id) => {
 
               <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
+</button>
+              <button className="btn btn-success mb-3 mt-2 ms-2" onClick={handleExcelExport}>
+  Excel
 </button>
       <h2 className="mb-4 text-center">Tenant Paid Bills Data</h2>
   <div ref={tableRef}>    <Table striped bordered hover responsive className="table-sm align-middle">

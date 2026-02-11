@@ -42,6 +42,7 @@ const ApprovedCar = () => {
   const [priceFilter, setPriceFilter] = useState('');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState('');
   const [propertyModeFilter, setPropertyModeFilter] = useState('');
+  const [billTypeFilter, setBillTypeFilter] = useState('');
   const [billMap, setBillMap] = useState({});
   
 
@@ -264,6 +265,14 @@ const navigate = useNavigate();
     }
   };
 
+  // Helper function to determine bill type
+  const getBillType = (rentId) => {
+    if (billMap[rentId]) {
+      return 'Office Bill';
+    }
+    return 'Online Bill';
+  };
+
   // Search and filter functionality
 const handleSearch = () => {
   let result = [...properties];
@@ -371,6 +380,11 @@ if (priceFilter === 'house30') {
     );
   }
 
+  // Bill type filter
+  if (billTypeFilter && billTypeFilter !== '') {
+    result = result.filter((prop) => getBillType(prop.rentId) === billTypeFilter);
+  }
+
 const parseAmount = (val) => Number(String(val).replace(/,/g, '') || 0);
 
   // Sorting
@@ -407,7 +421,8 @@ useEffect(() => {
   bankLoan,
   priceFilter,
   propertyTypeFilter,
-  propertyModeFilter
+  propertyModeFilter,
+  billTypeFilter
 ]);
 
 // Reset all filters
@@ -424,6 +439,7 @@ const handleReset = () => {
   setPriceFilter('');
   setPropertyTypeFilter('');
   setPropertyModeFilter('');
+  setBillTypeFilter('');
   setSortOption('');
   setFiltered(properties);
 };
@@ -816,6 +832,7 @@ const handlePrint = (prop) => {
   backgroundColor: '#fff' 
 }} className="row mb-3">
         <div className="col-md-3">
+          <label>Rent ID</label>
           <Form.Control
             type="text"
             placeholder="Search by RENT ID"
@@ -843,6 +860,14 @@ const handlePrint = (prop) => {
   <option value="">All Property Mode</option>
   <option value="Residential">Residential</option>
   <option value="Commercial">Commercial</option>
+</select>
+</div>
+<div className="col-md-3">
+<label>Bill Type</label>
+<select value={billTypeFilter} onChange={(e) => setBillTypeFilter(e.target.value)}>
+  <option value="">All</option>
+  <option value="Office Bill">Office Bill</option>
+  <option value="Online Bill">Online Bill</option>
 </select>
 </div>
         <div className="col-md-2">
@@ -949,6 +974,8 @@ const handlePrint = (prop) => {
               <th>Set rentId Status</th>
               <th>Set rentId Assigned Date</th>
               <th>Set rentId Assigned PhoneNumber</th>
+              <th>Bill no</th>
+              <th>Bill Type</th>
               <th>Plan Name</th>
               <th>Plan Type</th>
           <th>Plan Created</th>
@@ -1023,6 +1050,8 @@ const handlePrint = (prop) => {
   <td>{prop.assignedPhoneNumber || 'N/A'}</td>
   <td>{prop.setrentIdAssignedAt ? new Date(prop.setrentIdAssignedAt).toLocaleDateString() : 'N/A'}</td>
  
+                  <td>{billMap[prop.rentId]?.billNo || '-'}</td>
+                  <td>{getBillType(prop.rentId)}</td>
                   <td>{prop.planName}</td>
                   <td>{prop.packageType}</td>
               <td>{new Date(prop.planCreatedAt).toLocaleDateString()}</td>
