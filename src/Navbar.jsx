@@ -53,7 +53,12 @@ const AppNavbar = ({ toggleSidebar }) => {
   }, [adminName]);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminName"); // remove from storage
+    // Clear all authentication-related data from localStorage
+    localStorage.removeItem("adminName");
+    localStorage.removeItem("adminRole");
+    localStorage.removeItem("adminUserType");
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("otpVerified");
     sessionStorage.removeItem("navbarRefreshed"); // allow refresh next login
     setAdminName("");
     navigate("/admin"); // redirect to login

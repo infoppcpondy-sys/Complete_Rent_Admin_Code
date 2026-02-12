@@ -3,7 +3,7 @@
 
 
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import Admin from "./Admin";
@@ -20,9 +20,24 @@ import { useDispatch } from 'react-redux';
 import { setName } from './redux/adminSlice';
 import { setRole } from './redux/adminSlice';
 
-
-
-
+// Protected Route - Check if user is authenticated and has completed OTP
+const ProtectedDashboard = () => {
+  const isAuthenticated = localStorage.getItem('isAuthenticated');
+  const adminName = localStorage.getItem('adminName');
+  const adminRole = localStorage.getItem('adminRole');
+  const otpVerified = localStorage.getItem('otpVerified');
+  
+  // Check all required authentication conditions
+  if (!isAuthenticated || isAuthenticated !== 'true' || 
+      !adminName || !adminRole || 
+      !otpVerified || otpVerified !== 'true') {
+    // Clear any partial authentication data
+    localStorage.clear();
+    return <Navigate to="/admin" replace />;
+  }
+  
+  return <Dashboard />;
+};
 
 const App = () => {
 
@@ -51,7 +66,7 @@ const App = () => {
     <Router basename="/process">
     <Routes>
       <Route path="/admin" element={<Admin />} />
-      <Route path="/dashboard/*" element={<Dashboard />} />
+      <Route path="/dashboard/*" element={<ProtectedDashboard />} />
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
     </Router>

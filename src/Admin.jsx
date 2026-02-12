@@ -70,6 +70,13 @@ const Admin = () => {
     if (loginRes.status === 200 && loginMessage?.includes("login successful")) {
       // Skip OTP for Marketing role
       if (role.toLowerCase() === 'marketing') {
+        // Set authentication flag and user data to localStorage
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('adminName', name);
+        localStorage.setItem('adminRole', role);
+        localStorage.setItem('adminUserType', userType);
+        localStorage.setItem('otpVerified', 'true'); // Marketing skips OTP but is verified
+        
         dispatch(setAdminData({
           name: name,
           role: role,
@@ -141,6 +148,13 @@ const Admin = () => {
       );
 
       if (otpRes.data.success) {
+        // Set authentication flag and user data to localStorage
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('adminName', formData.name);
+        localStorage.setItem('adminRole', formData.role);
+        localStorage.setItem('adminUserType', formData.userType);
+        localStorage.setItem('otpVerified', 'true'); // Track OTP verification
+        
         dispatch(setAdminData({
           name: formData.name,
           role: formData.role,

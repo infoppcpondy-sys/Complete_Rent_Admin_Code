@@ -108,7 +108,6 @@ import ViewedProperties from './Detail/ViewedProperty';
 import NotificationForm from './NotificationSend';
 import ProfileTable from './GetUserProfile';
 import GetUserCalledList from './GetUserCalledList';
-import axios from 'axios';
 import DeletedProperties from './DeletedProperties';
 import PyProperty from './Detail/PyProperty';
 import UserViewsTable from './AdminViewsTable';
@@ -368,6 +367,24 @@ const routes = [
 const Dashboard = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Safety check - if not authenticated, logout
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    const adminName = localStorage.getItem('adminName');
+    const adminRole = localStorage.getItem('adminRole');
+    const otpVerified = localStorage.getItem('otpVerified');
+    
+    // Check all required authentication conditions
+    if (!isAuthenticated || isAuthenticated !== 'true' || 
+        !adminName || !adminRole || 
+        !otpVerified || otpVerified !== 'true') {
+      // Not authenticated - force logout and redirect
+      console.warn('⚠️ Dashboard: Authentication failed, redirecting to login');
+      localStorage.clear();
+      window.location.href = '/process/admin';
+    }
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => !prev);
