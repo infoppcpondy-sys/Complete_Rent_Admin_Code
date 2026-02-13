@@ -1391,7 +1391,18 @@ All Views Data        </NavLink>
       
 </ul>
 
-
+<li className="p-3 mt-2  text-white" 
+   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
+     <NavLink 
+       to="/dashboard/exclusive-location"
+       onClick={toggleSidebar}
+       className={({ isActive }) => (isActive ? "active-link rounded" : "")}
+       style={{display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white'}}
+     >
+       <FaUser style={{marginRight:'10px '}}/>
+       Exclusive Location
+     </NavLink>
+</li>
 
 
     

@@ -184,7 +184,7 @@ import { Table } from 'react-bootstrap';
 const allFiles = [
   "Statistics", "Login Report", "Login Verify Directly", "Direct Logout Users", "Admin Report", "Office", "AddPlan", "BuyerPlan",
   "State", "District", "City", "Area", "AdminSetForm", "Notification Send", "Admin GetForm",
-  "Get User Profile", "Add Property", "Manage Property", "Text Editer ", "Search Property ",
+  "Get User Profile", "Add Property", "Manage Property", "Text Editer ", "Search Property ", "605010",
   "Approved Property", "PreApproved Property ", "Delete Properties", "Pending Property",
   "Removed Property", "Expire Property", "PPC Property ", "Feature Property", "Paid Property ",
   "Free Property", "Agent Property", " Subscriber", "Free Bills",

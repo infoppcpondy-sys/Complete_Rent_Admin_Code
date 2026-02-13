@@ -178,6 +178,7 @@ import GetAllContactFormDatas from './GetAllContactFormDatas';
 import OwnerTenantMenu from './Tomenu.jsx';
 import AddPropertyFormMarketing from './AddPropertyFormMarketing';
 import RemovedTenant from './RemovedTenant';
+import ExclusiveLocation from './605010';
 
 const routes = [
   { path: "/loginreport", element: <LoginReport /> }, 
@@ -358,6 +359,7 @@ const routes = [
     { path: "/owner-tenant-menu", element: <OwnerTenantMenu /> },
     { path: "/add-property-marketing", element: <AddPropertyFormMarketing /> },
     {path: "/removed-tenant", element: <RemovedTenant /> },
+    { path: "/exclusive-location", element: <ExclusiveLocation /> },
     
 
 
