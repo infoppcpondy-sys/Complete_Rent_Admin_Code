@@ -11,20 +11,27 @@ const AdminDashboard = () => {
     const [isEdit, setIsEdit] = useState(false);
     const [currentPropertyId, setCurrentPropertyId] = useState(null);
     const [selectedProperty, setSelectedProperty] = useState(null);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     
     // Form data
     const [formData, setFormData] = useState({
+        createdBy: '',
         propertyMode: 'Rent',
         rentAmount: '',
         leaseAmount: '',
         advanceAmount: '',
         streetName: '',
         location: '',
-        phoneNumber: ''
+        phoneNumber: '',
+        bhk: 'No',
+        floor: 'Ground Floor'
     });
     
     const [images, setImages] = useState([]);
+    const [imagePreviews, setImagePreviews] = useState([]);
     const [existingImages, setExistingImages] = useState([]);
+    const [dragActive, setDragActive] = useState(false);
     
     // Filters
     const [filters, setFilters] = useState({
@@ -47,6 +54,9 @@ const AdminDashboard = () => {
     
     const [allowedRoles, setAllowedRoles] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [phoneNumberCount, setPhoneNumberCount] = useState(0);
+    const [tableImageIndices, setTableImageIndices] = useState({});
+    const [isCompressing, setIsCompressing] = useState(false);
     
     const fileName = "605010"; // current file
     
@@ -114,23 +124,49 @@ const AdminDashboard = () => {
         fetchProperties();
     }, [filters]);
 
+    // Auto-cycle images in table view
+    useEffect(() => {
+        const intervals = {};
+        
+        properties.forEach(property => {
+            if (property.images && property.images.length > 1) {
+                intervals[property._id] = setInterval(() => {
+                    setTableImageIndices(prev => ({
+                        ...prev,
+                        [property._id]: ((prev[property._id] || 0) + 1) % property.images.length
+                    }));
+                }, 3000); // Change image every 3 seconds
+            }
+        });
+        
+        return () => {
+            Object.values(intervals).forEach(interval => clearInterval(interval));
+        };
+    }, [properties]);
+
     // Reset form
     const resetForm = () => {
         setFormData({
+            createdBy: '',
             propertyMode: 'Rent',
             rentAmount: '',
             leaseAmount: '',
             advanceAmount: '',
             streetName: '',
             location: '',
-            phoneNumber: ''
+            phoneNumber: '',
+            bhk: 'No',
+            floor: 'Ground Floor'
         });
         setImages([]);
+        setImagePreviews([]);
         setExistingImages([]);
         setIsEdit(false);
         setCurrentPropertyId(null);
         setShowForm(false);
         setError(null);
+        setPhoneNumberCount(0);
+        setDragActive(false);
     };
 
     // Handle add new property button
@@ -144,13 +180,16 @@ const AdminDashboard = () => {
         setIsEdit(true);
         setCurrentPropertyId(property._id);
         setFormData({
+            createdBy: property.createdBy || '',
             propertyMode: property.propertyMode,
             rentAmount: property.rentAmount || '',
             leaseAmount: property.leaseAmount || '',
             advanceAmount: property.advanceAmount || '',
             streetName: property.streetName,
             location: property.location,
-            phoneNumber: property.phoneNumber
+            phoneNumber: property.phoneNumber,
+            bhk: property.bhk || 'No',
+            floor: property.floor || 'Ground Floor'
         });
         setExistingImages(property.images || []);
         setShowForm(true);
@@ -160,6 +199,36 @@ const AdminDashboard = () => {
     // Handle view property details
     const handleView = (property) => {
         setSelectedProperty(property);
+    };
+
+    // Handle image click for lightbox gallery
+    const handleImageClick = (property, imageIndex = 0) => {
+        setSelectedImage(property);
+        setSelectedImageIndex(imageIndex);
+    };
+
+    // Handle close image modal
+    const handleCloseImageModal = () => {
+        setSelectedImage(null);
+        setSelectedImageIndex(0);
+    };
+
+    // Handle next image in gallery
+    const handleNextImage = () => {
+        if (selectedImage && selectedImage.images) {
+            setSelectedImageIndex((prev) => 
+                prev === selectedImage.images.length - 1 ? 0 : prev + 1
+            );
+        }
+    };
+
+    // Handle previous image in gallery
+    const handlePreviousImage = () => {
+        if (selectedImage && selectedImage.images) {
+            setSelectedImageIndex((prev) => 
+                prev === 0 ? selectedImage.images.length - 1 : prev - 1
+            );
+        }
     };
 
     // Handle delete property
@@ -182,17 +251,184 @@ const AdminDashboard = () => {
             ...prev,
             [name]: value
         }));
+        
+        // Check if phone number already exists and count occurrences
+        if (name === 'phoneNumber' && value.length === 10) {
+            const count = properties.filter(property => property.phoneNumber === value && property._id !== currentPropertyId).length;
+            setPhoneNumberCount(count);
+        } else if (name === 'phoneNumber') {
+            setPhoneNumberCount(0);
+        }
     };
 
-    // Handle image selection
-    const handleImageChange = (e) => {
-        const files = Array.from(e.target.files);
-        setImages(files);
+    // Generate masked phone number (e.g., 9876543210 -> 98765***10)
+    const getMaskedPhoneNumber = (phoneNumber) => {
+        if (!phoneNumber || phoneNumber.length < 10) return 'N/A';
+        const str = phoneNumber.toString();
+        return str.substring(0, 5) + '***' + str.substring(8);
+    };
+
+    // Add watermark to canvas - centered with high opacity
+    const addWatermark = (ctx, width, height) => {
+        const watermarkText = 'RENT PONDY';
+        const fontSize = Math.min(width / 5, height / 5, 80); // Responsive font size, max 80px
+        
+        ctx.save();
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; // White with 50% opacity (increased from 15%)
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Draw watermark once in the center of the image
+        ctx.fillText(watermarkText, width / 2, height / 2);
+        
+        ctx.restore();
+    };
+
+    // Compress image to under 500KB with watermark
+    const compressImage = async (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Resize if image is too large (max 1200px width)
+                    if (width > 1200) {
+                        height = (height * 1200) / width;
+                        width = 1200;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Add watermark to the image
+                    addWatermark(ctx, width, height);
+                    
+                    // Compress with quality adjustment to ensure < 500KB
+                    let quality = 0.8;
+                    let blob;
+                    
+                    const tryCompress = () => {
+                        canvas.toBlob((currentBlob) => {
+                            if (currentBlob.size > 512000 && quality > 0.3) {
+                                // If still > 500KB, reduce quality and try again
+                                quality -= 0.1;
+                                canvas.toBlob(tryCompress, 'image/jpeg', quality);
+                            } else {
+                                // Create a new File object with compressed data
+                                const compressedFile = new File([currentBlob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: file.lastModified
+                                });
+                                resolve({
+                                    file: compressedFile,
+                                    originalSize: file.size,
+                                    compressedSize: currentBlob.size
+                                });
+                            }
+                        }, 'image/jpeg', quality);
+                    };
+                    
+                    tryCompress();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    // Helper function to read file as data URL
+    const readFileAsDataURL = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+        });
+    };
+
+    // Handle image selection and drag-drop
+    const handleImageChange = async (e) => {
+        const files = e.target.files ? Array.from(e.target.files) : Array.from(e.dataTransfer.files);
+        const validFiles = files.filter((file) => file.type.startsWith('image/'));
+        
+        // Limit to 10 images total
+        const totalImages = images.length + validFiles.length;
+        if (totalImages > 10) {
+            alert('Maximum 10 images allowed!');
+            return;
+        }
+        
+        setIsCompressing(true);
+        
+        try {
+            // Compress all images and get their data URLs in parallel
+            const compressionPromises = validFiles.map(async (file) => {
+                const { file: compressedFile, originalSize, compressedSize } = await compressImage(file);
+                const dataURL = await readFileAsDataURL(compressedFile);
+                
+                return {
+                    compressedFile,
+                    preview: {
+                        src: dataURL,
+                        name: file.name,
+                        originalSize: (originalSize / 1024 / 1024).toFixed(2),
+                        compressedSize: (compressedSize / 1024 / 1024).toFixed(2)
+                    }
+                };
+            });
+            
+            // Wait for all compressions to complete
+            const results = await Promise.all(compressionPromises);
+            
+            // Extract compressed files and previews
+            const compressedFilesWithInfo = results.map(r => r.compressedFile);
+            const previewsData = results.map(r => r.preview);
+            
+            // Update state with all images at once
+            setImages(prev => [...prev, ...compressedFilesWithInfo]);
+            setImagePreviews(prev => [...prev, ...previewsData]);
+            setIsCompressing(false);
+        } catch (error) {
+            console.error('Error compressing images:', error);
+            setIsCompressing(false);
+            alert('Error compressing images. Please try again.');
+        }
+    };
+
+    // Remove image by index
+    const handleRemoveImage = (index) => {
+        setImages(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(prev => prev.filter((_, i) => i !== index));
     };
 
     // Remove existing image
     const handleRemoveExistingImage = (index) => {
         setExistingImages(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Drag handlers
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        handleImageChange(e);
     };
 
     // Handle form submit
@@ -278,7 +514,7 @@ const AdminDashboard = () => {
     return (
         <div className="admin-dashboard">
             <div className="dashboard-header">
-                <h1>🏠 Exclusive Location Property Management</h1>
+                <h1>🏠 Moolakulam & Reddiyarpalam - 605010</h1>
                 {!showForm && (
                     <button className="btn btn-primary" onClick={handleAddNew}>
                         + Add New Property
@@ -299,6 +535,24 @@ const AdminDashboard = () => {
                     {error && <div className="error-message">❌ {error}</div>}
 
                     <form onSubmit={handleSubmit} className="property-form">
+                        <div className="form-row">
+                            {/* Created By */}
+                            <div className="form-group">
+                                <label>Created By Name {!isEdit ? '*' : ''}</label>
+                                <input
+                                    type="text"
+                                    name="createdBy"
+                                    value={formData.createdBy}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter admin name"
+                                    disabled={isEdit}
+                                    className={isEdit ? 'form-control-readonly' : ''}
+                                    required
+                                />
+                                {isEdit && <small style={{ color: '#0066cc', fontWeight: '600' }}>✓ Created by {formData.createdBy}</small>}
+                            </div>
+                        </div>
+
                         <div className="form-row">
                             {/* Property Mode */}
                             <div className="form-group">
@@ -384,7 +638,47 @@ const AdminDashboard = () => {
                                     required
                                 />
                             </div>
+                        </div>
 
+                        <div className="form-row">
+                            {/* BHK */}
+                            <div className="form-group">
+                                <label>BHK</label>
+                                <select
+                                    name="bhk"
+                                    value={formData.bhk}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="No">No</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="5+">5+</option>
+                                </select>
+                            </div>
+
+                            {/* Floor */}
+                            <div className="form-group">
+                                <label>Floor</label>
+                                <select
+                                    name="floor"
+                                    value={formData.floor}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="Basement">Basement</option>
+                                    <option value="Ground Floor">Ground Floor</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8+">8+</option>
+                                </select>
+                            </div>
                             {/* Phone Number */}
                             <div className="form-group">
                                 <label>Phone Number *</label>
@@ -397,6 +691,9 @@ const AdminDashboard = () => {
                                     pattern="[0-9]{10}"
                                     required
                                 />
+                                {phoneNumberCount > 0 && (
+                                    <small className="warning-text">⚠️ This phone number already exists in {phoneNumberCount} propert{phoneNumberCount === 1 ? 'y' : 'ies'}</small>
+                                )}
                             </div>
                         </div>
 
@@ -424,21 +721,80 @@ const AdminDashboard = () => {
                             </div>
                         )}
 
-                        {/* Upload New Images */}
+                        {/* Upload New Images - Improved Card */}
                         <div className="form-group">
-                            <label>{isEdit ? 'Add More Images' : 'Upload Images'}</label>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageChange}
-                                className="file-input"
-                            />
-                            <small>You can select multiple images (Max 10)</small>
+                            <label>📸 {isEdit ? 'Add More Images' : 'Upload Images'} (Max 10)</label>
                             
-                            {images.length > 0 && (
-                                <div className="selected-files">
-                                    <p>✅ Selected files: {images.length}</p>
+                            {/* Drag and Drop Area */}
+                            <div
+                                className={`upload-card ${dragActive ? 'drag-active' : ''}`}
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragOver={handleDrag}
+                                onDrop={handleDrop}
+                            >
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleImageChange}
+                                    className="file-input-hidden"
+                                    id="imageInput"
+                                />
+                                <label htmlFor="imageInput" className="upload-label">
+                                    <div className="upload-icon">📤</div>
+                                    <h3>Drag & drop images here</h3>
+                                    <p>or click to browse</p>
+                                    <small>Images will be auto-compressed to under 500KB</small>
+                                </label>
+                            </div>
+                            
+                            {/* Image Count Badge */}
+                            {isCompressing && (
+                                <div className="image-count-badge compressing-badge">
+                                    🔄 Compressing images...
+                                </div>
+                            )}
+                            
+                            {(images.length > 0 || imagePreviews.length > 0) && !isCompressing && (
+                                <div className="image-count-badge">
+                                    ✅ {images.length} image{images.length !== 1 ? 's' : ''} selected
+                                </div>
+                            )}
+                            
+                            {/* Image Previews */}
+                            {imagePreviews.length > 0 && (
+                                <div className="image-previews-container">
+                                    <h4>📷 Preview ({imagePreviews.length})</h4>
+                                    <div className="image-preview-grid">
+                                        {imagePreviews.map((preview, index) => {
+                                            const compressionRatio = ((1 - preview.compressedSize / preview.originalSize) * 100).toFixed(0);
+                                            return (
+                                                <div key={index} className="preview-item">
+                                                    <div className="preview-image-wrapper">
+                                                        <img src={preview.src} alt={`Preview ${index + 1}`} />
+                                                        <button
+                                                            type="button"
+                                                            className="btn-remove-preview"
+                                                            onClick={() => handleRemoveImage(index)}
+                                                            title="Remove image"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                    <div className="preview-info">
+                                                        <p className="preview-name">{preview.name.slice(0, 20)}...</p>
+                                                        <p className="preview-size">
+                                                            {preview.originalSize} MB → {preview.compressedSize} MB
+                                                        </p>
+                                                        <p className="preview-compression">
+                                                            📦 Saved {compressionRatio}%
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -479,19 +835,54 @@ const AdminDashboard = () => {
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Mode</th>
+                                        <th>S.I No</th>
+                                        <th>Property ID</th>
+                                        <th>Image</th>
+                                        <th>BHK</th>
+                                        <th>Floor</th>
+                                        <th>Property Mode</th>
                                         <th>Amount</th>
                                         <th>Street</th>
                                         <th>Location</th>
                                         <th>Phone</th>
+                                        <th>Masked Phone</th>
                                         <th>Advance</th>
-                                        <th>Created</th>
+                                        <th>Created At</th>
+                                        <th>Created By</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {properties.map((property) => (
+                                    {properties.map((property, index) => (
                                         <tr key={property._id}>
+                                            <td className="serial-number">{index + 1}</td>
+                                            <td>
+                                                <span className="property-id">
+                                                    {property.propertyId || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {property.images && property.images.length > 0 && property.images[tableImageIndices[property._id] || 0]?.url ? (
+                                                    <div className="table-image-container">
+                                                        <img
+                                                            src={`${process.env.REACT_APP_MEDIA_URL}${property.images[tableImageIndices[property._id] || 0]?.url}`}
+                                                            alt="Property"
+                                                            className="table-image table-image-clickable"
+                                                            onClick={() => handleImageClick(property, tableImageIndices[property._id] || 0)}
+                                                            title="Click to view all images"
+                                                        />
+                                                        {property.images.length > 1 && (
+                                                            <span className="image-counter-badge">
+                                                                {(tableImageIndices[property._id] || 0) + 1}/{property.images.length}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="no-image-small">📷 No Image</div>
+                                                )}
+                                            </td>
+                                            <td>{property.bhk || 'N/A'}</td>
+                                            <td>{property.floor || 'N/A'}</td>
                                             <td>
                                                 <span className={`badge badge-${property.propertyMode.toLowerCase()}`}>
                                                     {property.propertyMode}
@@ -501,8 +892,14 @@ const AdminDashboard = () => {
                                             <td>{property.streetName}</td>
                                             <td>{property.location}</td>
                                             <td>{property.phoneNumber}</td>
+                                            <td>{getMaskedPhoneNumber(property.phoneNumber)}</td>
                                             <td>₹{property.advanceAmount || '-'}</td>
                                             <td>{new Date(property.createdAt).toLocaleDateString()}</td>
+                                            <td>
+                                                <span className="created-by-badge">
+                                                    {property.createdBy || 'N/A'}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <div className="action-buttons">
                                                     <button 
@@ -526,7 +923,7 @@ const AdminDashboard = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}
+                    )}}
 
                     {/* Pagination */}
                     {totalPages > 1 && (
@@ -550,6 +947,83 @@ const AdminDashboard = () => {
                             </button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* IMAGE LIGHTBOX GALLERY MODAL */}
+            {selectedImage && selectedImage.images && selectedImage.images.length > 0 && (
+                <div className="image-lightbox-overlay" onClick={handleCloseImageModal}>
+                    <div className="image-lightbox-container" onClick={(e) => e.stopPropagation()}>
+                        {/* Close Button */}
+                        <button 
+                            className="lightbox-close-btn"
+                            onClick={handleCloseImageModal}
+                            title="Close"
+                        >
+                            ✕
+                        </button>
+
+                        {/* Main Image Display */}
+                        <div className="lightbox-image-wrapper">
+                            {selectedImage?.images?.[selectedImageIndex]?.url ? (
+                                <img 
+                                    src={`${process.env.REACT_APP_MEDIA_URL}${selectedImage.images[selectedImageIndex].url}`}
+                                    alt={`Property ${selectedImageIndex + 1}`}
+                                    className="lightbox-image" 
+                                />
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>Image not available</div>
+                            )}
+                        </div>
+
+                        {/* Navigation Arrows (only show if multiple images) */}
+                        {selectedImage.images.length > 1 && (
+                            <>
+                                <button
+                                    className="lightbox-nav-btn lightbox-prev-btn"
+                                    onClick={handlePreviousImage}
+                                    title="Previous image"
+                                >
+                                    ❮
+                                </button>
+                                <button
+                                    className="lightbox-nav-btn lightbox-next-btn"
+                                    onClick={handleNextImage}
+                                    title="Next image"
+                                >
+                                    ❯
+                                </button>
+                            </>
+                        )}
+
+                        {/* Image Counter */}
+                        {selectedImage.images.length > 1 && (
+                            <div className="lightbox-counter">
+                                {selectedImageIndex + 1} / {selectedImage.images.length}
+                            </div>
+                        )}
+
+                        {/* Thumbnail Strip */}
+                        {selectedImage?.images?.length > 1 && (
+                            <div className="lightbox-thumbnails">
+                                {selectedImage.images.filter(img => img?.url).map((img, index) => (
+                                    <img
+                                        key={index}
+                                        src={`${process.env.REACT_APP_MEDIA_URL}${img.url}`}
+                                        alt={`Thumbnail ${index + 1}`}
+                                        className={`lightbox-thumbnail ${index === selectedImageIndex ? 'active' : ''}`}
+                                        onClick={() => setSelectedImageIndex(index)}
+                                        title={`Image ${index + 1}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Info Text */}
+                        <div className="lightbox-info">
+                            <p>💡 Use arrows or click thumbnails to browse • Click ✕ or outside to close</p>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
