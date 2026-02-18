@@ -17,6 +17,8 @@ const SetRENTID = () => {
   const [allProperties, setAllProperties] = useState([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [filterRentId, setFilterRentId] = useState('');
+  const [filterPhoneNumber, setFilterPhoneNumber] = useState('');
   const navigate = useNavigate();
 
   const handleAssignPhone = async () => {
@@ -110,6 +112,18 @@ const SetRENTID = () => {
   }
 };
 
+// Filter properties based on search criteria
+const getFilteredProperties = () => {
+  return allProperties.filter((prop) => {
+    const rentIdMatch = String(prop.rentId).toLowerCase().includes(filterRentId.toLowerCase());
+    const phoneMatch = 
+      (prop.originalPhoneNumber && String(prop.originalPhoneNumber).includes(filterPhoneNumber)) ||
+      (prop.assignedPhoneNumber && String(prop.assignedPhoneNumber).includes(filterPhoneNumber));
+    
+    return rentIdMatch && phoneMatch;
+  });
+};
+
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
       <h2 className="text-center mb-4"> Mask Property Owner Number Panel</h2>
@@ -137,7 +151,46 @@ const SetRENTID = () => {
 
         <button className='text-white bg-primary' onClick={handleAssignPhone}>Assign</button>
       </div>
-              <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
+
+      {/* Filter Section */}
+      <div style={{ 
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+        padding: '15px',
+        backgroundColor: '#f8f9fa',
+        marginTop: '15px',
+        marginBottom: '15px',
+        borderRadius: '4px'
+      }} className="d-flex flex-row gap-2 align-items-center flex-nowrap">
+        <label style={{ fontWeight: 'bold' }}> </label>
+        <input
+          type="text"
+          value={filterRentId}
+          onChange={(e) => setFilterRentId(e.target.value)}
+          placeholder="Enter RENT ID to search"
+          style={{ marginRight: '15px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+        />
+
+        <label style={{ fontWeight: 'bold' }}> </label>
+        <input
+          type="text"
+          value={filterPhoneNumber}
+          onChange={(e) => setFilterPhoneNumber(e.target.value)}
+          placeholder="Enter phone number to search"
+          style={{ marginRight: '15px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+        />
+
+        <button 
+          className='btn btn-secondary'
+          onClick={() => {
+            setFilterRentId('');
+            setFilterPhoneNumber('');
+          }}
+          style={{ padding: '8px 15px' }}
+        >
+          Clear Filters
+        </button>
+      </div>
+              <button className="btn btn-secondary mb-3" style={{background:"tomato"}} onClick={handlePrint}>
   Print
 </button>
       {message && <p style={{ color: 'green' }}>{message}</p>}
@@ -160,7 +213,7 @@ const SetRENTID = () => {
           </tr>
         </thead>
         <tbody>
-          {allProperties.map((prop, index) => (
+          {getFilteredProperties().map((prop, index) => (
             <tr key={prop.rentId}>
               <td>{index + 1}</td>
               <td style={{cursor: "pointer"}}  onClick={() =>

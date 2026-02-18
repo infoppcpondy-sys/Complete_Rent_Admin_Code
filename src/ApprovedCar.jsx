@@ -771,7 +771,7 @@ const handlePrint = (prop) => {
   <!--     <h6>Property Location on Map:</h6>
 <div id="map"></div>
    <img 
-              src="https://maps.googleapis.com/maps/api/staticmap?center=${prop.locationCoordinates}&zoom=15&size=600x300&maptype=roadmap&markers=color:red%7C${prop.locationCoordinates}&key=AIzaSyB0wL8bW7T1bHM0YXMQgJbd1XKk-YIxaDU&libraries=places"
+              src="https://maps.googleapis.com/maps/api/staticmap?center=${prop.locationCoordinates}&zoom=15&size=600x300&maptype=roadmap&markers=color:red%7C${prop.locationCoordinates}&key=AIzaSyBOSInlVwT7uN2G0J3VndG3dOrCVkGbeEs&libraries=places"
             alt="Property Location Map"
             style="width:100%; max-width:400px; height:auto;"
           /> -->

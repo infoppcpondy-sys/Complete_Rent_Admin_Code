@@ -17,13 +17,16 @@ const AdminDashboard = () => {
     // Form data
     const [formData, setFormData] = useState({
         createdBy: '',
-        propertyMode: 'Rent',
+        propertyMode: 'Commercial',
+        propertyType: '',
+        rentType: 'Rent',
         rentAmount: '',
         leaseAmount: '',
         advanceAmount: '',
         streetName: '',
         location: '',
         phoneNumber: '',
+        url: '',
         bhk: 'No',
         floor: 'Ground Floor'
     });
@@ -38,10 +41,12 @@ const AdminDashboard = () => {
         page: 1,
         limit: 10,
         propertyMode: '',
+        propertyType: '',
+        rentType: '',
         location: '',
         search: '',
         createdBy: '',
-        createdDate: ''
+        createdAt: ''
     });
     const [totalPages, setTotalPages] = useState(1);
 
@@ -148,13 +153,16 @@ const AdminDashboard = () => {
     const resetForm = () => {
         setFormData({
             createdBy: '',
-            propertyMode: 'Rent',
+            propertyMode: 'Commercial',
+            propertyType: '',
+            rentType: 'Rent',
             rentAmount: '',
             leaseAmount: '',
             advanceAmount: '',
             streetName: '',
             location: '',
             phoneNumber: '',
+            url: '',
             bhk: 'No',
             floor: 'Ground Floor'
         });
@@ -181,13 +189,16 @@ const AdminDashboard = () => {
         setCurrentPropertyId(property._id);
         setFormData({
             createdBy: property.createdBy || '',
-            propertyMode: property.propertyMode,
+            propertyMode: property.propertyMode || 'Commercial',
+            propertyType: property.propertyType || '',
+            rentType: property.rentType || 'Rent',
             rentAmount: property.rentAmount || '',
             leaseAmount: property.leaseAmount || '',
             advanceAmount: property.advanceAmount || '',
             streetName: property.streetName,
             location: property.location,
             phoneNumber: property.phoneNumber,
+            url: property.url || '',
             bhk: property.bhk || 'No',
             floor: property.floor || 'Ground Floor'
         });
@@ -261,11 +272,11 @@ const AdminDashboard = () => {
         }
     };
 
-    // Generate masked phone number (e.g., 9876543210 -> 98765***10)
+    // Generate masked phone number (e.g., 9876543210 -> 98765*****)
     const getMaskedPhoneNumber = (phoneNumber) => {
         if (!phoneNumber || phoneNumber.length < 10) return 'N/A';
         const str = phoneNumber.toString();
-        return str.substring(0, 5) + '***' + str.substring(8);
+        return str.substring(0, 5) + '*****';
     };
 
     // Add watermark to canvas - centered with high opacity
@@ -514,7 +525,7 @@ const AdminDashboard = () => {
     return (
         <div className="admin-dashboard">
             <div className="dashboard-header">
-                <h1>🏠 Moolakulam & Reddiyarpalam - 605010</h1>
+                <h1>🏠 Exclusive Locations</h1>
                 {!showForm && (
                     <button className="btn btn-primary" onClick={handleAddNew}>
                         + Add New Property
@@ -563,14 +574,64 @@ const AdminDashboard = () => {
                                     onChange={handleInputChange}
                                     required
                                 >
-                                    <option value="Rent">Rent</option>
-                                    <option value="Lease">Lease</option>
-                                    <option value="Sale">Sale</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Residential">Residential</option>
                                 </select>
                             </div>
 
-                            {/* Rent Amount (only for Rent mode) */}
-                            {formData.propertyMode === 'Rent' && (
+                            {/* Property Type */}
+                            <div className="form-group">
+                                <label>Property Type *</label>
+                                <select
+                                    name="propertyType"
+                                    value={formData.propertyType}
+                                    onChange={handleInputChange}
+                                    required
+                                >
+                                    <option value="">Select Property Type</option>
+                                    <option value="Apartment">Apartment</option>
+                                    <option value="House">House</option>
+                                    <option value="Villa">Villa</option>
+                                    <option value="Farm House">Farm House</option>
+                                    <option value="Plot">Plot</option>
+                                    <option value="Land">Land</option>
+                                    <option value="Hotel">Hotel</option>
+                                    <option value="Resorts">Resorts</option>
+                                    <option value="Commercial Building">Commercial Building</option>
+                                    <option value="Guest House">Guest House</option>
+                                    <option value="Godown">Godown</option>
+                                    <option value="Industrial Building">Industrial Building</option>
+                                    <option value="Shed">Shed</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                    <option value="Others">Others</option>
+                                    <option value="Space">Space</option>
+                                    <option value="Bachelor Room">Bachelor Room</option>
+                                    <option value="Shop / Office">Shop / Office</option>
+                                    <option value="Function Hall">Function Hall</option>
+                                    <option value="P/G Hostel">P/G Hostel</option>
+                                    <option value="Home Stay">Home Stay</option>
+                                    <option value="Dormitory">Dormitory</option>
+                                </select>
+                            </div>
+
+                            {/* Rent Type */}
+                            <div className="form-group">
+                                <label>Rent Type *</label>
+                                <select
+                                    name="rentType"
+                                    value={formData.rentType}
+                                    onChange={handleInputChange}
+                                    required
+                                >
+                                    <option value="Rent">Rent</option>
+                                    <option value="Lease">Lease</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            {/* Rent Amount (only for Rent type) */}
+                            {formData.rentType === 'Rent' && (
                                 <div className="form-group">
                                     <label>Rent Amount (₹) *</label>
                                     <input
@@ -584,8 +645,8 @@ const AdminDashboard = () => {
                                 </div>
                             )}
 
-                            {/* Lease Amount (only for Lease mode) */}
-                            {formData.propertyMode === 'Lease' && (
+                            {/* Lease Amount (only for Lease type) */}
+                            {formData.rentType === 'Lease' && (
                                 <div className="form-group">
                                     <label>Lease Amount (₹) *</label>
                                     <input
@@ -637,6 +698,19 @@ const AdminDashboard = () => {
                                     placeholder="Enter location"
                                     required
                                 />
+                            </div>
+
+                            {/* URL */}
+                            <div className="form-group">
+                                <label>Google Map URL</label>
+                                <input
+                                    type="url"
+                                    name="url"
+                                    value={formData.url}
+                                    onChange={handleInputChange}
+                                    placeholder="Paste Google Map location URL"
+                                />
+                                <small>e.g., https://maps.google.com/...</small>
                             </div>
                         </div>
 
@@ -824,6 +898,121 @@ const AdminDashboard = () => {
                 <div className="properties-section">
                     <h2>📋 Properties List ({properties.length})</h2>
 
+                    {/* FILTERS SECTION */}
+                    <div className="filters-section">
+                        <div className="form-row">
+                            {/* Property Mode Filter */}
+                            <div className="form-group">
+                                <label>Property Mode</label>
+                                <select
+                                    name="propertyMode"
+                                    value={filters.propertyMode}
+                                    onChange={handleFilterChange}
+                                    className="filter-select"
+                                >
+                                    <option value="">All Modes</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Residential">Residential</option>
+                                </select>
+                            </div>
+
+                            {/* Property Type Filter */}
+                            <div className="form-group">
+                                <label>Property Type</label>
+                                <select
+                                    name="propertyType"
+                                    value={filters.propertyType}
+                                    onChange={handleFilterChange}
+                                    className="filter-select"
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="Apartment">Apartment</option>
+                                    <option value="House">House</option>
+                                    <option value="Villa">Villa</option>
+                                    <option value="Farm House">Farm House</option>
+                                    <option value="Plot">Plot</option>
+                                    <option value="Land">Land</option>
+                                    <option value="Hotel">Hotel</option>
+                                    <option value="Resorts">Resorts</option>
+                                    <option value="Commercial Building">Commercial Building</option>
+                                    <option value="Guest House">Guest House</option>
+                                    <option value="Godown">Godown</option>
+                                    <option value="Industrial Building">Industrial Building</option>
+                                    <option value="Shed">Shed</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                    <option value="Others">Others</option>
+                                    <option value="Space">Space</option>
+                                    <option value="Bachelor Room">Bachelor Room</option>
+                                    <option value="Shop / Office">Shop / Office</option>
+                                    <option value="Function Hall">Function Hall</option>
+                                    <option value="P/G Hostel">P/G Hostel</option>
+                                    <option value="Home Stay">Home Stay</option>
+                                    <option value="Dormitory">Dormitory</option>
+                                </select>
+                            </div>
+
+                            {/* Rent Type Filter */}
+                            <div className="form-group">
+                                <label>Rent Type</label>
+                                <select
+                                    name="rentType"
+                                    value={filters.rentType}
+                                    onChange={handleFilterChange}
+                                    className="filter-select"
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="Rent">Rent</option>
+                                    <option value="Lease">Lease</option>
+                                </select>
+                            </div>
+
+                            {/* Location Filter */}
+                            <div className="form-group">
+                                <label>Location</label>
+                                <input
+                                    type="text"
+                                    name="location"
+                                    value={filters.location}
+                                    onChange={handleFilterChange}
+                                    placeholder="Enter location"
+                                    className="filter-input"
+                                />
+                            </div>
+
+                            {/* Created By Filter */}
+                            <div className="form-group">
+                                <label>Created By</label>
+                                <input
+                                    type="text"
+                                    name="createdBy"
+                                    value={filters.createdBy}
+                                    onChange={handleFilterChange}
+                                    placeholder="Enter created by name"
+                                    className="filter-input"
+                                />
+                            </div>
+
+                            {/* Created At */}
+                            <div className="form-group">
+                                <label>Created At</label>
+                                <input
+                                    type="date"
+                                    name="createdAt"
+                                    value={filters.createdAt || ''}
+                                    onChange={(e) => {
+                                        const newInputValue = e.target.value;
+                                        setFilters(prev => ({
+                                            ...prev,
+                                            createdAt: newInputValue,
+                                            page: 1
+                                        }));
+                                    }}
+                                    className="filter-input"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {error && <div className="error-message">❌ {error}</div>}
 
                     {properties.length === 0 ? (
@@ -841,9 +1030,12 @@ const AdminDashboard = () => {
                                         <th>BHK</th>
                                         <th>Floor</th>
                                         <th>Property Mode</th>
+                                        <th>Property Type</th>
+                                        <th>Rent Type</th>
                                         <th>Amount</th>
                                         <th>Street</th>
                                         <th>Location</th>
+                                        <th>URL</th>
                                         <th>Phone</th>
                                         <th>Masked Phone</th>
                                         <th>Advance</th>
@@ -888,9 +1080,20 @@ const AdminDashboard = () => {
                                                     {property.propertyMode}
                                                 </span>
                                             </td>
+                                            <td>{property.propertyType || '-'}</td>
+                                            <td>{property.rentType || '-'}</td>
                                             <td>₹{property.rentAmount || property.leaseAmount || '-'}</td>
                                             <td>{property.streetName}</td>
                                             <td>{property.location}</td>
+                                            <td>
+                                                {property.url ? (
+                                                    <a href={property.url} target="_blank" rel="noopener noreferrer" style={{color: '#007bff', textDecoration: 'underline', cursor: 'pointer'}}>
+                                                        🔗 View
+                                                    </a>
+                                                ) : (
+                                                    '-'
+                                                )}
+                                            </td>
                                             <td>{property.phoneNumber}</td>
                                             <td>{getMaskedPhoneNumber(property.phoneNumber)}</td>
                                             <td>₹{property.advanceAmount || '-'}</td>

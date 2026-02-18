@@ -499,10 +499,11 @@
 
 /* Filters Section */
 .filters-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
     margin-bottom: 30px;
+    border: 1px solid #e0e0e0;
 }
 
 .filter-input,
@@ -844,19 +845,14 @@ tbody tr:hover {
     display: inline-block;
 }
 
-.badge-rent {
-    background: #d4edda;
-    color: #155724;
-}
-
-.badge-lease {
+.badge-commercial {
     background: #cce5ff;
     color: #004085;
 }
 
-.badge-sale {
-    background: #fff3cd;
-    color: #856404;
+.badge-residential {
+    background: #d4edda;
+    color: #155724;
 }
 
 /* Serial Number */

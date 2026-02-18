@@ -33,7 +33,7 @@ import {
   FaMoneyBillAlt,
   FaPhone,
   FaRegQuestionCircle,
-  FaEye,FaCity,FaUserCog,FaHome
+  FaEye,FaCity,FaUserCog,FaHome,FaWhatsapp,FaPaperPlane
 } from "react-icons/fa";
 import { RiAccountCircleFill, RiBankCard2Fill, RiBarChart2Fill, RiCaravanFill, RiCellphoneFill, RiDashboardHorizontalFill, RiExchangeFill, RiFileListFill, RiGroupFill, RiHandCoinFill, RiLayoutFill, RiNewspaperFill, RiQuestionAnswerFill, RiRoadMapFill, RiSettings5Fill, RiShieldUserFill, RiTicket2Fill, RiUserFill, RiUserSettingsFill } from "react-icons/ri";
 import { FcStatistics } from "react-icons/fc";
@@ -319,6 +319,25 @@ const menuItems = [
  </NavLink>
       </li>
 </ul>
+
+
+<li className="p-3 mt-2  text-white" 
+  onClick={() => toggleMenu('bulk-whatsapp')}
+   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
+     
+          <FaWhatsapp style={{marginRight:'10px '}}/>
+          Bulk Whatsapp
+      </li>
+<ul className={`collapse ${activeMenu === 'bulk-whatsapp' ? 'show' : ''}`} id="BulkWhatsappMenu">
+<li className="p-0 mt-2">
+    <NavLink to="/dashboard/bulk-whatsapp"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaPaperPlane />
+      Send Message
+    </NavLink>
+  </li>
+  </ul>
+
+
       <li className="p-3 mt-2  text-white" 
         onClick={() => toggleMenu('office')}
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>

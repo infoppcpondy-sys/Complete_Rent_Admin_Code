@@ -179,6 +179,7 @@ import OwnerTenantMenu from './Tomenu.jsx';
 import AddPropertyFormMarketing from './AddPropertyFormMarketing';
 import RemovedTenant from './RemovedTenant';
 import ExclusiveLocation from './605010';
+import BulkWhatsapp from './BulkWhatsapp';
 
 const routes = [
   { path: "/loginreport", element: <LoginReport /> }, 
@@ -360,7 +361,7 @@ const routes = [
     { path: "/add-property-marketing", element: <AddPropertyFormMarketing /> },
     {path: "/removed-tenant", element: <RemovedTenant /> },
     { path: "/exclusive-location", element: <ExclusiveLocation /> },
-    
+    {path: "/bulk-whatsapp", element: <BulkWhatsapp /> },
 
 
 ];
