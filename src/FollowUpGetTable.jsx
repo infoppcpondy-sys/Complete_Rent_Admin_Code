@@ -18,6 +18,8 @@ const FollowUpGetTable = () => {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [properties, setProperties] = useState({});
+  const [pendingRentIds, setPendingRentIds] = useState([]);
   const printRef = useRef();
 
   // Edit follow-up state
@@ -75,9 +77,46 @@ const FollowUpGetTable = () => {
     }
   };
 
+  // Fetch all properties to map status
+  const fetchProperties = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-alls-datas-all`);
+      const propertiesMap = {};
+      if (res.data.users && Array.isArray(res.data.users)) {
+        res.data.users.forEach(property => {
+          propertiesMap[property.rentId] = property.status;
+        });
+      }
+      setProperties(propertiesMap);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    }
+  };
+
+  // Fetch pending properties to check status
+  const fetchPendingProperties = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/properties/pending-rent`);
+      const pendingIds = [];
+      if (res.data.users && Array.isArray(res.data.users)) {
+        res.data.users.forEach(property => {
+          if (property.rentId) {
+            pendingIds.push(String(property.rentId));
+          }
+        });
+      }
+      console.log('Pending Rent IDs:', pendingIds);
+      setPendingRentIds(pendingIds);
+    } catch (error) {
+      console.error('Error fetching pending properties:', error);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     fetchAllFollowUps();
+    fetchProperties();
+    fetchPendingProperties();
   }, []);
 
   // Date range filter
@@ -381,6 +420,55 @@ const FollowUpGetTable = () => {
     return `${year}-${month}-${day}`;
   };
 
+  // Get property status code and color based on rentId
+  const getPropertyStatusDisplay = (rentId) => {
+    let code = 'ES';
+    let backgroundColor = '#000000';
+    let textColor = '#ffffff';
+
+    // Check if rentId is in pending properties first
+    const rentIdString = String(rentId);
+    if (pendingRentIds.includes(rentIdString)) {
+      code = 'PE';
+      backgroundColor = '#007BFF';
+      textColor = '#ffffff';
+      return { code, backgroundColor, textColor };
+    }
+
+    const status = properties[rentId];
+
+    if (status) {
+      switch (status.toLowerCase()) {
+        case 'complete':
+          code = 'PA';
+          backgroundColor = '#FFC107';
+          textColor = '#000000';
+          break;
+        case 'incomplete':
+          code = 'PE';
+          backgroundColor = '#007BFF';
+          textColor = '#ffffff';
+          break;
+        case 'active':
+          code = 'AP';
+          backgroundColor = '#28A745';
+          textColor = '#ffffff';
+          break;
+        case 'delete':
+          code = 'DE';
+          backgroundColor = '#DC3545';
+          textColor = '#ffffff';
+          break;
+        default:
+          code = 'ES';
+          backgroundColor = '#000000';
+          textColor = '#ffffff';
+      }
+    }
+
+    return { code, backgroundColor, textColor };
+  };
+
   // Get badge color based on day status
   const getDayStatusBadgeColor = (status) => {
     switch (status) {
@@ -481,6 +569,7 @@ const FollowUpGetTable = () => {
               <tr className="bg-gray-100 text-center">
                 <th>S.No</th>
                 <th>Rent ID</th>
+                <th>Property Status</th>
                 <th>Phone Number</th>
                 <th>Follow-Up Status</th>
                 <th>Follow-Up Type</th>
@@ -492,37 +581,53 @@ const FollowUpGetTable = () => {
               </tr>
             </thead>
             <tbody>
-              {followups.filter(item => item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').map((item, index) => (
-                <tr key={item._id} className="text-center">
-                  <td>{index + 1}</td>
-                  <td>{item.rentId}</td>
-                  <td>{item.phoneNumber || '-'}</td>
-                  <td>{item.followupStatus}</td>
-                  <td>{item.followupType}</td>
-                  <td>{new Date(item.followupDate).toLocaleDateString()}</td>
-                  <td>
-                    <span style={{
-                      padding: '5px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      ...getDayStatusBadgeColor(getFollowUpDayStatus(item.followupDate))
-                    }}>
-                      {getFollowUpDayStatus(item.followupDate)}
-                    </span>
-                  </td>
-                  <td>{item.adminName}</td>
-                  <td>{new Date(item.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button 
-                      className="btn btn-sm btn-warning" 
-                      onClick={() => handleEdit(item)}
-                      style={{ marginRight: '5px' }}
-                    >
-                      ✏️ Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {followups.filter(item => item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').map((item, index) => {
+                const { code, backgroundColor, textColor } = getPropertyStatusDisplay(item.rentId);
+                return (
+                  <tr key={item._id} className="text-center">
+                    <td>{index + 1}</td>
+                    <td>{item.rentId}</td>
+                    <td>
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        display: 'inline-block'
+                      }}>
+                        {code}
+                      </span>
+                    </td>
+                    <td>{item.phoneNumber || '-'}</td>
+                    <td>{item.followupStatus}</td>
+                    <td>{item.followupType}</td>
+                    <td>{new Date(item.followupDate).toLocaleDateString()}</td>
+                    <td>
+                      <span style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        ...getDayStatusBadgeColor(getFollowUpDayStatus(item.followupDate))
+                      }}>
+                        {getFollowUpDayStatus(item.followupDate)}
+                      </span>
+                    </td>
+                    <td>{item.adminName}</td>
+                    <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button 
+                        className="btn btn-sm btn-warning" 
+                        onClick={() => handleEdit(item)}
+                        style={{ marginRight: '5px' }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </Table>
         </div>
@@ -539,6 +644,7 @@ const FollowUpGetTable = () => {
               <tr style={{ backgroundColor: '#f8d7da', color: '#721c24' }}>
                 <th>S.No</th>
                 <th>Rent ID</th>
+                <th>Property Status</th>
                 <th>Phone Number</th>
                 <th>Follow-Up Status</th>
                 <th>Follow-Up Type</th>
@@ -550,48 +656,64 @@ const FollowUpGetTable = () => {
               </tr>
             </thead>
             <tbody>
-              {followups.filter(item => item.followupStatus === 'Not Interested-Closed' || item.followupStatus === 'Paid Closed').map((item, index) => (
-                <tr key={item._id} className="text-center" style={{ backgroundColor: '#fff5f5' }}>
-                  <td>{index + 1}</td>
-                  <td>{item.rentId}</td>
-                  <td>{item.phoneNumber || '-'}</td>
-                  <td>
-                    <span style={{
-                      padding: '5px 12px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      backgroundColor: item.followupStatus === 'Paid Closed' ? '#28a745' : '#dc3545',
-                      color: 'white'
-                    }}>
-                      {item.followupStatus}
-                    </span>
-                  </td>
-                  <td>{item.followupType}</td>
-                  <td>{new Date(item.followupDate).toLocaleDateString()}</td>
-                  <td>
-                    <span style={{
-                      padding: '5px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      ...getDayStatusBadgeColor(getFollowUpDayStatus(item.followupDate))
-                    }}>
-                      {getFollowUpDayStatus(item.followupDate)}
-                    </span>
-                  </td>
-                  <td>{item.adminName}</td>
-                  <td>{new Date(item.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button 
-                      className="btn btn-sm btn-warning" 
-                      onClick={() => handleEdit(item)}
-                      style={{ marginRight: '5px' }}
-                    >
-                      ✏️ Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {followups.filter(item => item.followupStatus === 'Not Interested-Closed' || item.followupStatus === 'Paid Closed').map((item, index) => {
+                const { code, backgroundColor, textColor } = getPropertyStatusDisplay(item.rentId);
+                return (
+                  <tr key={item._id} className="text-center" style={{ backgroundColor: '#fff5f5' }}>
+                    <td>{index + 1}</td>
+                    <td>{item.rentId}</td>
+                    <td>
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        display: 'inline-block'
+                      }}>
+                        {code}
+                      </span>
+                    </td>
+                    <td>{item.phoneNumber || '-'}</td>
+                    <td>
+                      <span style={{
+                        padding: '5px 12px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        backgroundColor: item.followupStatus === 'Paid Closed' ? '#28a745' : '#dc3545',
+                        color: 'white'
+                      }}>
+                        {item.followupStatus}
+                      </span>
+                    </td>
+                    <td>{item.followupType}</td>
+                    <td>{new Date(item.followupDate).toLocaleDateString()}</td>
+                    <td>
+                      <span style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        ...getDayStatusBadgeColor(getFollowUpDayStatus(item.followupDate))
+                      }}>
+                        {getFollowUpDayStatus(item.followupDate)}
+                      </span>
+                    </td>
+                    <td>{item.adminName}</td>
+                    <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button 
+                        className="btn btn-sm btn-warning" 
+                        onClick={() => handleEdit(item)}
+                        style={{ marginRight: '5px' }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </Table>
         </div>

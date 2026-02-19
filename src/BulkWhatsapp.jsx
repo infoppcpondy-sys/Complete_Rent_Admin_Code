@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
-const API = "/api/bulk-whatsapp";
+// Production: Use rentpondy.com domain
+const API = "https://rentpondy.com/PPC/PPC/api/bulk-whatsapp";
 
 const SCHEDULE_OPTIONS = [
   { label: "1 min", value: 1 },
@@ -64,6 +65,8 @@ const styles = {
     padding: "28px 32px",
     width: "520px",
     maxWidth: "95vw",
+    maxHeight: "90vh",
+    overflowY: "auto",
     boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
     position: "relative",
   },
@@ -131,6 +134,8 @@ const styles = {
     border: "1.5px solid #ddd",
     borderRadius: "8px",
     minHeight: "44px",
+    maxHeight: "200px",
+    overflowY: "auto",
     background: "#fafafa",
   },
   tag: {
@@ -309,6 +314,7 @@ export default function BulkWhatsapp() {
   const [numbers, setNumbers] = useState([]); // [{ value, isDup }]
   const [message, setMessage] = useState("");
   const [scheduleMinutes, setScheduleMinutes] = useState(1);
+  const [scheduleDate, setScheduleDate] = useState("");
   const inputRef = useRef(null);
 
   // ── Fetch records on mount & every 15s ──────────────────────────────────────
@@ -341,6 +347,10 @@ export default function BulkWhatsapp() {
       showToast("Invalid number format: " + val);
       return;
     }
+    if (numbers.length >= 200) {
+      showToast("⚠ Maximum 200 numbers allowed.");
+      return;
+    }
     const isDup = numbers.some((n) => n.value === val);
     setNumbers((prev) => [...prev, { value: val, isDup }]);
   }
@@ -355,6 +365,61 @@ export default function BulkWhatsapp() {
     } else if (e.key === "Backspace" && !numberInput) {
       setNumbers((prev) => prev.slice(0, -1));
     }
+  }
+
+  function handlePaste(e) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    
+    // Split by various delimiters and extract phone numbers
+    const rawNumbers = pastedText
+      .split(/[\s,;:\n\r\t|]+/)
+      .map((n) => n.trim())
+      .filter(Boolean);
+
+    if (rawNumbers.length === 0) {
+      showToast("No valid data found in pasted content.");
+      return;
+    }
+
+    let added = 0;
+    let invalid = 0;
+    let duplicates = 0;
+
+    rawNumbers.forEach((raw) => {
+      const val = raw.replace(/\s+/g, "");
+      
+      // Validate format
+      if (!/^\d{7,15}$/.test(val)) {
+        invalid++;
+        return;
+      }
+
+      // Check limit
+      if (numbers.length + added >= 200) {
+        return;
+      }
+
+      // Check if already exists
+      const isDup = numbers.some((n) => n.value === val) || 
+                    rawNumbers.slice(0, rawNumbers.indexOf(raw)).some((x) => x.replace(/\s+/g, "") === val);
+      if (isDup) {
+        duplicates++;
+        setNumbers((prev) => [...prev, { value: val, isDup: true }]);
+      } else {
+        setNumbers((prev) => [...prev, { value: val, isDup: false }]);
+      }
+      added++;
+    });
+
+    let msg = `✓ Added ${added} number(s)`;
+    if (invalid > 0) msg += `, ${invalid} invalid`;
+    if (duplicates > 0) msg += `, ${duplicates} duplicate(s)`;
+    if (added > 0) msg += `.`;
+    else msg = "No valid numbers found in pasted content.";
+
+    showToast(msg);
+    setNumberInput("");
   }
 
   function removeNumber(idx) {
@@ -374,6 +439,7 @@ export default function BulkWhatsapp() {
     setNumberInput("");
     setMessage("");
     setScheduleMinutes(1);
+    setScheduleDate("");
   }
 
   // ── Submit ───────────────────────────────────────────────────────────────────
@@ -389,11 +455,19 @@ export default function BulkWhatsapp() {
     }
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/create`, {
+      const payload = {
         phoneNumbers: validNumbers,
         message: message.trim(),
-        scheduleMinutes: Number(scheduleMinutes),
-      });
+      };
+      
+      // Use schedule date if provided, otherwise use delay minutes
+      if (scheduleDate) {
+        payload.scheduleDateTime = new Date(scheduleDate).toISOString();
+      } else {
+        payload.scheduleMinutes = Number(scheduleMinutes);
+      }
+      
+      const res = await axios.post(`${API}/create-message`, payload);
       showToast(`✓ Scheduled ${res.data.totalScheduled} message(s)!`);
       resetForm();
       setShowModal(false);
@@ -433,7 +507,7 @@ export default function BulkWhatsapp() {
         <table style={styles.table}>
           <thead>
             <tr>
-              {["SI.No", "Phone Number", "Message", "Schedule Time", "Status", "Action"].map(
+              {["SI.No", "Phone Number", "Message", "Schedule Time", "Status", "Created Date", "Delivery Date", "Action"].map(
                 (h) => (
                   <th key={h} style={styles.th}>
                     {h}
@@ -445,7 +519,7 @@ export default function BulkWhatsapp() {
           <tbody>
             {records.length === 0 ? (
               <tr>
-                <td colSpan={6} style={styles.emptyRow}>
+                <td colSpan={8} style={styles.emptyRow}>
                   No messages yet. Click "Create New Message" to get started.
                 </td>
               </tr>
@@ -465,6 +539,16 @@ export default function BulkWhatsapp() {
                   </td>
                   <td style={styles.td}>
                     <StatusBadge status={rec.status} />
+                  </td>
+                  <td style={styles.td}>
+                    {rec.createdAt
+                      ? new Date(rec.createdAt).toLocaleString()
+                      : 'N/A'}
+                  </td>
+                  <td style={styles.td}>
+                    {rec.sentAt
+                      ? new Date(rec.sentAt).toLocaleString()
+                      : 'Pending'}
                   </td>
                   <td style={styles.td}>
                     <button
@@ -495,7 +579,7 @@ export default function BulkWhatsapp() {
               <label style={styles.label}>
                 Phone Numbers{" "}
                 <span style={{ color: "#888", fontWeight: 400 }}>
-                  (press Enter / comma to add)
+                  (paste up to 200 or press Enter/comma to add)
                 </span>
               </label>
               <div
@@ -524,6 +608,7 @@ export default function BulkWhatsapp() {
                   value={numberInput}
                   onChange={(e) => setNumberInput(e.target.value)}
                   onKeyDown={handleNumberKeyDown}
+                  onPaste={handlePaste}
                   onBlur={() => {
                     if (numberInput.trim()) {
                       addNumber(numberInput);
@@ -533,6 +618,9 @@ export default function BulkWhatsapp() {
                   placeholder={numbers.length === 0 ? "Enter number e.g. 919876543210" : ""}
                 />
               </div>
+              <p style={{ ...styles.hint, color: "#666" }}>
+                {numbers.length}/200 numbers added
+              </p>
               {hasDuplicates && (
                 <p style={{ ...styles.hint, color: "#e74c3c" }}>
                   ⚠ Duplicate numbers are marked in red and will be excluded.
@@ -559,11 +647,36 @@ export default function BulkWhatsapp() {
 
             {/* Schedule */}
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>Schedule Delay</label>
+              <label style={styles.label}>Schedule Option</label>
+              <p style={styles.hint}>Choose either Schedule Delay or Schedule Date/Time</p>
+            </div>
+
+            {/* Schedule Date/Time */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Schedule Date & Time (Optional)</label>
+              <input
+                type="datetime-local"
+                style={styles.input}
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+              <p style={styles.hint}>
+                {scheduleDate
+                  ? `Will send on ${new Date(scheduleDate).toLocaleString()}`
+                  : "Leave empty to use Schedule Delay option"}
+              </p>
+            </div>
+
+            {/* Schedule Delay */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Schedule Delay (Minutes)</label>
               <select
                 style={styles.select}
                 value={scheduleMinutes}
-                onChange={(e) => setScheduleMinutes(e.target.value)}
+                onChange={(e) => {
+                  setScheduleMinutes(e.target.value);
+                }}
               >
                 {SCHEDULE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -571,6 +684,9 @@ export default function BulkWhatsapp() {
                   </option>
                 ))}
               </select>
+              <p style={styles.hint}>
+                {scheduleDate ? "(Will use Schedule Date/Time instead)" : "Schedule in this many minutes"}
+              </p>
             </div>
 
             <button
