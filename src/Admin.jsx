@@ -90,6 +90,7 @@ const Admin = () => {
         const otpRes = await axios.post(
           `${process.env.REACT_APP_API_URL}/admin-send-otp-login-rent`,
           { officeName }
+          // {adminName:name}
         );
 
         if (otpRes?.data?.success) {

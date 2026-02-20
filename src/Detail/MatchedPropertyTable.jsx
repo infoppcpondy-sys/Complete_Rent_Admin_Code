@@ -286,11 +286,19 @@ const handleSendWhatsApp = async (item, property) => {
 
     console.log('[WhatsApp Send] Starting process for property:', property.rentId);
 
+    // Get plans for owner and tenant
+    const ownerPlan = getOwnerPlan(property.rentId);
+    const tenantPlan = getTenantPlan(item.buyerAssistanceCard.Ra_Id);
+
+    // Determine which phone numbers to display (mask if free plan, show if paid plan)
+    const displayTenantPhone = tenantPlan === 'Free' ? maskPhoneNumber(formattedTenantPhone) : formattedTenantPhone;
+    const displayOwnerPhone = ownerPlan === 'Free' ? maskPhoneNumber(formattedOwnerPhone) : formattedOwnerPhone;
+
     // Message to owner
-    const ownerMessage = `Hello ${ownerName},\n\nYour property (${propertyDetails}) has been successfully matched with a potential tenant. They are interested in renting your property. Please contact them at your earliest convenience to arrange a viewing.\n\nTenant Contact: ${formattedTenantPhone}\n\nThank you for using RENT PONDY!`;
+    const ownerMessage = `🏠 *RENT PONDY - Property Match Alert!*\n\nHello ${ownerName}! 👋\n\nGreat news! 🎉 Your property *(${propertyDetails})* has been successfully matched with a potential tenant who is actively looking to rent.\n\nThey are interested in your property and eager to connect. Please reach out at your earliest convenience to arrange a viewing! 📅\n\n📞 *Tenant Contact:* ${displayTenantPhone}${tenantPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\nThank you for choosing *RENT PONDY!* 🙏\nWe're here to make renting easier for you! 🌟`;
 
     // Message to tenant
-    const tenantMessage = `Hello ${tenantName},\n\nGreat news! We have found a potential property match for you - ${propertyDetails} matching your requirements.\n\nProperty Owner: ${ownerName}\nOwner Contact: ${formattedOwnerPhone}\n\nPlease connect with the owner to schedule a viewing.\n\nBest regards,\nRENT PONDY Team!`;
+    const tenantMessage = `🔑 *RENT PONDY - Property Match Found!*\n\nHello ${tenantName}! 👋\n\nExciting news! 🎉 We have found a *perfect property match* for you!\n\n🏡 *Property Details:* ${propertyDetails}\nThis property matches your requirements and is ready for viewing!\n\n👤 *Property Owner:* ${ownerName}\n📞 *Owner Contact:* ${displayOwnerPhone}${ownerPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\nPlease connect with the owner to schedule a viewing at your convenience. 📅\n\nBest regards,\n*RENT PONDY Team* 🏠✨\n_Making your rental journey smooth & easy!_`;
 
     // Send message to owner
     console.log('[WhatsApp Send] Sending message to owner:', formattedOwnerPhone);
@@ -566,11 +574,19 @@ const handleSendAllWhatsApp = async () => {
           continue;
         }
 
+        // Get plans for owner and tenant
+        const ownerPlan = getOwnerPlan(property.rentId);
+        const tenantPlan = getTenantPlan(item.buyerAssistanceCard.Ra_Id);
+
+        // Determine which phone numbers to display (mask if free plan, show if paid plan)
+        const displayTenantPhone = tenantPlan === 'Free' ? maskPhoneNumber(formattedTenantPhone) : formattedTenantPhone;
+        const displayOwnerPhone = ownerPlan === 'Free' ? maskPhoneNumber(formattedOwnerPhone) : formattedOwnerPhone;
+
         // Message to owner
-        const ownerMessage = `Hello ${ownerName},\n\nYour property (${propertyDetails}) has been successfully matched with a potential tenant. They are interested in renting your property. Please contact them at your earliest convenience to arrange a viewing.\n\nTenant Contact: ${formattedTenantPhone}\n\nThank you for using RENT PONDY!`;
+        const ownerMessage = `🏠 *RENT PONDY - Property Match Alert!*\n\nHello ${ownerName}! 👋\n\nGreat news! 🎉 Your property *(${propertyDetails})* has been successfully matched with a potential tenant who is actively looking to rent.\n\nThey are interested in your property and eager to connect. Please reach out at your earliest convenience to arrange a viewing! 📅\n\n📞 *Tenant Contact:* ${displayTenantPhone}${tenantPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\nThank you for choosing *RENT PONDY!* 🙏\nWe're here to make renting easier for you! 🌟`;
 
         // Message to tenant
-        const tenantMessage = `Hello ${tenantName},\n\nGreat news! We have found a potential property match for you - ${propertyDetails} matching your requirements.\n\nProperty Owner: ${ownerName}\nOwner Contact: ${formattedOwnerPhone}\n\nPlease connect with the owner to schedule a viewing.\n\nBest regards,\nRENT PONDY Team!`;
+        const tenantMessage = `🔑 *RENT PONDY - Property Match Found!*\n\nHello ${tenantName}! 👋\n\nExciting news! 🎉 We have found a *perfect property match* for you!\n\n🏡 *Property Details:* ${propertyDetails}\nThis property matches your requirements and is ready for viewing!\n\n👤 *Property Owner:* ${ownerName}\n📞 *Owner Contact:* ${displayOwnerPhone}${ownerPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\nPlease connect with the owner to schedule a viewing at your convenience. 📅\n\nBest regards,\n*RENT PONDY Team* 🏠✨\n_Making your rental journey smooth & easy!_`;
 
         // Send message to owner
         try {
@@ -809,6 +825,14 @@ const handleSendAllWhatsApp = async () => {
     console.log("Tenant not found in either:", cleanRaId, "Free list:", freeTenants, "Paid list:", paidTenants);
     return '-';
   };
+
+  // Helper function to mask last 5 digits of phone number (e.g., 919108632441 becomes 9191086XXXXX)
+  const maskPhoneNumber = (phoneNumber) => {
+    const cleaned = String(phoneNumber).replace(/\D/g, '');
+    if (cleaned.length < 5) return phoneNumber;
+    const unmasked = cleaned.substring(0, cleaned.length - 5);
+    return `${unmasked}XXXXX`;
+  };
 const applyFilters = () => {
   return filteredData.map(item => {
     const matched = item.matchedProperties.filter(property => {
@@ -866,7 +890,12 @@ const applyFilters = () => {
         matchesTenantPlan = tenantPlan === filters.tenantPlan;
       }
 
-      return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch && minMatch && maxMatch && matchesWhatsappStatus && matchesOwnerPlan && matchesTenantPlan;
+      // Exclude rows where either Owner Plan or Tenant Plan is "-"
+      const ownerPlan = getOwnerPlan(property.rentId);
+      const tenantPlan = getTenantPlan(item.buyerAssistanceCard.Ra_Id);
+      const excludeInvalidPlans = ownerPlan !== "-" && tenantPlan !== "-";
+
+      return matchesId && matchesRaId && matchesOwnerPhone && matchesRaPhone && startMatch && endMatch && minMatch && maxMatch && matchesWhatsappStatus && matchesOwnerPlan && matchesTenantPlan && excludeInvalidPlans;
     });
 
     return { ...item, matchedProperties: matched };
@@ -892,7 +921,14 @@ const handleResetFilters = () => {
 
 // ===== HELPER FUNCTION: Calculate total matched properties count =====
 const getTotalMatchedPropertiesCount = () => {
-  return matchedData.reduce((total, item) => total + (item.matchedProperties?.length || 0), 0);
+  return matchedData.reduce((total, item) => {
+    const validProperties = item.matchedProperties.filter(property => {
+      const ownerPlan = getOwnerPlan(property.rentId);
+      const tenantPlan = getTenantPlan(item.buyerAssistanceCard.Ra_Id);
+      return ownerPlan !== "-" && tenantPlan !== "-";
+    });
+    return total + validProperties.length;
+  }, 0);
 };
 
 // ===== HELPER FUNCTION: Calculate filtered matched properties count =====

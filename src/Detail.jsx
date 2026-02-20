@@ -202,8 +202,8 @@ const Detail = () => {
   const [comment, setComment] = useState("");
   // const [propertyClicked, setPropertyClicked] = useState(false);
   const mapRef = useRef(null);
-    const [nearbyPlaces, setNearbyPlaces] = useState([]);
-const [allNearbyPlaces, setAllNearbyPlaces] = useState([]);
+    // const [nearbyPlaces, setNearbyPlaces] = useState([]);
+// const [allNearbyPlaces, setAllNearbyPlaces] = useState([]);
 
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [isShareMenuVisible, setIsShareMenuVisible] = useState(false);
