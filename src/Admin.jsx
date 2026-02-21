@@ -13,7 +13,7 @@
 
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -36,6 +36,8 @@ const Admin = () => {
 
   const [step, setStep] = useState('login'); // 'login' | 'verify'
   const [loading, setLoading] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [canResendOtp, setCanResendOtp] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -45,6 +47,18 @@ const Admin = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  // OTP Timer effect
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const timer = setTimeout(() => {
+        setOtpTimer(otpTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (otpTimer === 0 && step === 'verify') {
+      setCanResendOtp(true);
+    }
+  }, [otpTimer, step]);
 
   const handleLogin = async (e) => {
   e.preventDefault();
@@ -89,12 +103,13 @@ const Admin = () => {
         // Send OTP after successful login for other roles
         const otpRes = await axios.post(
           `${process.env.REACT_APP_API_URL}/admin-send-otp-login-rent`,
-          { officeName }
-          // {adminName:name}
+          { officeName, adminName: name }
         );
 
         if (otpRes?.data?.success) {
           toast.success("OTP sent to registered contact");
+          setOtpTimer(60); // OTP for 1 minutes
+          setCanResendOtp(false);
           setStep('verify');
         } else {
           toast.error(otpRes?.data?.message || "OTP service error");
@@ -145,6 +160,7 @@ const Admin = () => {
         {
           officeName: formData.officeName,
           otp: formData.otp,
+          adminName: formData.name,
         }
       );
 
@@ -170,6 +186,29 @@ const Admin = () => {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "OTP verification error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      const otpRes = await axios.post(
+        `${process.env.REACT_APP_API_URL}/admin-send-otp-login-rent`,
+        { officeName: formData.officeName, adminName: formData.name }
+      );
+
+      if (otpRes?.data?.success) {
+        toast.success("OTP resent to registered contact");
+        setOtpTimer(60); // Reset to 1 minutes
+        setCanResendOtp(false);
+        setFormData((prev) => ({ ...prev, otp: '' })); // Clear OTP field
+      } else {
+        toast.error(otpRes?.data?.message || "Failed to resend OTP");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Error resending OTP");
     } finally {
       setLoading(false);
     }
@@ -270,17 +309,40 @@ const Admin = () => {
               )}
 
               {step === 'verify' && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Enter OTP</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="otp"
-                    value={formData.otp}
-                    onChange={handleChange}
-                    placeholder="Enter the OTP"
-                    required
-                  />
-                </Form.Group>
+                <>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Enter OTP</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="otp"
+                      value={formData.otp}
+                      onChange={handleChange}
+                      placeholder="Enter the OTP"
+                      required
+                    />
+                  </Form.Group>
+                  
+                  <div className="mb-3 text-center">
+                    {otpTimer > 0 && (
+                      <p className="text-muted mb-2">
+                        OTP expires in: <strong>{Math.floor(otpTimer / 60)}:{String(otpTimer % 60).padStart(2, '0')}</strong>
+                      </p>
+                    )}
+                  </div>
+
+                  {canResendOtp && (
+                    <div className="mb-3 text-center">
+                      <Button 
+                        variant="link" 
+                        onClick={handleResendOtp} 
+                        disabled={loading}
+                        className="p-0"
+                      >
+                        Resend OTP
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
 
               <Button type="submit" className="w-100 mt-2" disabled={loading}>
