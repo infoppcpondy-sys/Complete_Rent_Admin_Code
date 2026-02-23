@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Table, Badge } from 'react-bootstrap';
-import { FaTrash, FaUndo, FaInfoCircle } from 'react-icons/fa';
+import { FaTrash, FaUndo, FaInfoCircle, FaFileExcel } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const BuyerAssistanceActive = () => {
   const [data, setData] = useState([]);
@@ -153,6 +154,45 @@ const handleUndoDelete = async (_id) => {
   }
 };
 
+const getTotalMatchedPropertiesCount = () => {
+  return data.length;
+};
+
+const getFilteredMatchedPropertiesCount = () => {
+  return filteredData.length;
+};
+
+const handleExportToExcel = () => {
+  if (filteredData.length === 0) {
+    alert('No data to export!');
+    return;
+  }
+
+  const exportData = filteredData.map(item => ({
+    'Ra_Id': item.Ra_Id,
+    'Phone Number': item.phoneNumber,
+    'Tenant Name': item.raName,
+    'Property Mode': item.propertyMode,
+    'Property Type': item.propertyType,
+    'Area': item.area || 'N/A',
+    'City': item.city || 'N/A',
+    'Pincode': item.pincode || item.pinCode || 'N/A',
+    'Min Price': item.minPrice,
+    'Max Price': item.maxPrice,
+    'Plan Name': item.planDetails.planName,
+    'Created At': item.planDetails.planCreatedAt,
+    'Duration (Days)': item.planDetails.durationDays,
+    'Expiry Date': item.planDetails.planExpiryDate,
+    'Package Type': item.planDetails.packageType,
+    'Status': item.isDeleted ? 'Deleted' : 'raActive'
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Buyer Assistance');
+  XLSX.writeFile(workbook, `BuyerAssistance_${new Date().toISOString().split('T')[0]}.xlsx`);
+};
+
  
   return (
     <div className="p-4">
@@ -227,6 +267,41 @@ onClick={handleReset}
               <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
 </button>
+              <button className="btn mb-3 mt-2" style={{background:"#28a745", color: 'white'}} onClick={handleExportToExcel}>
+  <FaFileExcel className="me-2" style={{marginRight: '8px'}} />
+  Export to Excel
+</button>
+
+      {/* Counter Module */}
+      <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+        <div style={{ 
+          background: '#6c757d', 
+          color: 'white', 
+          padding: '8px 16px', 
+          borderRadius: '4px', 
+          fontWeight: 'bold',
+          fontSize: '14px',
+          marginBottom: '12px',
+          marginLeft: '8px',
+          display: 'inline-block'
+        }}>
+          Total: {getTotalMatchedPropertiesCount()} Records
+        </div>
+        <div style={{ 
+          background: '#007bff', 
+          color: 'white', 
+          padding: '8px 16px', 
+          borderRadius: '4px', 
+          fontWeight: 'bold',
+          fontSize: '14px',
+          marginBottom: '12px',
+          marginLeft: '8px',
+          display: 'inline-block'
+        }}>
+          Showing: {getFilteredMatchedPropertiesCount()} Records
+        </div>
+      </div>
+
       {/* Data Table */}
       <div className="overflow-x-auto mt-5 mb-3">
         <h3 className="text-primary">All Buyer Assistance With Plan Datas</h3>
@@ -238,6 +313,9 @@ onClick={handleReset}
               <th className="border px-4 py-2">Tanent Name</th>
               <th className="border px-4 py-2">PropertyMode</th>
               <th className="border px-4 py-2">Property Type</th>
+              <th className="border px-4 py-2">Area</th>
+              <th className="border px-4 py-2">City</th>
+              <th className="border px-4 py-2">Pincode</th>
               <th className="border px-4 py-2">Min Price</th>
               <th className="border px-4 py-2">Max Price</th>
               <th className="border px-4 py-2">Plan Name</th>
@@ -257,6 +335,9 @@ onClick={handleReset}
                 <td className="border px-4 py-2">{item.raName}</td>
                 <td className="border px-4 py-2">{item.propertyMode}</td>
                 <td className="border px-4 py-2">{item.propertyType}</td>
+                <td className="border px-4 py-2">{item.area || 'N/A'}</td>
+                <td className="border px-4 py-2">{item.city || 'N/A'}</td>
+                <td className="border px-4 py-2">{item.pincode || item.pinCode || 'N/A'}</td>
                 <td className="border px-4 py-2">{item.minPrice}</td>
                 <td className="border px-4 py-2">{item.maxPrice}</td>
 

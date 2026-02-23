@@ -25,6 +25,7 @@ const AdminDashboard = () => {
         advanceAmount: '',
         streetName: '',
         location: '',
+        pincode: '',
         phoneNumber: '',
         url: '',
         bhk: 'No',
@@ -161,6 +162,7 @@ const AdminDashboard = () => {
             advanceAmount: '',
             streetName: '',
             location: '',
+            pincode: '',
             phoneNumber: '',
             url: '',
             bhk: 'No',
@@ -197,6 +199,7 @@ const AdminDashboard = () => {
             advanceAmount: property.advanceAmount || '',
             streetName: property.streetName,
             location: property.location,
+            pincode: property.pincode || '',
             phoneNumber: property.phoneNumber,
             url: property.url || '',
             bhk: property.bhk || 'No',
@@ -700,6 +703,21 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
+                            {/* Pincode */}
+                            <div className="form-group">
+                                <label>Pincode *</label>
+                                <input
+                                    type="text"
+                                    name="pincode"
+                                    value={formData.pincode}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter 6-digit pincode"
+                                    pattern="[0-9]{6}"
+                                    maxLength="6"
+                                    required
+                                />
+                            </div>
+
                             {/* URL */}
                             <div className="form-group">
                                 <label>Google Map URL</label>
@@ -1035,6 +1053,7 @@ const AdminDashboard = () => {
                                         <th>Amount</th>
                                         <th>Street</th>
                                         <th>Location</th>
+                                        <th>Pincode</th>
                                         <th>URL</th>
                                         <th>Phone</th>
                                         <th>Masked Phone</th>
@@ -1085,6 +1104,7 @@ const AdminDashboard = () => {
                                             <td>₹{property.rentAmount || property.leaseAmount || '-'}</td>
                                             <td>{property.streetName}</td>
                                             <td>{property.location}</td>
+                                            <td>{property.pincode || 'N/A'}</td>
                                             <td>
                                                 {property.url ? (
                                                     <a href={property.url} target="_blank" rel="noopener noreferrer" style={{color: '#007bff', textDecoration: 'underline', cursor: 'pointer'}}>

@@ -31,6 +31,7 @@ const ApprovedCar = () => {
   const [currentPhoneNumber, setCurrentPhoneNumber] = useState('');
   const [deletionReason, setDeletionReason] = useState('');
   const [phoneNumberSearch, setPhoneNumberSearch] = useState('');
+  const [pincodeFilter, setPincodeFilter] = useState('');
   const [showMoveToModal, setShowMoveToModal] = useState(false);
   const [selectedPropertyForMove, setSelectedPropertyForMove] = useState(null);
   const [featureStatusFilter, setFeatureStatusFilter] = useState('');
@@ -207,6 +208,8 @@ const navigate = useNavigate();
             'Property Mode': property.propertyMode,
             'Rental Amount': property.rentalAmount,
             'City': property.city,
+            'Area': property.area || 'N/A',
+            'Pincode': property.pinCode || 'N/A',
             'Plan Name': property.planName || 'N/A',
             'Bill Date': billDate,
             'Validity (days)': (bill && bill.validity) ? bill.validity : (property.validity || '-'),
@@ -291,6 +294,15 @@ const handleSearch = () => {
     result = result.filter((prop) =>
       String(prop.phoneNumber || '').toLowerCase().includes(query)
     );
+  }
+
+  // Pincode filter
+  if (pincodeFilter.trim()) {
+    const query = pincodeFilter.trim();
+    result = result.filter((prop) => {
+      const propPincode = prop.pinCode || prop.pincode || prop.postalCode;
+      return String(propPincode || '').includes(query);
+    });
   }
 
   // Date filter
@@ -422,13 +434,15 @@ useEffect(() => {
   priceFilter,
   propertyTypeFilter,
   propertyModeFilter,
-  billTypeFilter
+  billTypeFilter,
+  pincodeFilter
 ]);
 
 // Reset all filters
 const handleReset = () => {
   setrentIdSearch('');
   setPhoneNumberSearch('');
+  setPincodeFilter('');
   setStartDate('');
   setEndDate('');
   setFeatureStatusFilter('');
@@ -848,6 +862,18 @@ const handlePrint = (prop) => {
     onChange={(e) => setPhoneNumberSearch(e.target.value)}
   />
 </div>
+<div className="col-md-3">
+  <label>Pincode {pincodeFilter && <span style={{color: 'green', fontWeight: 'bold'}}>({filtered.filter(p => {
+    const propPincode = p.pinCode || p.pincode || p.postalCode;
+    return String(propPincode) === pincodeFilter;
+  }).length} properties)</span>}</label>
+  <Form.Control
+    type="text"
+    placeholder="Search by Pincode"
+    value={pincodeFilter}
+    onChange={(e) => setPincodeFilter(e.target.value)}
+  />
+</div>
  <div className="col-md-3">
 <select value={featureStatusFilter} onChange={(e) => setFeatureStatusFilter(e.target.value)}>
   <option value="">All Feature Status</option>
@@ -966,6 +992,8 @@ const handlePrint = (prop) => {
               <th>Property Mode</th>
               <th>Rental Amount</th>
               <th>City</th>
+              <th>Area</th>
+              <th>Pincode</th>
               <th>CreatedBy</th>
               <th>Created At</th>
               <th>Updated At</th>
@@ -1041,6 +1069,8 @@ const handlePrint = (prop) => {
                   <td>{prop.propertyMode}</td>
                   <td>{prop.rentalAmount}</td>
                   <td>{prop.city}</td>
+                  <td>{prop.area || 'N/A'}</td>
+                  <td>{prop.pinCode || 'N/A'}</td>
                   <td>{prop.createdBy}</td>
                   <td>{new Date(prop.createdAt).toLocaleDateString()}</td>
                   <td>{new Date(prop.updatedAt).toLocaleDateString()}</td>

@@ -640,6 +640,18 @@ const menuItems = [
         </NavLink>
       </li>
 
+
+      <li className="p-0 mt-2" >
+        <NavLink
+          to="/dashboard/search-pincode"
+ onClick={toggleSidebar}
+          className={({ isActive }) => (isActive ? "active-link rounded" : "")}
+        >
+          <FaSearch />
+          Search Pincode
+        </NavLink>
+      </li>
+
        <li className="p-0 mt-2">
       <NavLink
         to="/dashboard/add-car"
@@ -1072,6 +1084,27 @@ Customer Care
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
       Expired Assistant
+    </NavLink>
+  </li>
+
+</ul> */}
+
+
+{/* Property Analytics module */}
+
+  {/* <li className="p-3 mt-2  text-white" 
+    onClick={() => toggleMenu('propertyAnalytics')}
+   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
+     
+          <FaSearch style={{marginRight:'10px '}}/>
+         Property Analytics
+      </li>
+<ul className={`collapse ${activeMenu === 'propertyAnalytics' ? 'show' : ''}`} id="PropertyAnalyticsMenu">
+
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/search-pincode"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaSearch />
+      Search Pincode
     </NavLink>
   </li>
 

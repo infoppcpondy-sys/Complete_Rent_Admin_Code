@@ -1,0 +1,274 @@
+.pincode-search-container {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.pincode-header {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.pincode-header h1 {
+  color: #333;
+  font-weight: 700;
+  margin-bottom: 10px;
+  font-size: 2.5rem;
+}
+
+.pincode-header p {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Statistics Cards */
+.stat-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card-total {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stat-card-active {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.stat-card h3 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stat-card p {
+  font-size: 1rem;
+  margin-top: 10px;
+  opacity: 0.9;
+}
+
+/* Pincode Table */
+.pincode-table-wrapper {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 50px;
+}
+
+.pincode-table {
+  margin: 0;
+}
+
+.pincode-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.pincode-table thead th {
+  border: none;
+  padding: 20px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 3px solid #667eea;
+}
+
+.pincode-table tbody tr {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #eee;
+}
+
+.pincode-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.pincode-table tbody tr.no-properties {
+  opacity: 0.7;
+}
+
+.pincode-table td {
+  padding: 18px 20px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.pincode-cell {
+  font-weight: 600;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.count-badge {
+  font-size: 1rem;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+/* Grid View */
+.pincode-grid {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.pincode-grid h5 {
+  color: #333;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.pincode-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.pincode-card.has-properties {
+  border-color: #28a745;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+}
+
+.pincode-card.has-properties:hover {
+  border-color: #28a745;
+  box-shadow: 0 8px 24px rgba(40, 167, 69, 0.25);
+  transform: translateY(-5px);
+}
+
+.pincode-card.no-properties {
+  border-color: #ccc;
+  background: #f9f9f9;
+}
+
+.pincode-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.pincode-card .card-body {
+  padding: 25px 15px;
+}
+
+.pincode-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+.property-count h4 {
+  color: #333;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 15px 0 5px 0;
+}
+
+.property-count p {
+  color: #999;
+  font-size: 0.95rem;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pincode-header h1 {
+    font-size: 2rem;
+  }
+
+  .stat-card h3 {
+    font-size: 2rem;
+  }
+
+  .pincode-table thead th,
+  .pincode-table td {
+    padding: 12px 8px;
+    font-size: 0.9rem;
+  }
+
+  .pincode-number {
+    font-size: 1.3rem;
+  }
+
+  .property-count h4 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pincode-search-container {
+    padding: 20px 10px;
+  }
+
+  .pincode-header {
+    padding: 20px;
+  }
+
+  .pincode-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .pincode-header p {
+    font-size: 0.95rem;
+  }
+
+  .stat-card h3 {
+    font-size: 1.8rem;
+  }
+
+  .stat-card p {
+    font-size: 0.85rem;
+  }
+
+  .pincode-table thead th,
+  .pincode-table td {
+    padding: 10px 5px;
+    font-size: 0.8rem;
+  }
+
+  .pincode-grid {
+    padding: 20px;
+  }
+
+  .pincode-number {
+    font-size: 1.1rem;
+  }
+
+  .property-count h4 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pincode-table tbody tr,
+.pincode-card {
+  animation: fadeIn 0.5s ease-out;
+}
