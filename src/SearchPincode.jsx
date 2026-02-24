@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Table, Card, Container, Row, Col, Badge, Spinner } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 const SearchPincode = ({ properties = [] }) => {
   const [pincodeData, setPincodeData] = useState([]);
@@ -11,6 +12,8 @@ const SearchPincode = ({ properties = [] }) => {
   const [selectedExclusivePincode, setSelectedExclusivePincode] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [approvedModeFilter, setApprovedModeFilter] = useState('');
+  const navigate = useNavigate();
 
   const allPincodes = [
     '605001',
@@ -91,7 +94,7 @@ const SearchPincode = ({ properties = [] }) => {
             });
           }
 
-          if (pinCode) {
+          if (pinCode && !property.isDeleted) {
             const pinCodeStr = String(pinCode).trim();
             if (pincodeCountMap.hasOwnProperty(pinCodeStr)) {
               pincodeCountMap[pinCodeStr]++;
@@ -215,7 +218,40 @@ const SearchPincode = ({ properties = [] }) => {
   const totalProperties = pincodeData.reduce((sum, item) => sum + item.count, 0);
   const totalExclusiveProperties = exclusivePincodeData.reduce((sum, item) => sum + item.count, 0);
 
+  // Get combined data for 605001 and 605002
+  const getCombinedPincodeData = (data) => {
+    const combined605001_605002 = {
+      pincode: '605001 & 605002',
+      count: 0,
+      combined: true,
+      subPincodes: ['605001', '605002']
+    };
+    
+    data.forEach(item => {
+      if (item.pincode === '605001' || item.pincode === '605002') {
+        combined605001_605002.count += item.count;
+      }
+    });
+    
+    return combined605001_605002;
+  };
+
+  const combinedApprovedData = getCombinedPincodeData(pincodeData);
+  const combinedExclusiveData = getCombinedPincodeData(exclusivePincodeData);
+
+  // Filter data to exclude 605001 and 605002 from individual cards
+  const filteredPincodeData = pincodeData.filter(item => item.pincode !== '605001' && item.pincode !== '605002');
+  const filteredExclusivePincodeData = exclusivePincodeData.filter(item => item.pincode !== '605001' && item.pincode !== '605002');
+
   const getPropertiesForPincode = (pincode) => {
+    if (pincode === '605001') {
+      // Return properties from both 605001 and 605002
+      return allProperties.filter(property => {
+        const propPincode = property.pinCode || property.pincode || property.postalCode;
+        const pinCodeStr = String(propPincode).trim();
+        return pinCodeStr === '605001' || pinCodeStr === '605002';
+      });
+    }
     return allProperties.filter(property => {
       const propPincode = property.pinCode || property.pincode || property.postalCode;
       return String(propPincode).trim() === String(pincode).trim();
@@ -223,6 +259,14 @@ const SearchPincode = ({ properties = [] }) => {
   };
 
   const getExclusivePropertiesForPincode = (pincode) => {
+    if (pincode === '605001') {
+      // Return properties from both 605001 and 605002
+      return allExclusiveProperties.filter(property => {
+        const propPincode = property.pinCode || property.pincode || property.postalCode;
+        const pinCodeStr = String(propPincode).trim();
+        return pinCodeStr === '605001' || pinCodeStr === '605002';
+      });
+    }
     return allExclusiveProperties.filter(property => {
       const propPincode = property.pinCode || property.pincode || property.postalCode;
       return String(propPincode).trim() === String(pincode).trim();
@@ -232,9 +276,27 @@ const SearchPincode = ({ properties = [] }) => {
   const selectedPincodeProperties = selectedPincode ? getPropertiesForPincode(selectedPincode) : [];
   const selectedExclusivePincodeProperties = selectedExclusivePincode ? getExclusivePropertiesForPincode(selectedExclusivePincode) : [];
 
+  // Sort exclusive properties by creation date (recent first)
+  const sortedExclusivePincodeProperties = selectedExclusivePincodeProperties.length > 0
+    ? [...selectedExclusivePincodeProperties].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    : [];
+
+  // Filter approved properties: exclude deleted and filter by mode
+  const filteredApprovedProperties = selectedPincodeProperties
+    .filter(property => {
+      const isNotDeleted = !property.isDeleted;
+      const modeMatch = !approvedModeFilter || (property.propertyMode && property.propertyMode.toLowerCase() === approvedModeFilter.toLowerCase());
+      return isNotDeleted && modeMatch;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
   const handlePincodeSelect = (pincode) => setSelectedPincode(pincode);
   const handleExclusivePincodeSelect = (pincode) => setSelectedExclusivePincode(pincode);
-  const handleBackToGrid = () => { setSelectedPincode(null); setSelectedExclusivePincode(null); };
+  const handleBackToGrid = () => { 
+    setSelectedPincode(null); 
+    setSelectedExclusivePincode(null);
+    setApprovedModeFilter('');
+  };
 
   if (loading) {
     return (
@@ -296,16 +358,31 @@ const SearchPincode = ({ properties = [] }) => {
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px'
             }}>
-              <h2>📍 Pincode: <strong>{selectedPincode}</strong> (Approved Properties)</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
+              <h2>📍 Pincode: <strong>{selectedPincode === '605001' ? '605001 & 605002' : selectedPincode}</strong> (Approved Properties)</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '15px', flexWrap: 'wrap', justifyContent: 'space-between' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{selectedPincodeProperties.length}</h3>
-                  <p style={{ margin: '5px 0 0 0', fontSize: '1.1rem' }}>{selectedPincodeProperties.length === 1 ? 'Property' : 'Properties'} Found</p>
+                  <h3 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{filteredApprovedProperties.length}</h3>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '1.1rem' }}>{filteredApprovedProperties.length === 1 ? 'Property' : 'Properties'} Found</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label htmlFor="modeFilter" style={{ fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap' }}>Filter by Property Mode:</label>
+                  <select 
+                    id="modeFilter"
+                    className="form-select" 
+                    style={{ width: '180px' }}
+                    value={approvedModeFilter}
+                    onChange={(e) => setApprovedModeFilter(e.target.value)}
+                  >
+                    <option value="">All Modes</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Commercial">Commercial</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
-          {selectedPincodeProperties.length === 0 ? (
+          
+          {filteredApprovedProperties.length === 0 ? (
             <div className="alert alert-info text-center">No approved properties found for pincode {selectedPincode}</div>
           ) : (
             <div className="table-responsive">
@@ -317,10 +394,21 @@ const SearchPincode = ({ properties = [] }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedPincodeProperties.map((property, index) => (
+                  {filteredApprovedProperties.map((property, index) => (
                     <tr key={property.rentId || index}>
                       <td>{index + 1}</td>
-                      <td><strong>{property.rentId || 'N/A'}</strong></td>
+                      <td 
+                        style={{ cursor: 'pointer' }}
+                        onClick={() =>
+                          navigate('/dashboard/detail', {
+                            state: { rentId: property.rentId, phoneNumber: property.phoneNumber }
+                          })
+                        }
+                      >
+                        <strong style={{ color: '#007bff', textDecoration: 'underline' }}>
+                          {property.rentId || 'N/A'}
+                        </strong>
+                      </td>
                       <td>{property.phoneNumber || 'N/A'}</td>
                       <td>{property.propertyType || 'N/A'}</td>
                       <td>{property.propertyMode || 'N/A'}</td>
@@ -328,7 +416,7 @@ const SearchPincode = ({ properties = [] }) => {
                       <td>{property.city || 'N/A'}</td>
                       <td>₹{property.rentalAmount || 'N/A'}</td>
                       <td><Badge bg={property.planName === 'Paid' ? 'success' : 'warning'}>{property.planName || 'Free'}</Badge></td>
-                      <td><Badge bg={property.isDeleted ? 'danger' : property.status === 'active' ? 'success' : 'secondary'}>{property.isDeleted ? 'Deleted' : property.status || 'Pending'}</Badge></td>
+                      <td><Badge bg={property.status === 'active' ? 'success' : 'secondary'}>{property.status || 'Pending'}</Badge></td>
                       <td>{new Date(property.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
@@ -345,7 +433,7 @@ const SearchPincode = ({ properties = [] }) => {
               background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               color: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px'
             }}>
-              <h2>⭐ Pincode: <strong>{selectedExclusivePincode}</strong> (Exclusive Properties)</h2>
+              <h2>⭐ Pincode: <strong>{selectedExclusivePincode === '605001' ? '605001 & 605002' : selectedExclusivePincode}</strong> (Exclusive Properties)</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{selectedExclusivePincodeProperties.length}</h3>
@@ -367,7 +455,7 @@ const SearchPincode = ({ properties = [] }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedExclusivePincodeProperties.map((property, index) => (
+                  {sortedExclusivePincodeProperties.map((property, index) => (
                     <tr key={property.propertyId || property.id || property.rentId || property._id || index}>
                       <td>{index + 1}</td>
                       <td><strong>{property.propertyId || property.id || property.rentId || property.property_id || property.ppcId || property.exclusiveId || property._id || 'N/A'}</strong></td>
@@ -395,7 +483,68 @@ const SearchPincode = ({ properties = [] }) => {
           <div className="pincode-grid mt-5">
             <h5 className="mb-3">📊 Approved Properties Count by Pincode</h5>
             <Row className="g-2">
-              {pincodeData.map(item => (
+              {/* Combined Card for 605001 & 605002 */}
+              <Col xl={2} lg={3} md={4} sm={6} xs={6} key="605001-605002-combined">
+                <Card
+                  className={`pincode-card ${combinedApprovedData.count > 0 ? 'has-properties' : 'no-properties'}`}
+                  style={{
+                    cursor: combinedApprovedData.count > 0 ? 'pointer' : 'default',
+                    transition: 'all 0.2s ease',
+                    border: combinedApprovedData.count > 0 ? '1.5px solid #27AE60' : '1.5px solid #e0e0e0',
+                    borderRadius: '10px',
+                    boxShadow: combinedApprovedData.count > 0 ? '0 0 12px rgba(39,174,96,0.4), 0 2px 8px rgba(39,174,96,0.2)' : 'none',
+                  }}
+                  onClick={() => combinedApprovedData.count > 0 && handlePincodeSelect('605001')}
+                >
+                  <Card.Body className="p-2 text-center">
+                    {/* Pincode number */}
+                    <div style={{
+                      fontSize: '0.85rem',
+                      fontWeight: '700',
+                      color: combinedApprovedData.count > 0 ? '#27AE60' : '#bbb',
+                      letterSpacing: '0.5px',
+                      lineHeight: 1.2,
+                    }}>
+                      {combinedApprovedData.pincode}
+                    </div>
+                    {/* Area names */}
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: '#000',
+                      fontWeight: '700',
+                      marginBottom: '6px',
+                      whiteSpace: 'normal',
+                    }}>
+                      {pincodeToAreaName['605001'] || 'Unknown Area'}
+                      <br />
+                      {pincodeToAreaName['605002'] || 'Unknown Area'}
+                    </div>
+                    {/* Count box */}
+                    <div style={{
+                      backgroundColor: combinedApprovedData.count > 0 ? '#E8F8F5' : '#f5f5f5',
+                      borderRadius: '6px',
+                      padding: '6px 4px',
+                      marginBottom: '6px',
+                    }}>
+                      <div style={{
+                        fontSize: '1.7rem',
+                        fontWeight: '800',
+                        color: combinedApprovedData.count > 0 ? '#27AE60' : '#ccc',
+                        lineHeight: 1,
+                      }}>
+                        {combinedApprovedData.count}
+                      </div>
+                      <div style={{ fontSize: '0.62rem', color: '#999', marginTop: '2px' }}>
+                        {combinedApprovedData.count === 1 ? 'Property' : 'Properties'}
+                      </div>
+                    </div>
+                    {combinedApprovedData.count > 0 && (
+                      <Badge bg="success" style={{ fontSize: '0.58rem', padding: '2px 8px' }}>Active</Badge>
+                    )}
+                  </Card.Body>
+                </Card>
+              </Col>
+              {filteredPincodeData.map(item => (
                 <Col xl={2} lg={3} md={4} sm={6} xs={6} key={item.pincode}>
                   <Card
                     className={`pincode-card ${item.count > 0 ? 'has-properties' : 'no-properties'}`}
@@ -421,7 +570,7 @@ const SearchPincode = ({ properties = [] }) => {
                       </div>
                       {/* Area name */}
                       <div style={{
-                        fontSize: '0.68rem',
+                        fontSize: '0.80rem',
                         color: '#000',
                         fontWeight: '700',
                         marginBottom: '6px',
@@ -464,7 +613,68 @@ const SearchPincode = ({ properties = [] }) => {
           <div className="pincode-grid mt-4">
             <h5 className="mb-3">⭐ Exclusive Properties Count by Pincode</h5>
             <Row className="g-2">
-              {exclusivePincodeData.map(item => (
+              {/* Combined Card for 605001 & 605002 */}
+              <Col xl={2} lg={3} md={4} sm={6} xs={6} key="605001-605002-combined-exclusive">
+                <Card
+                  className={`pincode-card ${combinedExclusiveData.count > 0 ? 'has-properties' : 'no-properties'}`}
+                  style={{
+                    cursor: combinedExclusiveData.count > 0 ? 'pointer' : 'default',
+                    transition: 'all 0.2s ease',
+                    border: combinedExclusiveData.count > 0 ? '1.5px solid #FFD700' : '1.5px solid #e0e0e0',
+                    borderRadius: '10px',
+                    boxShadow: combinedExclusiveData.count > 0 ? '0 0 12px rgba(255,215,0,0.4), 0 2px 8px rgba(255,215,0,0.2)' : 'none',
+                  }}
+                  onClick={() => combinedExclusiveData.count > 0 && handleExclusivePincodeSelect('605001')}
+                >
+                  <Card.Body className="p-2 text-center">
+                    {/* Pincode number */}
+                    <div style={{
+                      fontSize: '0.85rem',
+                      fontWeight: '700',
+                      color: combinedExclusiveData.count > 0 ? '#DAA520' : '#bbb',
+                      letterSpacing: '0.5px',
+                      lineHeight: 1.2,
+                    }}>
+                      {combinedExclusiveData.pincode}
+                    </div>
+                    {/* Area names */}
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: '#000',
+                      fontWeight: '700',
+                      marginBottom: '6px',
+                      whiteSpace: 'normal',
+                    }}>
+                      {pincodeToAreaName['605001'] || 'Unknown Area'}
+                      <br />
+                      {pincodeToAreaName['605002'] || 'Unknown Area'}
+                    </div>
+                    {/* Count box */}
+                    <div style={{
+                      backgroundColor: combinedExclusiveData.count > 0 ? '#FFFACD' : '#f5f5f5',
+                      borderRadius: '6px',
+                      padding: '6px 4px',
+                      marginBottom: '6px',
+                    }}>
+                      <div style={{
+                        fontSize: '1.7rem',
+                        fontWeight: '800',
+                        color: combinedExclusiveData.count > 0 ? '#DAA520' : '#ccc',
+                        lineHeight: 1,
+                      }}>
+                        {combinedExclusiveData.count}
+                      </div>
+                      <div style={{ fontSize: '0.62rem', color: '#999', marginTop: '2px' }}>
+                        {combinedExclusiveData.count === 1 ? 'Property' : 'Properties'}
+                      </div>
+                    </div>
+                    {combinedExclusiveData.count > 0 && (
+                      <Badge bg="warning" style={{ fontSize: '0.58rem', padding: '2px 8px', color: '#333' }}>Exclusive</Badge>
+                    )}
+                  </Card.Body>
+                </Card>
+              </Col>
+              {filteredExclusivePincodeData.map(item => (
                 <Col xl={2} lg={3} md={4} sm={6} xs={6} key={item.pincode}>
                   <Card
                     className={`pincode-card ${item.count > 0 ? 'has-properties' : 'no-properties'}`}
@@ -490,7 +700,7 @@ const SearchPincode = ({ properties = [] }) => {
                       </div>
                       {/* Area name */}
                       <div style={{
-                        fontSize: '0.68rem',
+                        fontSize: '0.80rem',
                         color: '#000',
                         fontWeight: '700',
                         marginBottom: '6px',
