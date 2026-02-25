@@ -990,6 +990,8 @@ const handlePrint = (prop) => {
               <th>Direct Verified User</th>
               <th>Property Type</th>
               <th>Property Mode</th>
+              <th>BHK</th>
+              <th>Floor</th>
               <th>Rental Amount</th>
               <th>City</th>
               <th>Area</th>
@@ -1067,6 +1069,8 @@ const handlePrint = (prop) => {
 <td>{prop.isVerifiedUser ? 'True' : 'False'}</td>
                   <td>{prop.propertyType}</td>
                   <td>{prop.propertyMode}</td>
+                  <td>{prop.bedrooms || 'N/A'}</td>
+                  <td>{prop.floorNo || 'N/A'}</td>
                   <td>{prop.rentalAmount}</td>
                   <td>{prop.city}</td>
                   <td>{prop.area || 'N/A'}</td>

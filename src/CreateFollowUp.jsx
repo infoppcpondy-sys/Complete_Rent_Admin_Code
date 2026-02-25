@@ -16,6 +16,12 @@ function CreateFollowUp() {
   const [existingFollowUp, setExistingFollowUp] = useState(null);
   const [loadingCheck, setLoadingCheck] = useState(true);
 
+  // ✅ Admin names checkbox module (referenced from FollowUpGetTable.jsx)
+  const predefinedAdminNames = ['Bala', 'Madhan', 'Prabavathi', 'ThilagavatiMayavan', 'Arund', 'Gayathri', 'Nandhishwari'];
+  const [showCreateAdminDropdown, setShowCreateAdminDropdown] = useState(false);
+  const [selectedAdminNames, setSelectedAdminNames] = useState([]);
+  const [customAdminName, setCustomAdminName] = useState('');
+
   const location = useLocation();
   const { rentId, phoneNumber } = location.state || {};
 
@@ -95,6 +101,33 @@ function CreateFollowUp() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Handle checkbox change for admin names
+  const handleCreateAdminNameChange = (name) => {
+    setSelectedAdminNames((prev) =>
+      prev.includes(name)
+        ? prev.filter((n) => n !== name)
+        : [...prev, name]
+    );
+  };
+
+  // Get final admin names for submit
+  const getFinalCreateAdminNames = () => {
+    const finalNames = [...selectedAdminNames];
+    if (customAdminName.trim()) {
+      finalNames.push(customAdminName.trim());
+    }
+    return finalNames.length > 0 ? finalNames : [adminName];
+  };
+
+  // Handle adding custom admin name
+  const handleAddCustomCreateAdminName = () => {
+    if (customAdminName.trim() && !selectedAdminNames.includes(customAdminName.trim())) {
+      setSelectedAdminNames((prev) => [...prev, customAdminName.trim()]);
+      setCustomAdminName('');
+    }
+  };
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -120,11 +153,14 @@ function CreateFollowUp() {
 
     // Only proceed if validation passed
     try {
+      const finalAdminNames = getFinalCreateAdminNames();
+      const selectedAdminNamesStr = finalAdminNames.join(', ');
+      
       const payload = {
         rentId,
         phoneNumber,
         ...formData,
-        adminName,
+        adminName: selectedAdminNamesStr,
       };
 
       const response = await axios.post(
@@ -253,6 +289,101 @@ function CreateFollowUp() {
             style={{ padding: '8px', width: '100%', border: '1px solid #ccc', borderRadius: '4px' }}
             required
           />
+        </div>
+
+        {/* Admin Names Checkbox Module */}
+        <div style={{ marginBottom: '15px', border: '1px solid #e0e0e0', padding: '12px', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
+          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>👤 Select Admin Name(s):</label>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setShowCreateAdminDropdown(!showCreateAdminDropdown)}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'left'
+              }}
+              disabled={!!existingFollowUp}
+            >
+              {showCreateAdminDropdown ? '▼ Hide Admin List' : '▶ Show Admin List'}
+            </button>
+          </div>
+
+          {showCreateAdminDropdown && !existingFollowUp && (
+            <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+              {predefinedAdminNames.map((name) => (
+                <div key={name} style={{ marginBottom: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedAdminNames.includes(name)}
+                      onChange={() => handleCreateAdminNameChange(name)}
+                      style={{ marginRight: '8px', cursor: 'pointer', width: '18px', height: '18px' }}
+                    />
+                    <span>{name}</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Custom Admin Name Input */}
+          {!existingFollowUp && (
+            <div style={{ marginBottom: '10px', display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                value={customAdminName}
+                onChange={(e) => setCustomAdminName(e.target.value)}
+                placeholder="Enter custom admin name"
+                style={{ padding: '8px', flex: 1, border: '1px solid #ccc', borderRadius: '4px' }}
+                disabled={!!existingFollowUp}
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomCreateAdminName}
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+                disabled={!!existingFollowUp}
+              >
+                Add
+              </button>
+            </div>
+          )}
+
+          {/* Display selected admin names */}
+          {selectedAdminNames.length > 0 && (
+            <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#e7f3ff', border: '1px solid #b3d9ff', borderRadius: '4px' }}>
+              <strong style={{ fontSize: '0.9em' }}>✓ Selected:</strong>
+              <div style={{ fontSize: '0.9em', marginTop: '5px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                {selectedAdminNames.map((name) => (
+                  <span
+                    key={name}
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <button 

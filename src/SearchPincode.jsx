@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Card, Container, Row, Col, Badge, Spinner } from 'react-bootstrap';
+import { Table, Card, Container, Row, Col, Badge, Spinner, Modal, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
 const SearchPincode = ({ properties = [] }) => {
@@ -13,6 +13,12 @@ const SearchPincode = ({ properties = [] }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [approvedModeFilter, setApprovedModeFilter] = useState('');
+  const [exclusiveModeFilter, setExclusiveModeFilter] = useState('');
+  const [selectedPropertyForSend, setSelectedPropertyForSend] = useState(null);
+  const [messageContent, setMessageContent] = useState('');
+  const [toPhoneNumber, setToPhoneNumber] = useState('');
+  const [sendValidationError, setSendValidationError] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
   const navigate = useNavigate();
 
   const allPincodes = [
@@ -45,6 +51,110 @@ const SearchPincode = ({ properties = [] }) => {
     '605013': 'Saram',
     '605014': 'Kottakuppam',
     '605110': 'Villanur'
+  };
+
+  // ===== HANDLE SEND WHATSAPP FOR APPROVED PROPERTIES =====
+  const handleSendWhatsAppApproved = (property) => {
+    const message = `🏠 *Property Details – RENT PONDY*
+
+Hello Tenant 👋,
+
+📞 *Owner Phone:* ${property.phoneNumber || 'N/A'}
+🏢 *Property Type:* ${property.propertyType || 'N/A'}
+📌 *Mode:* ${property.propertyMode || 'N/A'}
+🛏️ *BHK:* ${property.bedrooms || 'N/A'}
+🏢 *Floor:* ${property.floorNo || 'N/A'}
+📐 *Area:* ${property.area || 'N/A'}
+🌆 *City:* ${property.city || 'N/A'}
+💰 *Rental Amount:* ₹${property.rentalAmount || 'N/A'}
+
+Thank you for choosing *RENT PONDY*! 🙏`;
+    
+    setSelectedPropertyForSend(property);
+    setMessageContent(message);
+  };
+
+  // ===== HANDLE SEND WHATSAPP FOR EXCLUSIVE PROPERTIES =====
+  const handleSendWhatsAppExclusive = (property) => {
+    const message = `🏡 *Exclusive Property – RENT PONDY*
+
+Hello Tenant 👋,
+
+📞 *Owner Phone:* ${property.phoneNumber || property.phone || 'N/A'}
+🛏️ *BHK:* ${property.bhk || 'N/A'}
+🏢 *Floor:* ${property.floor || 'N/A'}
+🏠 *Property Type:* ${property.propertyType || 'N/A'}
+📌 *Property Mode:* ${property.propertyMode || 'N/A'}
+📄 *Rent Type:* ${property.rentType || property.type || 'N/A'}
+💰 *Amount:* ₹${property.rentAmount || property.leaseAmount || property.amount || 'N/A'}
+💵 *Advance:* ₹${property.advanceAmount || property.advance || 'N/A'}
+📍 *Street:* ${property.streetName || property.street || 'N/A'}
+🌆 *Location:* ${property.location || 'N/A'}
+
+Thank you for choosing *RENT PONDY*! 🙏`;
+    
+    setSelectedPropertyForSend(property);
+    setMessageContent(message);
+  };
+
+  // ===== CLOSE MESSAGE EDITOR =====
+  const handleCloseMessageEditor = () => {
+    setSelectedPropertyForSend(null);
+    setMessageContent('');
+    setToPhoneNumber('');
+    setSendValidationError('');
+  };
+
+  // ===== VALIDATE AND SEND MESSAGE =====
+  const handleSendMessage = async () => {
+    if (!toPhoneNumber.trim()) {
+      setSendValidationError('⚠️ Please enter tenant phone number');
+      return;
+    }
+    if (toPhoneNumber.length < 10) {
+      setSendValidationError('⚠️ Phone number must be at least 10 digits');
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+      setSendValidationError('');
+
+      // Format phone number: add +91 if not present and remove any spaces/dashes
+      let formattedNumber = toPhoneNumber.trim().replace(/\s|-/g, '');
+      
+      // Add country code +91 if not already present
+      if (!formattedNumber.startsWith('+')) {
+        formattedNumber = '+91' + formattedNumber.slice(-10);
+      }
+
+      console.log('Sending message to:', formattedNumber);
+      console.log('API URL:', process.env.REACT_APP_API_URL);
+
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/send-message`,
+        {
+          to: formattedNumber,
+          message: messageContent
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Message sent successfully - close modal
+      console.log('Message sent successfully:', response.data);
+      handleCloseMessageEditor();
+      alert('✅ Message sent successfully!');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+      setSendValidationError(`❌ Failed to send message: ${errorMsg}`);
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   // Fetch and process approved properties
@@ -281,6 +391,13 @@ const SearchPincode = ({ properties = [] }) => {
     ? [...selectedExclusivePincodeProperties].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     : [];
 
+  // Filter exclusive properties by mode
+  const filteredExclusiveProperties = sortedExclusivePincodeProperties
+    .filter(property => {
+      const modeMatch = !exclusiveModeFilter || (property.propertyMode && property.propertyMode.toLowerCase() === exclusiveModeFilter.toLowerCase());
+      return modeMatch;
+    });
+
   // Filter approved properties: exclude deleted and filter by mode
   const filteredApprovedProperties = selectedPincodeProperties
     .filter(property => {
@@ -296,6 +413,7 @@ const SearchPincode = ({ properties = [] }) => {
     setSelectedPincode(null); 
     setSelectedExclusivePincode(null);
     setApprovedModeFilter('');
+    setExclusiveModeFilter('');
   };
 
   if (loading) {
@@ -389,8 +507,8 @@ const SearchPincode = ({ properties = [] }) => {
               <Table striped bordered hover>
                 <thead className="table-dark">
                   <tr>
-                    <th>S.No</th><th>Rent ID</th><th>Phone</th><th>Property Type</th><th>Mode</th>
-                    <th>Area</th><th>City</th><th>Rental Amount</th><th>Plan</th><th>Status</th><th>Created</th>
+                    <th>S.No</th><th>Rent ID</th><th>Phone</th><th>Property Type</th><th>Mode</th><th>BHK</th><th>Floor</th>
+                    <th>Area</th><th>City</th><th>Rental Amount</th><th>Plan</th><th>Status</th><th>Send WhatsApp</th><th>Created</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -412,11 +530,18 @@ const SearchPincode = ({ properties = [] }) => {
                       <td>{property.phoneNumber || 'N/A'}</td>
                       <td>{property.propertyType || 'N/A'}</td>
                       <td>{property.propertyMode || 'N/A'}</td>
+                      <td>{property.bedrooms || 'N/A'}</td>
+                      <td>{property.floorNo || 'N/A'}</td>
                       <td>{property.area || 'N/A'}</td>
                       <td>{property.city || 'N/A'}</td>
                       <td>₹{property.rentalAmount || 'N/A'}</td>
                       <td><Badge bg={property.planName === 'Paid' ? 'success' : 'warning'}>{property.planName || 'Free'}</Badge></td>
                       <td><Badge bg={property.status === 'active' ? 'success' : 'secondary'}>{property.status || 'Pending'}</Badge></td>
+                      <td>
+                        <button className="btn btn-sm btn-success" title="Send WhatsApp" onClick={() => handleSendWhatsAppApproved(property)} style={{ padding: '4px 10px', fontSize: '12px' }}>
+                          📱 Send
+                        </button>
+                      </td>
                       <td>{new Date(property.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
@@ -434,15 +559,29 @@ const SearchPincode = ({ properties = [] }) => {
               color: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px'
             }}>
               <h2>⭐ Pincode: <strong>{selectedExclusivePincode === '605001' ? '605001 & 605002' : selectedExclusivePincode}</strong> (Exclusive Properties)</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '15px', flexWrap: 'wrap', justifyContent: 'space-between' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{selectedExclusivePincodeProperties.length}</h3>
-                  <p style={{ margin: '5px 0 0 0', fontSize: '1.1rem' }}>{selectedExclusivePincodeProperties.length === 1 ? 'Property' : 'Properties'} Found</p>
+                  <h3 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{filteredExclusiveProperties.length}</h3>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '1.1rem' }}>{filteredExclusiveProperties.length === 1 ? 'Property' : 'Properties'} Found</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label htmlFor="exclusivePropertyModeFilter" style={{ fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap' }}>Filter by Property Mode:</label>
+                  <select 
+                    id="exclusivePropertyModeFilter"
+                    className="form-select" 
+                    style={{ width: '180px' }}
+                    value={exclusiveModeFilter}
+                    onChange={(e) => setExclusiveModeFilter(e.target.value)}
+                  >
+                    <option value="">All Modes</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Commercial">Commercial</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
-          {selectedExclusivePincodeProperties.length === 0 ? (
+          {filteredExclusiveProperties.length === 0 ? (
             <div className="alert alert-info text-center">No exclusive properties found for pincode {selectedExclusivePincode}</div>
           ) : (
             <div className="table-responsive">
@@ -450,12 +589,12 @@ const SearchPincode = ({ properties = [] }) => {
                 <thead className="table-dark">
                   <tr>
                     <th>S.No</th><th>Property ID</th><th>Phone</th><th>BHK</th><th>Floor</th>
-                    <th>Property Type</th><th>Rent Type</th><th>Amount</th><th>Advance</th>
-                    <th>Street</th><th>Location</th><th>Created At</th><th>Created By</th>
+                    <th>Property Type</th><th>Property Mode</th><th>Rent Type</th><th>Amount</th><th>Advance</th>
+                    <th>Street</th><th>Location</th><th>Created At</th><th>Send WhatsApp</th><th>Created By</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedExclusivePincodeProperties.map((property, index) => (
+                  {filteredExclusiveProperties.map((property, index) => (
                     <tr key={property.propertyId || property.id || property.rentId || property._id || index}>
                       <td>{index + 1}</td>
                       <td><strong>{property.propertyId || property.id || property.rentId || property.property_id || property.ppcId || property.exclusiveId || property._id || 'N/A'}</strong></td>
@@ -463,12 +602,18 @@ const SearchPincode = ({ properties = [] }) => {
                       <td>{property.bhk || 'N/A'}</td>
                       <td>{property.floor || 'N/A'}</td>
                       <td>{property.propertyType || 'N/A'}</td>
+                      <td>{property.propertyMode || 'N/A'}</td>
                       <td>{property.rentType || property.type || 'N/A'}</td>
                       <td>₹{property.rentAmount || property.leaseAmount || property.amount || 'N/A'}</td>
                       <td>₹{property.advanceAmount || property.advance || 'N/A'}</td>
                       <td>{property.streetName || property.street || 'N/A'}</td>
                       <td>{property.location || 'N/A'}</td>
                       <td>{property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}</td>
+                      <td>
+                        <button className="btn btn-sm btn-success" title="Send WhatsApp" onClick={() => handleSendWhatsAppExclusive(property)} style={{ padding: '4px 10px', fontSize: '12px' }}>
+                          📱 Send
+                        </button>
+                      </td>
                       <td>{property.createdBy || 'N/A'}</td>
                     </tr>
                   ))}
@@ -740,6 +885,96 @@ const SearchPincode = ({ properties = [] }) => {
           </div>
         </>
       )}
+
+      {/* ===== SEND WHATSAPP MESSAGE POPUP ===== */}
+      <Modal show={selectedPropertyForSend !== null} onHide={handleCloseMessageEditor} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>📱 WhatsApp Message</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedPropertyForSend && (
+            <div>
+              {/* To Phone Number Section */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>📞 To:</label>
+                <input
+                  type="text"
+                  value={toPhoneNumber}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setToPhoneNumber(value);
+                    setSendValidationError('');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: sendValidationError ? '2px solid #dc3545' : '1px solid #dee2e6',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    backgroundColor: sendValidationError ? '#ffe5e5' : '#fff'
+                  }}
+                  placeholder="Enter tenant phone number (numbers only)"
+                  maxLength="15"
+                />
+                <small style={{ color: '#6c757d', marginTop: '5px', display: 'block' }}>Phone number: {toPhoneNumber.length} digits</small>
+                {sendValidationError && (
+                  <small style={{ color: '#dc3545', marginTop: '5px', display: 'block', fontWeight: 'bold' }}>
+                    {sendValidationError}
+                  </small>
+                )}
+              </div>
+
+              {/* Message Edit Section */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>✏️ Edit Message</label>
+                <textarea
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '250px',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid #dee2e6',
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    resize: 'vertical'
+                  }}
+                  placeholder="Edit your message here..."
+                />
+                <small style={{ color: '#6c757d', marginTop: '5px', display: 'block' }}>Message length: {messageContent.length} characters</small>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseMessageEditor}>
+            Close
+          </Button>
+          <Button 
+            variant="success" 
+            onClick={handleSendMessage}
+            disabled={!toPhoneNumber.trim() || sendingMessage}
+          >
+            {sendingMessage ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                  style={{ marginRight: '5px' }}
+                />
+                Sending...
+              </>
+            ) : (
+              '📤 Send'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

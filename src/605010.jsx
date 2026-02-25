@@ -1146,7 +1146,7 @@ const AdminDashboard = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}}
+                    )}
 
                     {/* Pagination */}
                     {totalPages > 1 && (

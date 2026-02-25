@@ -11,6 +11,7 @@ import {
   FaCar,
   FaMoneyBill,
   FaMapMarkedAlt,
+  // FaMapMarker,
   FaFileInvoice,
   FaAssistiveListeningSystems,
   FaPhoneAlt,
@@ -1443,18 +1444,32 @@ All Views Data        </NavLink>
       
 </ul>
 
-<li className="p-3 mt-2  text-white" 
-   style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
-     <NavLink 
-       to="/dashboard/exclusive-location"
-       onClick={toggleSidebar}
-       className={({ isActive }) => (isActive ? "active-link rounded" : "")}
-       style={{display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'white'}}
-     >
-       <FaUser style={{marginRight:'10px '}}/>
-       Exclusive Location
-     </NavLink>
+<li
+  className="p-3 mt-2 text-white"
+  onClick={() => toggleMenu('exclusive-location')}
+  style={{ borderRadius: "5px", background: "#8BC34A", cursor: "pointer" }}
+>
+  <FaMapMarkedAlt style={{ marginRight: '10px' }} />
+  Exclusive Location
 </li>
+
+<ul
+  className={`collapse ${activeMenu === 'exclusive-location' ? 'show' : ''}`}
+  id="ExclusiveLocationMenu"
+>
+  <li className="p-0 mt-2">
+    <NavLink
+      to="/dashboard/exclusive-location"
+      onClick={toggleSidebar}
+      className={({ isActive }) =>
+        isActive ? "active-link rounded" : ""
+      }
+    >
+      <FaMapMarkedAlt/>
+      Exclusive Property - Add - Edit - Delete - View
+    </NavLink>
+  </li>
+</ul>
 
 
     
