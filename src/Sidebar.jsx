@@ -327,13 +327,19 @@ const menuItems = [
    style={{borderRadius:"5px",  background:"#8BC34A", cursor: "pointer"}}>
      
           <FaWhatsapp style={{marginRight:'10px '}}/>
-          Bulk Whatsapp
+          Whatsapp Send
       </li>
 <ul className={`collapse ${activeMenu === 'bulk-whatsapp' ? 'show' : ''}`} id="BulkWhatsappMenu">
 <li className="p-0 mt-2">
     <NavLink to="/dashboard/bulk-whatsapp"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaPaperPlane />
-      Send Message
+      Bulk Message
+    </NavLink>
+  </li>
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/single-send-whatsapp"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaWhatsapp />
+      Single Message
     </NavLink>
   </li>
   </ul>
@@ -1466,7 +1472,7 @@ All Views Data        </NavLink>
       }
     >
       <FaMapMarkedAlt/>
-      Exclusive Property - Add - Edit - Delete - View
+      Exclusive Property <br /> (Add, Edit, Delete)
     </NavLink>
   </li>
 </ul>

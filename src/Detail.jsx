@@ -1787,155 +1787,169 @@ return (
 
       {/* Contact Info Section */}
       <h5 className="pt-3 fw-bold">Contact Info</h5>
-   
 
-<div 
-  className="btn rounded-1 p-2 text-center d-flex align-items-center justify-content-center" 
-     style={{
-        backgroundColor: Viewed ? '#4F4B7E' : 'transparent',
-        border: '1px solid #4F4B7E',
-        color: Viewed ? 'white' : '#4F4B7E',
-        transition: 'background-color 0.3s ease, color 0.3s ease',
-        cursor: 'pointer'
-      }}  onClick={handleOwnerContactClick}
->
- 
-  <MdContactPhone size={20} style={{marginRight: '8px', color:"#4F4B7E"}}/>
+      <div 
+        className="btn rounded-1 p-2 text-center d-flex align-items-center justify-content-center" 
+        style={{
+          backgroundColor: showContactDetails ? '#4F4B7E' : 'transparent',
+          border: '1px solid #4F4B7E',
+          color: showContactDetails ? 'white' : '#4F4B7E',
+          transition: 'background-color 0.3s ease, color 0.3s ease',
+          cursor: 'pointer',
+          width: '100%'
+        }}  
+        onClick={handleOwnerContactClick}
+      >
+        <MdContactPhone size={20} style={{marginRight: '8px', color: showContactDetails ? 'white' : '#4F4B7E'}}/>
+        View owner contact details
+      </div>
 
-  View owner contact details
-</div>
-    {showContactDetails && (
+      {showContactDetails && (
         <div ref={contactRef} className="mt-3">
-      
-   <div className="row g-3">
+          <div className="row g-3">
 
-{/* Name */}
-<div className="col-6 d-flex align-items-center">
-  <FaUser style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
-  <div>
-    <div style={{ fontSize: "13px", color: "grey" }}>Name</div>
-    <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
-      {propertyDetails.ownerName || "N/A"}
-    </div>
-  </div>
-</div>
+            {/* Name */}
+            <div className="col-6 d-flex align-items-center">
+              <FaUser style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
+              <div>
+                <div style={{ fontSize: "13px", color: "grey" }}>Name</div>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
+                  {propertyDetails.ownerName || "N/A"}
+                </div>
+              </div>
+            </div>
 
-{/* Email */}
-<div className="col-12 d-flex align-items-center">
-  <FaEnvelope style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
-  <div>
-    <div style={{ fontSize: "13px", color: "grey" }}>Email</div>
-    <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
-      {propertyDetails.email || "N/A"}
-    </div>
-  </div>
-</div>
+            {/* Email */}
+            <div className="col-12 d-flex align-items-center">
+              <FaEnvelope style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
+              <div>
+                <div style={{ fontSize: "13px", color: "grey" }}>Email</div>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
+                  {propertyDetails.email || "N/A"}
+                </div>
+              </div>
+            </div>
 
-{/* Mobile */}
-<div className="col-6 d-flex align-items-center">
-  <FaPhoneAlt style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
-  <div>
-    <div style={{ fontSize: "13px", color: "grey" }}>Mobile</div>
-    <div
-      style={{
-        fontSize: "15px",
-        fontWeight: 600,
-        color: "#4F4B7E",
-        cursor: "pointer",
-        textDecoration: "none"
-      }}
-      onClick={() => window.location.href = `tel:${finalContactNumber}`}
-    >
-      {finalContactNumber || "N/A"}
-    </div>
-  </div>
-</div>
+            {/* Mobile */}
+            <div className="col-6 d-flex align-items-center">
+              <FaPhoneAlt style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
+              <div>
+                <div style={{ fontSize: "13px", color: "grey" }}>Mobile</div>
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#4F4B7E",
+                    cursor: "pointer",
+                    textDecoration: "none"
+                  }}
+                  onClick={() => window.location.href = `tel:${finalContactNumber}`}
+                >
+                  {finalContactNumber || "N/A"}
+                </div>
+              </div>
+            </div>
 
+            {/* Alternate Phone */}
+            <div className="col-6 d-flex align-items-center">
+              <FaPhoneAlt style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
+              <div>
+                <div style={{ fontSize: "13px", color: "grey" }}>Alternate Phone</div>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
+                  <a
+                    href={`tel:${propertyDetails.alternatePhone}`}
+                    style={{
+                      textDecoration: "none",
+                      color: "#2E7480",
+                    }}
+                  >
+                    {propertyDetails.alternatePhone || "N/A"}
+                  </a>
+                </div>
+              </div>
+            </div>
 
-{/* Alternate Phone */}
-<div className="col-6 d-flex align-items-center">
-  <FaPhoneAlt style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
-  <div>
-    <div style={{ fontSize: "13px", color: "grey" }}>Alternate Phone</div>
-    <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
-      {/* {propertyDetails.alternatePhone || "N/A"} */}
-         <a
-                            href={`tel:${propertyDetails.alternatePhone}`}
-                            style={{
-                              textDecoration: "none",
-                              color: "#2E7480",
-                            }}
-                          >
-                            {propertyDetails.alternatePhone || "N/A"}
-                            </a>
-    </div>
-  </div>
-</div>
+            {/* Address */}
+            <div className="col-12 d-flex align-items-center">
+              <FaMapMarkerAlt style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
+              <div>
+                <div style={{ fontSize: "13px", color: "grey" }}>Address</div>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
+                  {propertyDetails.doorNumber} {propertyDetails.streetName} {propertyDetails.nagar} {propertyDetails.area} {propertyDetails.city} {propertyDetails.district} {propertyDetails.state} {propertyDetails.country} {propertyDetails.pinCode}
+                </div>
+              </div>
+            </div>
 
-{/* Address */}
-<div className="col-12 d-flex align-items-center">
-  <FaMapMarkerAlt style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
-  <div>
-    <div style={{ fontSize: "13px", color: "grey" }}>Address</div>
-    <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
-      {propertyDetails.doorNumber} {propertyDetails.streetName} {propertyDetails.nagar} {propertyDetails.area} {propertyDetails.city} {propertyDetails.district} {propertyDetails.state} {propertyDetails.country} {propertyDetails.pinCode}   </div>
-  </div>
-</div>
+            {!propertyDetails.address && (
+              <div className="col-12">
+                <button
+                  className="btn btn-outline-primary mt-2 w-100"
+                  style={{ color: "#30747F", border: "1px solid #30747F" }}
+                  onClick={handleAddressRequest}
+                >
+                  Request Map Location
+                </button>
+              </div>
+            )}
 
+            {/* Best Time to Call */}
+            <div className="col-12 d-flex align-items-center">
+              <FaClock style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
+              <div>
+                <div style={{ fontSize: "13px", color: "grey" }}>Best Time to Call</div>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
+                  {propertyDetails.bestTimeToCall || "N/A"}
+                </div>
+              </div>
+            </div>
 
-{!propertyDetails.address && (
-  <button
-    className="btn btn-outline-primary mt-2"
-    style={{ color: "#30747F", border: "1px solid #30747F" }}
-    onClick={handleAddressRequest}
-  >
-    Request Map Location
-  </button>
-)}
+            {/* Action Buttons */}
+            <div className="col-12 d-flex gap-2 mt-2">
+              {finalContactNumber && (
+                <button
+                  className="btn text-white flex-fill"
+                  style={{
+                    color: "white",
+                    backgroundColor: "#4F4B7E",
+                    border: "1px solid #4F4B7E"
+                  }}
+                  onClick={() => window.location.href = `tel:${finalContactNumber}`}
+                  onMouseOver={(e) => {
+                    e.target.style.backgroundColor = "#3d3a5f";
+                    e.target.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.backgroundColor = "#4F4B7E";
+                    e.target.style.transform = "translateY(0)";
+                  }}
+                >
+                  <FaPhoneAlt style={{ marginRight: "6px" }} /> Call
+                </button>
+              )}
+              {finalContactNumber && (
+                <button
+                  className="btn text-white flex-fill"
+                  style={{
+                    color: "white",
+                    backgroundColor: "#25D366",
+                    border: "1px solid #25D366"
+                  }}
+                  onClick={() => window.open(`https://wa.me/${finalContactNumber.replace(/\D/g, '')}`, '_blank')}
+                  onMouseOver={(e) => {
+                    e.target.style.backgroundColor = "#1fa952";
+                    e.target.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.backgroundColor = "#25D366";
+                    e.target.style.transform = "translateY(0)";
+                  }}
+                >
+                  <FaWhatsapp style={{ marginRight: "6px" }} /> Message
+                </button>
+              )}
+            </div>
 
-
-{/* Best Time to Call */}
-<div className="col-12 d-flex align-items-center">
-  <FaClock style={{ fontSize: "16px", color: "#4F4B7E", marginRight: "10px" }} />
-  <div>
-    <div style={{ fontSize: "13px", color: "grey" }}>Best Time to Call</div>
-    <div style={{ fontSize: "15px", fontWeight: 600, color: "grey" }}>
-      {propertyDetails.bestTimeToCall || "N/A"}
-
-    </div>
-  </div>
-</div>
-
-</div>
-
-          <span className="d-flex justify-content-end align-items-center">
-
-
-{finalContactNumber && (
-  <button
-    className="btn btn-outline-#4F4B7E m-0 d-flex align-items-center gap-2"
-    style={{
-      color: "white",
-      backgroundColor: "#4F4B7E",
-      border: "1px solid #4F4B7E"
-    }}
-    onClick={() => window.location.href = `tel:${finalContactNumber}`}
-    onMouseOver={(e) => {
-      e.target.style.background = "#029bb3";
-      e.target.style.fontWeight = 600;
-      e.target.style.transition = "background 0.3s ease";
-    }}
-    onMouseOut={(e) => {
-      e.target.style.background = "#4F4B7E";
-      e.target.style.fontWeight = 400;
-    }}
-  >
-    <FaPhoneAlt style={{ transition: 'color 0.3s ease-in-out', background: "none" }} /> Call
-  </button>
-)}
-
-
-</span>
+          </div>
         </div>
       )}
 

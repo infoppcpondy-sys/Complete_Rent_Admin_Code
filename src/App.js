@@ -15,6 +15,8 @@ import Plan from "./Plan";
 import Detail from "./Detail";
 import GetBuyerAssistance from "./GetBuyerAssistance";
 import PropertyAssistance from "./PropertyAssistance";
+import PMLogin from "./PMLogin";
+import PMDashboard from "./PMDashboard";
  
 import { useDispatch } from 'react-redux';
 import { setName } from './redux/adminSlice';
@@ -37,6 +39,19 @@ const ProtectedDashboard = () => {
   }
   
   return <Dashboard />;
+};
+
+// Protected Route - Check if PM is authenticated (no OTP required)
+const ProtectedPM = () => {
+  const pmAuthenticated = localStorage.getItem('pmAuthenticated');
+  const pmEmail = localStorage.getItem('pmEmail');
+  
+  // Check PM authentication conditions
+  if (!pmAuthenticated || pmAuthenticated !== 'true' || !pmEmail) {
+    return <Navigate to="/dashboard/pm" replace />;
+  }
+  
+  return <PMDashboard />;
 };
 
 const App = () => {
@@ -66,6 +81,8 @@ const App = () => {
     <Router basename="/process">
     <Routes>
       <Route path="/admin" element={<Admin />} />
+      <Route path="/dashboard/pm" element={<PMLogin />} />
+      <Route path="/dashboard/pm/home" element={<ProtectedPM />} />
       <Route path="/dashboard/*" element={<ProtectedDashboard />} />
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>

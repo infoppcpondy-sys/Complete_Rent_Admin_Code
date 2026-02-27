@@ -180,6 +180,7 @@ import AddPropertyFormMarketing from './AddPropertyFormMarketing';
 import RemovedTenant from './RemovedTenant';
 import ExclusiveLocation from './605010';
 import BulkWhatsapp from './BulkWhatsapp';
+import SingleSendMessage from './SingleSendMessage';
 import SearchPincode from './SearchPincode';
 
 const routes = [
@@ -363,6 +364,7 @@ const routes = [
     {path: "/removed-tenant", element: <RemovedTenant /> },
     { path: "/exclusive-location", element: <ExclusiveLocation /> },
     { path: "/bulk-whatsapp", element: <BulkWhatsapp /> },
+    { path: "/single-send-whatsapp", element: <SingleSendMessage /> },
     { path: "/search-pincode", element: <SearchPincode /> },
 
 

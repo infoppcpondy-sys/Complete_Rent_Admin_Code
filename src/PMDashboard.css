@@ -1,0 +1,204 @@
+.pm-dashboard-container {
+  padding: 30px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.pm-header {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pm-header h1 {
+  color: #2d3748;
+  font-weight: 800;
+  margin-bottom: 5px;
+  font-size: 36px;
+}
+
+.pm-header p {
+  color: #718096;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.logout-btn {
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.pm-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  height: 100%;
+  background: white;
+  overflow: hidden;
+}
+
+.pm-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.pm-card h5 {
+  color: #2d3748;
+  font-weight: 700;
+  margin-bottom: 15px;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-number {
+  font-size: 42px;
+  font-weight: 800;
+  color: #667eea;
+  margin: 20px 0;
+  font-family: 'Arial', sans-serif;
+}
+
+.card-label {
+  color: #a0aec0;
+  font-size: 11px;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.action-btn {
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: #718096;
+  font-weight: 600;
+}
+
+.alert {
+  border: none;
+  border-radius: 12px;
+  border-left: 5px solid;
+  padding: 16px 20px;
+  margin-bottom: 30px;
+  font-weight: 500;
+}
+
+.alert-info {
+  border-left-color: #667eea;
+  background: #f0f4ff;
+  color: #444;
+}
+
+.alert strong {
+  font-weight: 700;
+  color: #2d3748;
+}
+
+@media (max-width: 768px) {
+  .pm-dashboard-container {
+    padding: 20px;
+  }
+
+  .pm-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+    padding: 25px;
+  }
+
+  .pm-header h1 {
+    font-size: 28px;
+  }
+
+  .logout-btn {
+    width: 100%;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .card-number {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 576px) {
+  .pm-dashboard-container {
+    padding: 15px;
+  }
+
+  .pm-header {
+    padding: 20px;
+  }
+
+  .pm-header h1 {
+    font-size: 24px;
+  }
+
+  .pm-header p {
+    font-size: 14px;
+  }
+
+  .card-number {
+    font-size: 32px;
+  }
+
+  .alert {
+    font-size: 13px;
+    padding: 14px 16px;
+  }
+}

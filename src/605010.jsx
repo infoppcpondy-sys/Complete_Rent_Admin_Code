@@ -117,7 +117,13 @@ const AdminDashboard = () => {
         try {
             setError(null);
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/read-prop`, {
-                params: filters
+                params: {
+                    ...filters,
+                    isAdmin: true  // Always fetch all properties including hidden ones for admin
+                },
+                headers: {
+                    'x-is-admin': 'true'  // Add admin flag header
+                }
             });
             setProperties(response.data.data);
             setTotalPages(response.data.totalPages);
@@ -255,6 +261,18 @@ const AdminDashboard = () => {
             } catch (err) {
                 alert(err.response?.data?.message || 'Error deleting property');
             }
+        }
+    };
+
+    // Handle toggle hide/unhide property
+    const handleToggleHide = async (property) => {
+        try {
+            const newStatus = property.isHidden ? 'visible' : 'hidden';
+            await axios.patch(`${process.env.REACT_APP_API_URL}/toggle-hide/${property._id}`);
+            alert(`Property marked as ${newStatus} successfully!`);
+            fetchProperties();
+        } catch (err) {
+            alert(err.response?.data?.message || `Error toggling property visibility`);
         }
     };
 
@@ -1061,6 +1079,7 @@ const AdminDashboard = () => {
                                         <th>Created At</th>
                                         <th>Created By</th>
                                         <th>Actions</th>
+                                        <th>Visibility</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1140,6 +1159,15 @@ const AdminDashboard = () => {
                                                         🗑️
                                                     </button>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                <button 
+                                                    className={`btn ${property.isHidden ? 'btn-unhide' : 'btn-hide'}`}
+                                                    onClick={() => handleToggleHide(property)}
+                                                    title={property.isHidden ? 'Unhide from users' : 'Hide from users'}
+                                                >
+                                                    {property.isHidden ? '👁️ Hidden' : '👁️‍🗨️ Visible'}
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
