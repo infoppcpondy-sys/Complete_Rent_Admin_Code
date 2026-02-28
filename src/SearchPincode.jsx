@@ -76,6 +76,7 @@ Thank you for choosing *RENT PONDY*! 🙏`;
 
   // ===== HANDLE SEND WHATSAPP FOR EXCLUSIVE PROPERTIES =====
   const handleSendWhatsAppExclusive = (property) => {
+    const mapUrl = getPropertyMapUrl(property);
     const message = `🏡 *Exclusive Property – RENT PONDY*
 
 Hello Tenant 👋,
@@ -90,6 +91,7 @@ Hello Tenant 👋,
 💵 *Advance:* ₹${property.advanceAmount || property.advance || 'N/A'}
 📍 *Street:* ${property.streetName || property.street || 'N/A'}
 🌆 *Location:* ${property.location || 'N/A'}
+${mapUrl ? `🗺️ *Map URL:* ${mapUrl}` : ''}
 
 Thank you for choosing *RENT PONDY*! 🙏`;
     
@@ -416,6 +418,12 @@ Thank you for choosing *RENT PONDY*! 🙏`;
     setExclusiveModeFilter('');
   };
 
+  // ===== GET PROPERTY MAP URL =====
+  const getPropertyMapUrl = (property) => {
+    // Use the actual URL stored in the property
+    return property.url || null;
+  };
+
   if (loading) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
@@ -590,7 +598,7 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                   <tr>
                     <th>S.No</th><th>Property ID</th><th>Phone</th><th>BHK</th><th>Floor</th>
                     <th>Property Type</th><th>Property Mode</th><th>Rent Type</th><th>Amount</th><th>Advance</th>
-                    <th>Street</th><th>Location</th><th>Created At</th><th>Send WhatsApp</th><th>Created By</th>
+                    <th>Street</th><th>Location</th><th>Created At</th><th>Map URL</th><th>Send WhatsApp</th><th>Created By</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -609,6 +617,22 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                       <td>{property.streetName || property.street || 'N/A'}</td>
                       <td>{property.location || 'N/A'}</td>
                       <td>{property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}</td>
+                      <td>
+                        {getPropertyMapUrl(property) ? (
+                          <a 
+                            href={getPropertyMapUrl(property)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="btn btn-sm btn-info" 
+                            title="View Map URL"
+                            style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none' }}
+                          >
+                            🔗 View
+                          </a>
+                        ) : (
+                          <span style={{ color: '#999', fontSize: '12px' }}>-</span>
+                        )}
+                      </td>
                       <td>
                         <button className="btn btn-sm btn-success" title="Send WhatsApp" onClick={() => handleSendWhatsAppExclusive(property)} style={{ padding: '4px 10px', fontSize: '12px' }}>
                           📱 Send

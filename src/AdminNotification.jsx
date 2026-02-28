@@ -19,6 +19,7 @@ const NotificationsTable = () => {
   const [statusFilter, setStatusFilter] = useState(""); // "Read", "Unread", or ""
   const [ownerPhoneFilter, setOwnerPhoneFilter] = useState("");
   const [tenantPhoneFilter, setTenantPhoneFilter] = useState("");
+  const [ownerData, setOwnerData] = useState([]); // Store owner data from API
 
   const itemsPerPage = 50;
 
@@ -40,7 +41,60 @@ const fetchNotifications = async () => {
 
     fetchNotifications();
   }, []);
+
+  // Fetch owner data from API
+  useEffect(() => {
+    const fetchOwnerData = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-alls-datas-all`);
+        setOwnerData(response.data?.users || response.data || []);
+      } catch (err) {
+        console.error("Fetch owner data failed:", err);
+        setOwnerData([]);
+      }
+    };
+
+    fetchOwnerData();
+  }, []);
     const tableRef = useRef();
+
+  // Get owner status based on phone number
+  const getOwnerStatus = (phoneNumber) => {
+    const owner = ownerData.find(
+      owner => owner.phoneNumber === phoneNumber || owner.phone === phoneNumber
+    );
+    
+    if (owner && owner.status === 'active') {
+      return 'AP';
+    }
+    
+    // If phone number is not found in API data
+    return 'NP';
+  };
+
+  // Get badge style based on status
+  const getBadgeStyle = (status) => {
+    if (status === 'AP') {
+      return {
+        backgroundColor: '#d4edda',
+        color: '#155724',
+        padding: '4px 8px',
+        borderRadius: '4px',
+        fontWeight: 'bold',
+        fontSize: '12px'
+      };
+    } else if (status === 'NP') {
+      return {
+        backgroundColor: '#f8d7da',
+        color: '#721c24',
+        padding: '4px 8px',
+        borderRadius: '4px',
+        fontWeight: 'bold',
+        fontSize: '12px'
+      };
+    }
+    return {};
+  };
   
   const handlePrint = () => {
     const printContent = tableRef.current.innerHTML;
@@ -269,7 +323,9 @@ const handleReset = () => {
             <th>Message</th>
             <th>Type</th>
             <th>Owner Phone Number</th>
+            <th>Owner Status</th>
             <th>Tenant Phone Number</th>
+            <th>Tenant Status</th>
             <th>Status</th>
             <th>Created At</th>
           </tr>
@@ -282,7 +338,13 @@ const handleReset = () => {
                 <td>{notification.message}</td>
                 <td>{notification.type}</td>
                 <td>{notification.recipientPhoneNumber}</td>
+                <td>
+                  <span style={getBadgeStyle(getOwnerStatus(notification.recipientPhoneNumber))}>
+                    {getOwnerStatus(notification.recipientPhoneNumber)}
+                  </span>
+                </td>
                 <td>{notification.senderPhoneNumber}</td>
+                <td></td>
                 <td>{notification.isRead ? "Read" : "Unread"}</td>
                 <td>{new Date(notification.createdAt).toLocaleString()}</td>
                
@@ -290,7 +352,7 @@ const handleReset = () => {
             ))
           ) : (
             <tr>
-              <td colSpan="8">No notifications found</td>
+              <td colSpan="9">No notifications found</td>
             </tr>
           )}
         </tbody>

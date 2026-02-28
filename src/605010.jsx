@@ -3,6 +3,10 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import moment from 'moment';
 import './605010.css';
+import DefaultImage from './Assets/Defaultimageexclusive.png';
+
+// Default image for properties with no images
+const DEFAULT_IMAGE = DefaultImage;
 
 const AdminDashboard = () => {
     const [properties, setProperties] = useState([]);
@@ -1072,7 +1076,7 @@ const AdminDashboard = () => {
                                         <th>Street</th>
                                         <th>Location</th>
                                         <th>Pincode</th>
-                                        <th>URL</th>
+                                        <th>Map URL</th>
                                         <th>Phone</th>
                                         <th>Masked Phone</th>
                                         <th>Advance</th>
@@ -1108,7 +1112,14 @@ const AdminDashboard = () => {
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <div className="no-image-small">📷 No Image</div>
+                                                    <div className="table-image-container">
+                                                        <img
+                                                            src={DEFAULT_IMAGE}
+                                                            alt="Default Property Image"
+                                                            className="table-image"
+                                                            title="No images uploaded - Default thumbnail"
+                                                        />
+                                                    </div>
                                                 )}
                                             </td>
                                             <td>{property.bhk || 'N/A'}</td>
@@ -1162,11 +1173,11 @@ const AdminDashboard = () => {
                                             </td>
                                             <td>
                                                 <button 
-                                                    className={`btn ${property.isHidden ? 'btn-unhide' : 'btn-hide'}`}
+                                                    className={`btn visibility-badge ${property.isHidden ? 'visibility-hidden' : 'visibility-visible'}`}
                                                     onClick={() => handleToggleHide(property)}
-                                                    title={property.isHidden ? 'Unhide from users' : 'Hide from users'}
+                                                    title={property.isHidden ? 'Click to make visible' : 'Click to hide'}
                                                 >
-                                                    {property.isHidden ? '👁️ Hidden' : '👁️‍🗨️ Visible'}
+                                                    {property.isHidden ? '🔒 Hidden' : '👁️ Visible'}
                                                 </button>
                                             </td>
                                         </tr>
@@ -1202,7 +1213,7 @@ const AdminDashboard = () => {
             )}
 
             {/* IMAGE LIGHTBOX GALLERY MODAL */}
-            {selectedImage && selectedImage.images && selectedImage.images.length > 0 && (
+            {selectedImage && ((selectedImage.images && selectedImage.images.length > 0) || true) && (
                 <div className="image-lightbox-overlay" onClick={handleCloseImageModal}>
                     <div className="image-lightbox-container" onClick={(e) => e.stopPropagation()}>
                         {/* Close Button */}
@@ -1216,19 +1227,23 @@ const AdminDashboard = () => {
 
                         {/* Main Image Display */}
                         <div className="lightbox-image-wrapper">
-                            {selectedImage?.images?.[selectedImageIndex]?.url ? (
+                            {selectedImage?.images?.length > 0 && selectedImage.images[selectedImageIndex]?.url ? (
                                 <img 
                                     src={`${process.env.REACT_APP_MEDIA_URL}${selectedImage.images[selectedImageIndex].url}`}
                                     alt={`Property ${selectedImageIndex + 1}`}
                                     className="lightbox-image" 
                                 />
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>Image not available</div>
+                                <img 
+                                    src={DEFAULT_IMAGE}
+                                    alt="Default Property Image"
+                                    className="lightbox-image"
+                                />
                             )}
                         </div>
 
                         {/* Navigation Arrows (only show if multiple images) */}
-                        {selectedImage.images.length > 1 && (
+                        {selectedImage?.images?.length > 1 && (
                             <>
                                 <button
                                     className="lightbox-nav-btn lightbox-prev-btn"
@@ -1248,7 +1263,7 @@ const AdminDashboard = () => {
                         )}
 
                         {/* Image Counter */}
-                        {selectedImage.images.length > 1 && (
+                        {selectedImage?.images?.length > 1 && (
                             <div className="lightbox-counter">
                                 {selectedImageIndex + 1} / {selectedImage.images.length}
                             </div>
@@ -1272,7 +1287,7 @@ const AdminDashboard = () => {
 
                         {/* Info Text */}
                         <div className="lightbox-info">
-                            <p>💡 Use arrows or click thumbnails to browse • Click ✕ or outside to close</p>
+                            <p>{selectedImage?.images?.length > 0 ? '💡 Use arrows or click thumbnails to browse • Click ✕ or outside to close' : '📷 Default thumbnail - No images uploaded yet'}</p>
                         </div>
                     </div>
                 </div>
