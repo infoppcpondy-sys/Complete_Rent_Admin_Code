@@ -191,9 +191,9 @@ const MatchedDataTable = () => {
     const displayTenantPhone = ownerPlan === 'Free' ? maskPhoneNumber(formattedTenantPhone) : formattedTenantPhone;
     const displayOwnerPhone = tenantPlan === 'Free' ? maskPhoneNumber(formattedOwnerPhone) : formattedOwnerPhone;
 
-    const ownerMessage = `🏠 *RENT PONDY - Property Match Alert!*\n\nHello ${ownerName}! 👋\n\nGreat news! 🎉 Your property *(${propertyDetails})* has been successfully matched with a potential tenant who is actively looking to rent.\n\nThey are interested in your property and eager to connect. Please reach out at your earliest convenience to arrange a viewing! 📅\n\n📞 *Tenant Contact:* ${displayTenantPhone}${ownerPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\nThank you for choosing *RENT PONDY!* 🙏\nWe're here to make renting easier for you! 🌟`;
+    const ownerMessage = `🏠 *RENT PONDY - Property Match Alert!*\n\nHello ${ownerName}! 👋\n\nGreat news! 🎉 Your property *(${propertyDetails})* has been successfully matched with a potential tenant who is actively looking to rent.\n\n📞 *Tenant Contact:* ${displayTenantPhone}${ownerPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\n📲 *Download our APP:*\nhttps://play.google.com/store/apps/details?id=com.apps.rentpondy&pcampaignid=web_share\n\n🌐 *Visit our site:*\nhttps://rentpondy.com/\n\nThank you for choosing *RENT PONDY!* 🙏\nWe're here to make renting easier for you! 🌟`;
 
-    const tenantMessage = `🔑 *RENT PONDY - Property Match Found!*\n\nHello ${tenantName}! 👋\n\nExciting news! 🎉 We have found a *perfect property match* for you!\n\n🏡 *Property Details:* ${propertyDetails}\nThis property matches your requirements and is ready for viewing!\n\n👤 *Property Owner:* ${ownerName}\n📞 *Owner Contact:* ${displayOwnerPhone}${tenantPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\nPlease connect with the owner to schedule a viewing at your convenience. 📅\n\nBest regards,\n*RENT PONDY Team* 🏠✨\n_Making your rental journey smooth & easy!_`;
+    const tenantMessage = `🔑 *RENT PONDY - Property Match Found!*\n\nHello ${tenantName}! 👋\n\nExciting news! 🎉 We have found a *perfect property match* for you!\n\n🏡 *Property Details:* ${propertyDetails}\nThis property matches your requirements and is ready for viewing!\n\n👤 *Property Owner:* ${ownerName}\n📞 *Owner Contact:* ${displayOwnerPhone}${tenantPlan === 'Free' ? `\n\n⚠️ To get the full contact details, please contact *RENT PONDY*:\n📱 *8300622013*` : ''}\n\n📲 *Download our APP:*\nhttps://play.google.com/store/apps/details?id=com.apps.rentpondy&pcampaignid=web_share\n\n🌐 *Visit our site:*\nhttps://rentpondy.com/\n\nBest regards,\n*RENT PONDY Team* 🏠✨\n_Making your rental journey smooth & easy!`;
 
     await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, { to: formattedOwnerPhone, message: ownerMessage });
     await axios.post(`${process.env.REACT_APP_API_URL}/send-message`, { to: formattedTenantPhone, message: tenantMessage });
@@ -485,10 +485,11 @@ const MatchedDataTable = () => {
         const maxMatch = filters.maxRentalAmount ? property.rentalAmount <= parseFloat(filters.maxRentalAmount) : true;
         let matchesWhatsappStatus = true;
         if (filters.whatsappStatus) {
+          // When filter is explicitly selected, show only items matching that filter
           matchesWhatsappStatus = (property.Whatsappstatus || 'Not Send') === filters.whatsappStatus;
         } else {
-          // By default, hide "Send" status unless explicitly filtered
-          matchesWhatsappStatus = (property.Whatsappstatus || 'Not Send') !== 'Send';
+          // By default, show only "Not Send" items (unsent messages)
+          matchesWhatsappStatus = (property.Whatsappstatus || 'Not Send') === 'Not Send';
         }
         let matchesOwnerPlan = true;
         if (filters.ownerPlan) matchesOwnerPlan = getOwnerPlan(property.rentId) === filters.ownerPlan;
