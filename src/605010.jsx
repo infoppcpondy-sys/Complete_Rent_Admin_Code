@@ -936,7 +936,7 @@ const AdminDashboard = () => {
             {/* PROPERTIES LIST SECTION */}
             {!showForm && (
                 <div className="properties-section">
-                    <h2>📋 Properties List ({properties.length})</h2>
+                    <h2>📋 Properties List</h2>
 
                     {/* FILTERS SECTION */}
                     <div className="filters-section">
@@ -1089,7 +1089,7 @@ const AdminDashboard = () => {
                                 <tbody>
                                     {properties.map((property, index) => (
                                         <tr key={property._id}>
-                                            <td className="serial-number">{index + 1}</td>
+                                            <td className="serial-number">{(filters.page - 1) * filters.limit + index + 1}</td>
                                             <td>
                                                 <span className="property-id">
                                                     {property.propertyId || 'N/A'}
