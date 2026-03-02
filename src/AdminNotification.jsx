@@ -20,6 +20,9 @@ const NotificationsTable = () => {
   const [ownerPhoneFilter, setOwnerPhoneFilter] = useState("");
   const [tenantPhoneFilter, setTenantPhoneFilter] = useState("");
   const [ownerData, setOwnerData] = useState([]); // Store owner data from API
+  const [tenantData, setTenantData] = useState([]); // Store tenant data from API
+  const [ownerBillStatusMap, setOwnerBillStatusMap] = useState({}); // Store owner bill status by phone number
+  const [tenantBillStatusMap, setTenantBillStatusMap] = useState({}); // Store tenant bill status by phone number
 
   const itemsPerPage = 50;
 
@@ -56,7 +59,137 @@ const fetchNotifications = async () => {
 
     fetchOwnerData();
   }, []);
+
+  // Fetch tenant data from API
+  useEffect(() => {
+    const fetchTenantData = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/raActive-buyerAssistance-all-plans-rent`);
+        let data = response.data?.buyers || response.data?.data || response.data || [];
+        
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setTenantData(data);
+        } else if (typeof data === 'object' && data !== null) {
+          setTenantData([data]);
+        } else {
+          setTenantData([]);
+        }
+      } catch (err) {
+        console.error("Fetch tenant data failed:", err);
+        setTenantData([]);
+      }
+    };
+
+    fetchTenantData();
+  }, []);
+
+  // Fetch owner bill status (free/paid plans) from API
+  useEffect(() => {
+    const fetchOwnerBillStatus = async () => {
+      try {
+        const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+        const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+        
+        const ownerBillMap = {};
+        
+        // Map free properties by phone number
+        if (freeRes.data.data && Array.isArray(freeRes.data.data)) {
+          freeRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                if (prop.phoneNumber) {
+                  ownerBillMap[prop.phoneNumber] = 'Free';
+                }
+              });
+            }
+          });
+        }
+        
+        // Map paid properties by phone number
+        if (paidRes.data.data && Array.isArray(paidRes.data.data)) {
+          paidRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                if (prop.phoneNumber) {
+                  ownerBillMap[prop.phoneNumber] = 'Paid';
+                }
+              });
+            }
+          });
+        }
+        
+        setOwnerBillStatusMap(ownerBillMap);
+      } catch (err) {
+        console.error("Fetch owner bill status failed:", err);
+        setOwnerBillStatusMap({});
+      }
+    };
+
+    fetchOwnerBillStatus();
+  }, []);
+
+  // Fetch tenant bill status (free/paid plans) from API
+  useEffect(() => {
+    const fetchTenantBillStatus = async () => {
+      try {
+        const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+        const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+        
+        const tenantBillMap = {};
+        
+        // Map free properties by phone number
+        if (freeRes.data.data && Array.isArray(freeRes.data.data)) {
+          freeRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                if (prop.phoneNumber) {
+                  tenantBillMap[prop.phoneNumber] = 'Free';
+                }
+              });
+            }
+          });
+        }
+        
+        // Map paid properties by phone number
+        if (paidRes.data.data && Array.isArray(paidRes.data.data)) {
+          paidRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                if (prop.phoneNumber) {
+                  tenantBillMap[prop.phoneNumber] = 'Paid';
+                }
+              });
+            }
+          });
+        }
+        
+        setTenantBillStatusMap(tenantBillMap);
+      } catch (err) {
+        console.error("Fetch tenant bill status failed:", err);
+        setTenantBillStatusMap({});
+      }
+    };
+
+    fetchTenantBillStatus();
+  }, []);
     const tableRef = useRef();
+
+  // Get owner bill status based on phone number
+  const getOwnerBillStatus = (phoneNumber) => {
+    if (!phoneNumber || !ownerBillStatusMap[phoneNumber]) {
+      return 'N/A';
+    }
+    return ownerBillStatusMap[phoneNumber];
+  };
+
+  // Get tenant bill status based on phone number
+  const getTenantBillStatus = (phoneNumber) => {
+    if (!phoneNumber || !tenantBillStatusMap[phoneNumber]) {
+      return 'N/A';
+    }
+    return tenantBillStatusMap[phoneNumber];
+  };
 
   // Get owner status based on phone number
   const getOwnerStatus = (phoneNumber) => {
@@ -65,6 +198,24 @@ const fetchNotifications = async () => {
     );
     
     if (owner && owner.status === 'active') {
+      return 'AP';
+    }
+    
+    // If phone number is not found in API data
+    return 'NP';
+  };
+
+  // Get tenant status based on phone number
+  const getTenantStatus = (phoneNumber) => {
+    if (!Array.isArray(tenantData)) {
+      return 'NP';
+    }
+
+    const tenant = tenantData.find(
+      tenant => tenant.phoneNumber === phoneNumber || tenant.phone === phoneNumber
+    );
+    
+    if (tenant && tenant.ra_status === 'raActive') {
       return 'AP';
     }
     
@@ -324,8 +475,10 @@ const handleReset = () => {
             <th>Type</th>
             <th>Owner Phone Number</th>
             <th>Owner Status</th>
+            <th>Owner Bill Status</th>
             <th>Tenant Phone Number</th>
             <th>Tenant Status</th>
+            <th>Tenant Bill Status</th>
             <th>Status</th>
             <th>Created At</th>
           </tr>
@@ -343,8 +496,14 @@ const handleReset = () => {
                     {getOwnerStatus(notification.recipientPhoneNumber)}
                   </span>
                 </td>
+                <td>{getOwnerBillStatus(notification.recipientPhoneNumber)}</td>
                 <td>{notification.senderPhoneNumber}</td>
-                <td></td>
+                <td>
+                  <span style={getBadgeStyle(getTenantStatus(notification.senderPhoneNumber))}>
+                    {getTenantStatus(notification.senderPhoneNumber)}
+                  </span>
+                </td>
+                <td>{getTenantBillStatus(notification.senderPhoneNumber)}</td>
                 <td>{notification.isRead ? "Read" : "Unread"}</td>
                 <td>{new Date(notification.createdAt).toLocaleString()}</td>
                
@@ -352,7 +511,7 @@ const handleReset = () => {
             ))
           ) : (
             <tr>
-              <td colSpan="9">No notifications found</td>
+              <td colSpan="11">No notifications found</td>
             </tr>
           )}
         </tbody>
