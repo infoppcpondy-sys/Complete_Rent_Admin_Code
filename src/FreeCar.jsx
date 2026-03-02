@@ -490,24 +490,26 @@ const FreePlansWithProperties = () => {
   };
 
   // Flatten all properties from all items and deduplicate by rentId
-  const getFlattenedUniqueProperties = () => {
-    const seenRentIds = new Set();
-    const uniqueProperties = [];
+const getFlattenedUniqueProperties = () => {
+  const seenRentIds = new Set();
+  const uniqueProperties = [];
 
-    filteredData.forEach((item) => {
+  filteredData.forEach((item) => {
+    if (item.billInfo?.paymentType === "Free") {
       item.properties?.forEach((property) => {
         if (!seenRentIds.has(property.rentId)) {
           seenRentIds.add(property.rentId);
           uniqueProperties.push({
             ...property,
-            billInfo: item.billInfo, // Attach billInfo from parent item
+            billInfo: item.billInfo,
           });
         }
       });
-    });
+    }
+  });
 
-    return uniqueProperties;
-  };
+  return uniqueProperties;
+};
 
   const handlePrint = () => {
     const printContent = tableRef.current.innerHTML;
