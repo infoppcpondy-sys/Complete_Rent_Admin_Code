@@ -97,8 +97,9 @@ const menuItems = [
   };
   return (
     <div className={`sidebar ${isOpen ? "sidebar-open" : ""} p-3 m-3`}>
-      <div  className="d-flex align-items-center"><img src={logo} alt="" className="img-fluid logo-size"/>  
-          <h1 className="gradient-text ms-3" style={{color:'linear-gradient(195deg, rgba(73, 241, 185, 1), rgba(16, 183, 100, 1))'}}>RENT</h1>
+      <div className="d-flex align-items-center" style={{ gap: '12px', marginBottom: '20px' }}>
+        <img src={logo} alt="Rent Pondy" className="img-fluid" style={{ width: '50px', height: '50px' }} />  
+        <h1 className="gradient-text" style={{ margin: 0, color: 'linear-gradient(195deg, rgba(73, 241, 185, 1), rgba(16, 183, 100, 1))', whiteSpace: 'nowrap', fontSize: '24px', fontWeight: '700', letterSpacing: '1px' }}>RENT PONDY</h1>
       </div>
       <hr></hr>
       <nav>
