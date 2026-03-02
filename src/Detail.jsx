@@ -36,7 +36,7 @@ import contact from './Assets/contact.png';
 // import { ToWords } from 'to-words';
 import { IoIosArrowForward } from "react-icons/io";
 
-import promotion from './Assets/PUC_App Promotion_2.png'
+// import promotion from './Assets/PUC_App Promotion_2.png'
 import { ToWords } from 'to-words';
 
 import {
@@ -862,7 +862,7 @@ const formattedCreatedAt = Date.now
     { icon: fieldIcons.foodHabit, label: "foodHabit", value: propertyDetails.foodHabit },
     { icon: fieldIcons.jobType, label: "jobType", value: propertyDetails.jobType },
     { icon: fieldIcons.petAllowed, label: "petAllowed", value: propertyDetails.petAllowed },
-    { heading: true, label: "rental Property Address " }, // Heading 3
+    { heading: true, label: "Rental Property Address " }, // Heading 3
 
     // { icon: <BiMap />, label: "Location", value: "New York, USA" },
     { icon: fieldIcons.country, label: "Country", value: propertyDetails.country },
@@ -878,15 +878,15 @@ const formattedCreatedAt = Date.now
     { icon: fieldIcons.pinCode, label: "pinCode", value: propertyDetails.pinCode },
     { icon: fieldIcons.locationCoordinates, label: "location Coordinates", value: propertyDetails.locationCoordinates },
 
-    { heading: true, label: "Contact Info" }, // Heading 5
+    // { heading: true, label: "Contact Info" }, // Heading 5
    
-    { icon: fieldIcons.ownerName, label: "Owner Name", value: propertyDetails.ownerName },
-    { icon: fieldIcons.email, label: "Email", value: propertyDetails.email },
+    // { icon: fieldIcons.ownerName, label: "Owner Name", value: propertyDetails.ownerName },
+    // { icon: fieldIcons.email, label: "Email", value: propertyDetails.email },
 
-    { icon: fieldIcons.phoneNumber, label: "Phone Number", value: phoneNumber },
-    { icon: fieldIcons.alternatePhone, label: "alternate Phone", value: propertyDetails.alternatePhone },
+    // { icon: fieldIcons.phoneNumber, label: "Phone Number", value: phoneNumber },
+    // { icon: fieldIcons.alternatePhone, label: "alternate Phone", value: propertyDetails.alternatePhone },
 
-    { icon: fieldIcons.bestTimeToCall, label: "Best Time To Call", value: propertyDetails.bestTimeToCall },
+    // { icon: fieldIcons.bestTimeToCall, label: "Best Time To Call", value: propertyDetails.bestTimeToCall },
  
   ];
 
@@ -1122,6 +1122,8 @@ const confirmActionHandler = (actionType, actionMessage) => {
 };
 
 
+// DISABLED - Cards section (Interest, Report Sold Out, Report Property, Need Help)
+/*
 const cards = [
   {
     img: icon1,
@@ -1174,6 +1176,7 @@ const cards = [
 }
 
 ];
+*/
 
 
 
@@ -1788,6 +1791,7 @@ return (
       {/* Contact Info Section */}
       <h5 className="pt-3 fw-bold">Contact Info</h5>
 
+      {/* DISABLED - View owner contact details button
       <div 
         className="btn rounded-1 p-2 text-center d-flex align-items-center justify-content-center" 
         style={{
@@ -1803,7 +1807,9 @@ return (
         <MdContactPhone size={20} style={{marginRight: '8px', color: showContactDetails ? 'white' : '#4F4B7E'}}/>
         View owner contact details
       </div>
+      */}
 
+      {/* DISABLED - Contact details section
       {showContactDetails && (
         <div ref={contactRef} className="mt-3">
           <div className="row g-3">
@@ -1880,6 +1886,7 @@ return (
               </div>
             </div>
 
+            {/* DISABLED - Request Map Location
             {!propertyDetails.address && (
               <div className="col-12">
                 <button
@@ -1891,6 +1898,7 @@ return (
                 </button>
               </div>
             )}
+            */}
 
             {/* Best Time to Call */}
             <div className="col-12 d-flex align-items-center">
@@ -1903,7 +1911,7 @@ return (
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* DISABLED - Action Buttons (Call and Message)
             <div className="col-12 d-flex gap-2 mt-2">
               {finalContactNumber && (
                 <button
@@ -1948,10 +1956,11 @@ return (
                 </button>
               )}
             </div>
+            */}
 
           </div>
         </div>
-      )}
+    
 
 {propertyDetails?.locationCoordinates && (
   <div className="mt-1">
@@ -2118,6 +2127,7 @@ return (
 
 
 
+      {/* DISABLED - Cards rendering section
       <div className="container my-3 w-100">
         <div className="row justify-content-center">
       
@@ -2183,7 +2193,9 @@ return (
       ))}
         </div>
       </div>
-   
+      */}
+
+      <>
 {Popup && (
   <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
     <div className="modal-dialog modal-dialog-centered">
@@ -2400,26 +2412,9 @@ return (
     setPendingOfferData(null);
   }}
 />
-    </div>
-    </div>
-    <div className="d-flex align-items-center justify-content-between w-100 m-0 p-3">
-        <button onClick={handleGoBack} className="d-flex align-items-center justify-content-around ps-3  p-2"
-        style={{background:"#CDC9F9" , color:"#fff" , borderRadius:"25px" , width:"25%", border:"none"}}
-        ><IoChevronBackSharp size={18}/>
- Back</button>
-        <button className="d-flex align-items-center justify-content-around ps-3  p-2" onClick={() => navigate('/mobileviews')} 
-               style={{background:"#CDC9F9" , color:"#fff" , borderRadius:"25px" , width:"25%", border:"none"}}
-        ><TiHome />
-Home</button>
-        <button className="d-flex align-items-center justify-content-around ps-3 p-2" onClick={handleIncreaserentId} 
-                style={{background:"#CDC9F9" , color:"#fff", borderRadius:"25px" , width:"25%", border:"none"}}
-        >Next
-          <IoIosArrowForward size={18}/>
- </button>
-      </div>
 
-
-   <img src={promotion} alt="" className="p-4 m-0" />
+   {/* <img src={promotion} alt="" className="p-4 m-0" /> */}
+      </>
     </div>
     </div>
     </div>
