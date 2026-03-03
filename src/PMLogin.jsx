@@ -49,17 +49,27 @@ const SendMessageModal = ({ onClose, onSent }) => {
       }
 
       console.log("📱 Sending to:", formattedNumber);
-      console.log("🌐 Hitting:", `${API_BASE}/send-message`);
+      console.log("🌐 Hitting:", `${API_BASE}/send-text`);
 
       const response = await axios.post(
-        `${API_BASE}/send-message`,
-        { to: formattedNumber, message: message.trim() },
+        `${API_BASE}/send-text`,
+        { to: formattedNumber, text: message.trim() },
         { headers: { "Content-Type": "application/json" }, timeout: 20000 }
       );
 
       console.log("✅ Response:", response.data);
+      console.log("✅ Status Code:", response.status);
 
-      if (response.data?.success) {
+      // Success if:
+      // 1. Backend returns success: true (our format)
+      // 2. HTTP status is 200 (message was sent)
+      // 3. message_status is "Success" (OneMsg format passed through)
+      const isSuccess = 
+        response.data?.success === true ||
+        response.status === 200 ||
+        String(response.data?.message_status).toLowerCase().trim() === "success";
+
+      if (isSuccess) {
         setSuccess("✅ Message sent successfully!");
         setSentPhoneNumber(formattedNumber);
         setSentMessage(message.trim());
@@ -382,7 +392,7 @@ const PMLogin = () => {
                 <tr style={styles.tableHeader}>
                   <th style={{ ...styles.tableCell, width: "8%", textAlign: "center" }}>SI.No</th>
                   <th style={{ ...styles.tableCell, width: "20%", textAlign: "left" }}>Phone Number</th>
-                  <th style={{ ...styles.tableCell, width: "50%", textAlign: "left" }}>Message</th>
+                  <th style={{ ...styles.tableCell, width: "50%", textAlign: "left" }}>Message Content</th>
                   <th style={{ ...styles.tableCell, width: "22%", textAlign: "center" }}>Send Time</th>
                 </tr>
               </thead>
@@ -390,7 +400,7 @@ const PMLogin = () => {
                 {sentMessages.map((msg, index) => (
                   <tr key={msg.id} style={index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd}>
                     <td style={{ ...styles.tableCell, width: "8%", textAlign: "center", fontWeight: 600, color: "#667eea" }}>
-                      {msg.id}
+                      {index + 1}
                     </td>
                     <td style={{ ...styles.tableCell, width: "20%", textAlign: "left", color: "#1a202c", fontWeight: 500 }}>
                       {msg.phoneNumber}
