@@ -15,8 +15,6 @@ const SendMessageModal = ({ onClose, onSent }) => {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [success, setSuccess]         = useState("");
-  const [sentPhoneNumber, setSentPhoneNumber] = useState("");
-  const [sentMessage, setSentMessage] = useState("");
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -70,9 +68,7 @@ const SendMessageModal = ({ onClose, onSent }) => {
         String(response.data?.message_status).toLowerCase().trim() === "success";
 
       if (isSuccess) {
-        setSuccess("✅ Message sent successfully!");
-        setSentPhoneNumber(formattedNumber);
-        setSentMessage(message.trim());
+        setSuccess("✅ Message sent successfully! Using database credentials.");
         setTimeout(() => { onSent(formattedNumber, message.trim()); onClose(); }, 1500);
       } else {
         setError(`❌ ${response.data?.message || "Failed to send message"}`);
@@ -165,6 +161,202 @@ const SendMessageModal = ({ onClose, onSent }) => {
               </span>
             )}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Credentials Modal ───────────────────────────────────────────────────────── */
+const CredentialsModal = ({ onClose, onSaved }) => {
+  const [apiKey, setApiKey] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    fetchCredentials();
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  const fetchCredentials = async () => {
+    try {
+      console.log("🔍 Fetching credentials from:", `${API_BASE}/wasender-credentials`);
+      const response = await axios.get(
+        `${API_BASE}/wasender-credentials`,
+        { timeout: 10000 }
+      );
+
+      console.log("✅ Credentials response:", response.data);
+
+      if (response.data?.success && response.data?.data) {
+        setApiKey(response.data.data.apiKey || "");
+        setAccessToken(response.data.data.personalAccessToken || "");
+        setError("");
+      } else {
+        console.warn("⚠️ Unexpected response format:", response.data);
+        setError("Failed to load credentials: Invalid response format");
+      }
+    } catch (err) {
+      console.error("❌ Error fetching credentials:", err);
+      console.error("Response data:", err.response?.data);
+      console.error("Request URL:", err.config?.url);
+      const errorMsg = err.response?.data?.message || err.message || "Failed to load credentials";
+      setError(`❌ ${errorMsg}`);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!apiKey.trim()) return setError("⚠️ API Key is required.");
+    if (!accessToken.trim()) return setError("⚠️ Personal Access Token is required.");
+
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      console.log("💾 Saving credentials to database at:", `${API_BASE}/wasender-credentials`);
+      const response = await axios.post(
+        `${API_BASE}/wasender-credentials`,
+        {
+          apiKey: apiKey.trim(),
+          personalAccessToken: accessToken.trim(),
+          webhookSecret: ""
+        },
+        { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+      );
+
+      console.log("✅ Save response:", response.data);
+
+      if (response.data?.success) {
+        setSuccess("✅ Credentials saved to database! All future messages will use these credentials.");
+        setIsEditing(false);
+        setTimeout(() => { onSaved(); onClose(); }, 1500);
+      } else {
+        setError(`❌ ${response.data?.message || "Failed to save credentials"}`);
+      }
+    } catch (err) {
+      console.error("❌ Error saving credentials:", err);
+      console.error("Response data:", err.response?.data);
+      console.error("Request URL:", err.config?.url);
+      const msg = err.response?.data?.message || err.message || "Failed to save credentials";
+      setError(`❌ ${msg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && e.ctrlKey && !loading) handleSave();
+  };
+
+  return (
+    <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && !loading && onClose()}>
+      <div style={styles.modal}>
+        <div style={styles.modalHeader}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={styles.credIcon}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#fff">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5s-5 2.24-5 5v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h2 style={styles.modalTitle}>Wasender API Credentials</h2>
+              <p style={styles.modalSub}>Manage your API keys and tokens</p>
+            </div>
+          </div>
+          <button onClick={onClose} style={styles.closeBtn} disabled={loading}>×</button>
+        </div>
+
+        <div style={styles.modalBody}>
+          {isFetching ? (
+            <div style={{ padding: "40px 20px", textAlign: "center" }}>
+              <div style={styles.spinner} />
+              <p style={{ color: "#718096", marginTop: 12 }}>Loading credentials...</p>
+            </div>
+          ) : !isEditing ? (
+            <>
+              <div style={styles.credentialDisplay}>
+                <div style={styles.credField}>
+                  <label style={styles.credLabel}>API Key</label>
+                  <div style={styles.credValue}>
+                    {apiKey ? "••••••••" + apiKey.slice(-4) : "Not set"}
+                  </div>
+                </div>
+                <div style={styles.credField}>
+                  <label style={styles.credLabel}>Personal Access Token</label>
+                  <div style={styles.credValue}>
+                    {accessToken ? "••••••••" + accessToken.slice(-4) : "Not set"}
+                  </div>
+                </div>
+              </div>
+              {error && <div style={styles.errorBox}>{error}</div>}
+              {success && <div style={styles.successBox}>{success}</div>}
+            </>
+          ) : (
+            <>
+              <div style={styles.field}>
+                <label style={styles.label}>
+                  API Key <span style={{ color: "#e53e3e" }}>*</span>
+                </label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Enter your Wasender API Key"
+                  style={styles.input}
+                  disabled={loading}
+                />
+                <p style={styles.hint}>Your API key for Wasender service</p>
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>
+                  Personal Access Token <span style={{ color: "#e53e3e" }}>*</span>
+                </label>
+                <input
+                  type="password"
+                  value={accessToken}
+                  onChange={(e) => setAccessToken(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Enter your Personal Access Token"
+                  style={styles.input}
+                  disabled={loading}
+                />
+                <p style={styles.hint}>Your personal access token for authentication</p>
+              </div>
+
+              {error && <div style={styles.errorBox}>{error}</div>}
+              {success && <div style={styles.successBox}>{success}</div>}
+            </>
+          )}
+        </div>
+
+        <div style={styles.modalFooter}>
+          <button onClick={onClose} style={styles.cancelBtn} disabled={loading || isFetching}>
+            {isEditing ? "Cancel" : "Close"}
+          </button>
+          {!isEditing ? (
+            <button onClick={() => { setIsEditing(true); setError(""); }} style={styles.editBtn} disabled={loading || isFetching}>
+              ✏️ Edit Credentials
+            </button>
+          ) : (
+            <button onClick={handleSave} style={styles.sendBtn} disabled={loading}>
+              {loading ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={styles.spinner} /> Saving...
+                </span>
+              ) : (
+                "Save Credentials"
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -280,8 +472,55 @@ const LoginForm = ({ onLoginSuccess }) => {
 const PMLogin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showModal, setShowModal]             = useState(false);
+  const [showCredsModal, setShowCredsModal]   = useState(false);
   const [toast, setToast]                     = useState("");
   const [sentMessages, setSentMessages]       = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Fetch message history from backend
+  const fetchMessageHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      console.log("📥 Fetching message history from:", `${API_BASE}/pm-history`);
+      const response = await axios.get(`${API_BASE}/pm-history?limit=100`, {
+        timeout: 15000
+      });
+
+      if (response.data?.success && response.data?.data) {
+        // Convert backend data to display format
+        const formattedMessages = response.data.data.map((msg, index) => ({
+          id: index,
+          phoneNumber: msg.phoneNumber || "",
+          message: msg.message || "",
+          sendTime: msg.sentAt ? new Date(msg.sentAt).toLocaleString('en-IN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          }) : "N/A"
+        }));
+        console.log("✅ Loaded", formattedMessages.length, "messages from history");
+        setSentMessages(formattedMessages);
+      }
+    } catch (err) {
+      console.error("⚠️ Error fetching message history:", err.message);
+      // Try to load from localStorage as fallback
+      const cached = localStorage.getItem("pmMessageHistory");
+      if (cached) {
+        try {
+          setSentMessages(JSON.parse(cached));
+          console.log("📦 Loaded messages from localStorage cache");
+        } catch (e) {
+          console.error("Failed to parse cached messages");
+        }
+      }
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   useEffect(() => {
     // Clear authentication on page load/reload - always show login
@@ -292,6 +531,8 @@ const PMLogin = () => {
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
+    // Fetch message history after login
+    fetchMessageHistory();
   };
 
   const handleLogout = () => {
@@ -299,7 +540,8 @@ const PMLogin = () => {
     localStorage.removeItem("pmUsername");
     setIsAuthenticated(false);
     setShowModal(false);
-    setSentMessages([]);
+    setShowCredsModal(false);
+    // Keep messages in state - don't clear them
     setToast("✓ Logged out successfully!");
     setTimeout(() => setToast(""), 3500);
   };
@@ -316,17 +558,27 @@ const PMLogin = () => {
       hour12: true
     });
 
-    setSentMessages((prevMessages) => [
-      {
-        id: prevMessages.length + 1,
-        phoneNumber,
-        message,
-        sendTime: formattedTime
-      },
-      ...prevMessages
-    ]);
+    const newMessage = {
+      id: Date.now(), // Use timestamp as unique ID
+      phoneNumber,
+      message,
+      sendTime: formattedTime
+    };
+
+    // Add to state
+    setSentMessages((prevMessages) => {
+      const updatedMessages = [newMessage, ...prevMessages];
+      // Cache to localStorage as fallback
+      localStorage.setItem("pmMessageHistory", JSON.stringify(updatedMessages));
+      return updatedMessages;
+    });
 
     setToast("✓ Message sent successfully!");
+    setTimeout(() => setToast(""), 3500);
+  };
+
+  const handleCredentialsSaved = () => {
+    setToast("✓ Credentials updated successfully!");
     setTimeout(() => setToast(""), 3500);
   };
 
@@ -353,6 +605,9 @@ const PMLogin = () => {
             </svg>
             Send Message
           </button>
+          <button onClick={() => setShowCredsModal(true)} style={styles.credsBtn}>
+            🔐 API Credentials
+          </button>
           <button onClick={handleLogout} style={styles.logoutBtn}>
             Logout
           </button>
@@ -377,9 +632,16 @@ const PMLogin = () => {
       <div style={styles.tableContainer}>
         <h2 style={styles.tableTitle}>
           <span style={{ fontSize: 20, marginRight: 8 }}>📋</span>
-          Sent Messages
+          Sent Messages ({sentMessages.length})
         </h2>
-        {sentMessages.length === 0 ? (
+        {isLoadingHistory ? (
+          <div style={styles.noDataMessage}>
+            <div style={styles.spinner} />
+            <p style={{ margin: "12px 0 0", color: "#718096", fontSize: 13 }}>
+              Loading message history...
+            </p>
+          </div>
+        ) : sentMessages.length === 0 ? (
           <div style={styles.noDataMessage}>
             <p style={{ margin: 0, color: "#718096", fontSize: 13 }}>
               No messages sent yet. Click "Send Message" to get started!
@@ -421,6 +683,10 @@ const PMLogin = () => {
 
       {showModal && (
         <SendMessageModal onClose={() => setShowModal(false)} onSent={handleSent} />
+      )}
+
+      {showCredsModal && (
+        <CredentialsModal onClose={() => setShowCredsModal(false)} onSaved={handleCredentialsSaved} />
       )}
     </div>
   );
@@ -551,6 +817,14 @@ const styles = {
     fontSize: 13.5, fontWeight: 600, cursor: "pointer",
     boxShadow: "0 4px 14px rgba(37,211,102,.35)",
   },
+  credsBtn: {
+    display: "flex", alignItems: "center",
+    background: "linear-gradient(135deg,#667eea,#764ba2)",
+    color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px",
+    fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+    boxShadow: "0 4px 14px rgba(102,126,234,.35)",
+    transition: "all 0.3s ease",
+  },
   logoutBtn: {
     display: "flex", alignItems: "center",
     background: "#ef4444",
@@ -583,6 +857,11 @@ const styles = {
     background: "linear-gradient(135deg,#25d366,#128c7e)",
     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
+  credIcon: {
+    width: 40, height: 40, borderRadius: 12,
+    background: "linear-gradient(135deg,#667eea,#764ba2)",
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
   modalTitle: { fontSize: 16, fontWeight: 700, color: "#1a202c", margin: 0 },
   modalSub:   { fontSize: 12, color: "#a0aec0", margin: "2px 0 0" },
   closeBtn: {
@@ -594,6 +873,17 @@ const styles = {
   field:  { marginBottom: 18 },
   label:  { display: "block", fontSize: 13, fontWeight: 600, color: "#2d3748", marginBottom: 7 },
   hint:   { fontSize: 11.5, color: "#a0aec0", margin: "5px 0 0" },
+  credentialDisplay: {
+    padding: "14px", background: "#f7f9fc", borderRadius: 8,
+    border: "1px solid #e2e8f0", marginBottom: 16,
+  },
+  credField: { marginBottom: 14 },
+  credLabel: { display: "block", fontSize: 12, fontWeight: 600, color: "#2d3748", marginBottom: 6 },
+  credValue: {
+    padding: "8px 12px", background: "#fff", borderRadius: 6,
+    border: "1px solid #e2e8f0", color: "#667eea", fontSize: 13,
+    fontFamily: "monospace", wordBreak: "break-all",
+  },
   input: {
     width: "100%", padding: "9px 13px", borderRadius: 8,
     border: "1.5px solid #e2e8f0", fontSize: 13.5, outline: "none",
@@ -629,6 +919,13 @@ const styles = {
     color: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer",
     display: "flex", alignItems: "center", fontFamily: "inherit",
     boxShadow: "0 4px 12px rgba(37,211,102,.3)",
+  },
+  editBtn: {
+    padding: "9px 22px", borderRadius: 8, border: "none",
+    background: "linear-gradient(135deg,#667eea,#764ba2)",
+    color: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+    display: "flex", alignItems: "center", fontFamily: "inherit",
+    boxShadow: "0 4px 12px rgba(102,126,234,.3)",
   },
   spinner: {
     width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)",
