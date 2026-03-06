@@ -1,0 +1,568 @@
+.pm-bulk-dashboard-container {
+  padding: 30px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ── Login Form Styles ──────────────────────────────────────────────────────── */
+.pm-bulk-login-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+}
+
+.pm-bulk-login-box {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  animation: pm-bulk-slideInUp 0.5s ease-out;
+}
+
+@keyframes pm-bulk-slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pm-bulk-login-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.pm-bulk-login-title {
+  color: #2d3748;
+  font-weight: 800;
+  margin: 0 0 8px;
+  font-size: 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pm-bulk-login-subtitle {
+  color: #718096;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pm-bulk-form-group {
+  margin-bottom: 24px;
+}
+
+.pm-bulk-form-label {
+  display: block;
+  color: #2d3748;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.pm-bulk-form-control {
+  width: 100%;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #f9fafb;
+  color: #2d3748;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-sizing: border-box;
+}
+
+.pm-bulk-form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  background-color: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+.pm-bulk-form-control:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pm-bulk-form-control::placeholder {
+  color: #bbbcc0;
+}
+
+.pm-bulk-login-error-box {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #c53030;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pm-bulk-login-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+
+.pm-bulk-login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.pm-bulk-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pm-bulk-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: pm-bulk-spin 0.8s linear infinite;
+}
+
+@keyframes pm-bulk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pm-bulk-credential-hint {
+  padding: 16px;
+  background: #f0f4ff;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.pm-bulk-credential-hint p {
+  margin: 0;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.pm-bulk-credential-hint strong {
+  color: #2d3748;
+  font-weight: 700;
+}
+
+.pm-bulk-credential-hint code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #667eea;
+}
+
+/* ── Dashboard Styles ──────────────────────────────────────────────────────– */
+
+.pm-bulk-header {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pm-bulk-header h1 {
+  color: #2d3748;
+  font-weight: 800;
+  margin-bottom: 5px;
+  font-size: 36px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pm-bulk-header p {
+  color: #718096;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.logout-btn {
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.pm-bulk-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  height: 100%;
+  background: white;
+  overflow: hidden;
+}
+
+.pm-bulk-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.pm-bulk-card h5 {
+  color: #2d3748;
+  font-weight: 700;
+  margin-bottom: 15px;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-bulk-card h6 {
+  color: #2d3748;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* Stats Cards */
+.stats-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stats-card.success::before {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stats-card.warning::before {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.stats-card.danger::before {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.card-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.card-number {
+  font-size: 42px;
+  font-weight: 800;
+  color: #667eea;
+  margin: 20px 0;
+  font-family: 'Arial', sans-serif;
+}
+
+.stats-card.success .card-number {
+  color: #10b981;
+}
+
+.stats-card.warning .card-number {
+  color: #f59e0b;
+}
+
+.stats-card.danger .card-number {
+  color: #ef4444;
+}
+
+.card-label {
+  color: #a0aec0;
+  font-size: 11px;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* Progress Bar */
+.bulk-progress-bar {
+  height: 24px;
+  border-radius: 6px;
+  background-color: #e5e7eb;
+}
+
+.bulk-progress-bar .progress-bar {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.action-btn {
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.action-btn.bulk-btn {
+  padding: 14px 32px;
+  font-size: 14px;
+  min-width: 200px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.action-btn.bulk-btn:hover {
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+/* Campaigns List */
+.campaigns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.campaign-item {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  transition: all 0.3s ease;
+}
+
+.campaign-item:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.campaign-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.campaign-header h6 {
+  color: #2d3748;
+  font-weight: 700;
+  margin: 0;
+  font-size: 14px;
+}
+
+.campaign-message {
+  color: #4b5563;
+  font-size: 13px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: white;
+  border-left: 3px solid #667eea;
+  border-radius: 4px;
+}
+
+.campaign-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #718096;
+  font-weight: 600;
+}
+
+.campaign-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.campaign-progress {
+  height: 6px;
+  border-radius: 3px;
+  background-color: #e5e7eb;
+}
+
+.campaign-progress .progress-bar {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Alert */
+.alert {
+  border: none;
+  border-radius: 12px;
+  border-left: 5px solid;
+  padding: 16px 20px;
+  margin-bottom: 30px;
+  font-weight: 500;
+}
+
+.alert-info {
+  border-left-color: #667eea;
+  background: #f0f4ff;
+  color: #444;
+}
+
+.alert strong {
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: #718096;
+  font-weight: 600;
+}
+
+/* Card Header */
+.pm-bulk-card .card-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px;
+  background-color: #f9fafb !important;
+}
+
+.pm-bulk-card .card-header h5 {
+  margin: 0;
+}
+
+.pm-bulk-card .card-body {
+  padding: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pm-bulk-dashboard-container {
+    padding: 20px;
+  }
+
+  .pm-bulk-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+    padding: 25px;
+  }
+
+  .pm-bulk-header h1 {
+    font-size: 28px;
+  }
+
+  .logout-btn {
+    width: 100%;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .action-btn.bulk-btn {
+    width: 100%;
+  }
+
+  .card-number {
+    font-size: 36px;
+  }
+
+  .campaign-stats {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .pm-bulk-dashboard-container {
+    padding: 15px;
+  }
+
+  .pm-bulk-header {
+    padding: 20px;
+  }
+
+  .pm-bulk-header h1 {
+    font-size: 24px;
+  }
+
+  .pm-bulk-header p {
+    font-size: 14px;
+  }
+
+  .card-number {
+    font-size: 32px;
+  }
+
+  .alert {
+    font-size: 13px;
+    padding: 14px 16px;
+  }
+
+  .campaign-item {
+    padding: 12px;
+  }
+
+  .campaign-stats {
+    font-size: 11px;
+  }
+}

@@ -388,6 +388,7 @@ const LoginForm = ({ onLoginSuccess }) => {
       if (username === "admin" && password === "admin") {
         localStorage.setItem("pmAuthenticated", "true");
         localStorage.setItem("pmUsername", username);
+        localStorage.setItem("pmEmail", username + "@rentpondy.com");
         onLoginSuccess();
         setLoading(false);
       } else {
@@ -407,7 +408,7 @@ const LoginForm = ({ onLoginSuccess }) => {
         <div style={styles.loginHeader}>
           <div style={{ fontSize: 48, marginBottom: 16 }}></div>
           <h2 style={styles.loginTitle}>PONDY MATRIMONY</h2>
-          <p style={styles.loginSubtitle}>WhatsApp Campaign Manager</p>
+          <p style={styles.loginSubtitle}>WhatsApp Campaign Manager single message</p>
         </div>
 
         <form onSubmit={handleLogin} style={{ width: "100%" }}>
