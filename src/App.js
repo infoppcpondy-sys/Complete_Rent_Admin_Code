@@ -17,6 +17,7 @@ import GetBuyerAssistance from "./GetBuyerAssistance";
 import PropertyAssistance from "./PropertyAssistance";
 import PMLogin from "./PMLogin";
 import PMDashboard from "./PMDashboard";
+import PMBulkdashboard from "./PMBulkdashboard";
  
 import { useDispatch } from 'react-redux';
 import { setName } from './redux/adminSlice';
@@ -44,14 +45,19 @@ const ProtectedDashboard = () => {
 // Protected Route - Check if PM is authenticated (no OTP required)
 const ProtectedPM = () => {
   const pmAuthenticated = localStorage.getItem('pmAuthenticated');
-  const pmEmail = localStorage.getItem('pmEmail');
   
-  // Check PM authentication conditions
-  if (!pmAuthenticated || pmAuthenticated !== 'true' || !pmEmail) {
-    return <Navigate to="/dashboard/pm" replace />;
+  if (!pmAuthenticated || pmAuthenticated !== 'true') {
+    // Show login page
+    return <PMLogin />;
   }
   
-  return <PMDashboard />;
+  // If authenticated, show the single message dashboard
+  return <PMLogin />;
+};
+
+// Protected Route - Check if PM is authenticated for bulk messaging
+const ProtectedPMBulk = () => {
+  return <PMBulkdashboard />;
 };
 
 const App = () => {
@@ -81,8 +87,8 @@ const App = () => {
     <Router basename="/process">
     <Routes>
       <Route path="/admin" element={<Admin />} />
-      <Route path="/dashboard/pm" element={<PMLogin />} />
-      <Route path="/dashboard/pm/home" element={<ProtectedPM />} />
+      <Route path="/dashboard/pm" element={<ProtectedPM />} />
+      <Route path="/dashboard/pm-bulk" element={<ProtectedPMBulk />} />
       <Route path="/dashboard/*" element={<ProtectedDashboard />} />
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>

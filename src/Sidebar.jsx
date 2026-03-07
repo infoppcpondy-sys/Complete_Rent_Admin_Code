@@ -1502,13 +1502,13 @@ All Views Data        </NavLink>
           className={({ isActive }) => (isActive ? "active-link rounded" : "")}
         >
           <FaFileInvoice />
-          All FollowUps Data
+          All Property Followups Data
         </NavLink>
       </li> 
       <li className="p-0 mt-2">
         <NavLink to="/dashboard/buyers-follow-ups"
          onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <RiGroupFill size={20} /> Tenant Follow Ups
+          <RiGroupFill size={20} /> All Tenant Followups Data
         </NavLink>
       </li>
       <li className="p-0 mt-2">

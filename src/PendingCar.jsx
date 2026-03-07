@@ -24,7 +24,8 @@ const PendingProperties = () => {
   const [deletionReason, setDeletionReason] = useState('');
   const [phoneNumberSearch, setPhoneNumberSearch] = useState('');
   const [followUpMap, setFollowUpMap] = useState({});
-    const [statusProperties, setStatusProperties] = useState({});
+  const [statusProperties, setStatusProperties] = useState({});
+  const [followUpFilter, setFollowUpFilter] = useState('all');
 
   const navigate = useNavigate();
 
@@ -148,18 +149,25 @@ const PendingProperties = () => {
       const matchEnd = !endDate || createdDate <= endDate;
       return matchStart && matchEnd;
     });
+    // Apply followup filter
+    if (followUpFilter === 'with') {
+      result = result.filter(prop => followUpMap[prop.rentId]);
+    } else if (followUpFilter === 'without') {
+      result = result.filter(prop => !followUpMap[prop.rentId]);
+    }
     setFiltered(result);
   };
 
   useEffect(() => {
     handleSearch();
-  }, [properties, rentIdSearch, startDate, endDate, phoneNumberSearch]);
+  }, [properties, rentIdSearch, startDate, endDate, phoneNumberSearch, followUpFilter]);
 
   const handleReset = () => {
     setPhoneNumberSearch('');
     setRentIdSearch('');
     setStartDate('');
     setEndDate('');
+    setFollowUpFilter('all');
     setFiltered(properties);
   };
 // 🔁 Handle Delete Confirmation
@@ -250,7 +258,7 @@ const handleUndo = async (rentId) => {
   return (
     <div className="p-3">
       <h4>Pending Properties</h4>
-      <form onSubmit={(e) => e.preventDefault()} className="d-flex flex-row gap-2 align-items-center flex-nowrap">
+      <form onSubmit={(e) => e.preventDefault()} className="d-flex flex-row gap-2 align-items-center flex-wrap">
         <input
           type="text"
           className="form-control"
@@ -281,6 +289,16 @@ const handleUndo = async (rentId) => {
           onChange={(e) => setEndDate(e.target.value)}
           style={{ maxWidth: "150px" }}
         />
+        <select
+          className="form-control"
+          value={followUpFilter}
+          onChange={(e) => setFollowUpFilter(e.target.value)}
+          style={{ maxWidth: "150px" }}
+        >
+          <option value="all">All Followup</option>
+          <option value="with">Yes</option>
+          <option value="without">No</option>
+        </select>
         <Button variant="primary" onClick={handleSearch}>
           Search
         </Button>
@@ -309,7 +327,7 @@ const handleUndo = async (rentId) => {
             <th>City</th>
             <th>Created At</th>
             <th>Status</th>
-            <th>Deletion Reason</th>
+            {/* <th>Deletion Reason</th>
             <th>Deleted At</th>
             <th>Plan Name</th>
             <th>Plan Type</th>
@@ -318,7 +336,7 @@ const handleUndo = async (rentId) => {
             <th>Remaining Days</th>
             <th>PayU Status</th>
             <th>Payment ID</th>
-            <th>Transaction ID</th>
+            <th>Transaction ID</th> */}
             <th>Action</th>
             {/* <th>Perment Delete</th> */}
             <th>Create FollowUp</th>
@@ -357,7 +375,7 @@ const handleUndo = async (rentId) => {
                 <td>{prop.city}</td>
                 <td>{new Date(prop.createdAt).toLocaleDateString()}</td>
                 <td>{prop.status}</td>
-                <td>{prop.deletionReason || '-'}</td>
+                {/* <td>{prop.deletionReason || '-'}</td>
                 <td>{prop.deletionDate ? new Date(prop.deletionDate).toLocaleString() : '-'}</td>
                 <td>{prop.planName}</td>
                 <td>{prop.packageType}</td>
@@ -366,7 +384,7 @@ const handleUndo = async (rentId) => {
                 <td>{prop.remainingDays}</td>
                 <td>{prop.payUStatus}</td>
                 <td>{prop.paymentId}</td>
-                <td>{prop.transactionId}</td>
+                <td>{prop.transactionId}</td> */}
                 <td>
                   {prop.status === "delete" ? (
                     <>
