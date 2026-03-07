@@ -644,7 +644,7 @@ const handleDelete = async (rentId, phoneNumber) => {
       <Row className="mb-3">
  
 
-<div className="col-md-6">
+{/* <div className="col-md-6">
   <label className="form-label">Upload Excel File:</label>
 
   <div
@@ -668,10 +668,10 @@ const handleDelete = async (rentId, phoneNumber) => {
       className="bi bi-file-earmark-arrow-up"
       style={{ fontSize: "2rem", color: "#007bff" }}
     ></i>
-    <span style={{ fontSize: "1rem", color: "#333" }}>Click to upload Excel file</span>
+    <span style={{ fontSize: "1rem", color: "#333" }}>Click to upload Excel file</span> */}
     
     {/* Hidden file input */}
-    <input
+    {/* <input
       type="file"
       id="excelFile"
       accept=".xlsx, .xls"
@@ -679,10 +679,10 @@ const handleDelete = async (rentId, phoneNumber) => {
       style={{ display: "none" }}  // Hide the default file input
     />
   </div>
-</div>
+</div> */}
 
 {/* Upload Button */}
-<div className="col-md-12 d-flex align-items-end gap-2">
+{/* <div className="col-md-12 d-flex align-items-end gap-2">
   <button className="btn mt-1 btn-success" onClick={handleExcelUpload}>
     Upload Excel
   </button>
@@ -693,7 +693,7 @@ const handleDelete = async (rentId, phoneNumber) => {
     Delete All
   </button>
   {message && <div className="alert alert-info mt-3 mb-0">{message}</div>}
-</div>
+</div> */}
 
 </Row>
 
@@ -774,17 +774,17 @@ const handleDelete = async (rentId, phoneNumber) => {
   }}>
     Showing: {filteredProperties.length} Records
   </div>
-  <div style={{ display: 'flex', gap: '10px' }}>
+  {/* <div style={{ display: 'flex', gap: '10px' }}>
     <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
       Print
     </button>
     <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
       Excel
     </button>
-  </div>
+  </div> */}
 </div>
 
-      <h2 className="mb-4 mt-5">User All Properties</h2>
+      <h2 className="mb-10 mt-10">User All Properties</h2>
     
               {filteredProperties.length > 0 ? (
          <div ref={tableRef}>      
