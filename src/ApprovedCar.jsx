@@ -44,6 +44,7 @@ const ApprovedCar = () => {
   const [propertyTypeFilter, setPropertyTypeFilter] = useState('');
   const [propertyModeFilter, setPropertyModeFilter] = useState('');
   const [billTypeFilter, setBillTypeFilter] = useState('');
+  const [otpStatusFilter, setOtpStatusFilter] = useState('');
   const [billMap, setBillMap] = useState({});
   
 
@@ -318,6 +319,15 @@ const handleSearch = () => {
     result = result.filter((prop) => prop.featureStatus === featureStatusFilter);
   }
 
+  // OTP Status filter
+  if (otpStatusFilter) {
+    if (otpStatusFilter === 'verified') {
+      result = result.filter((prop) => prop.otpStatus === 'verified');
+    } else if (otpStatusFilter === 'unverified') {
+      result = result.filter((prop) => prop.otpStatus !== 'verified');
+    }
+  }
+
   // Location filter
   if (hasLocation === 'yes') {
     result = result.filter((prop) => !!prop.locationCoordinates);
@@ -435,6 +445,7 @@ useEffect(() => {
   propertyTypeFilter,
   propertyModeFilter,
   billTypeFilter,
+  otpStatusFilter,
   pincodeFilter
 ]);
 
@@ -454,6 +465,7 @@ const handleReset = () => {
   setPropertyTypeFilter('');
   setPropertyModeFilter('');
   setBillTypeFilter('');
+  setOtpStatusFilter('');
   setSortOption('');
   setFiltered(properties);
 };
@@ -855,48 +867,62 @@ const handlePrint = (prop) => {
           />
         </div>
         <div className="col-md-3">
-  <Form.Control
-    type="text"
-    placeholder="Search by Phone Number"
-    value={phoneNumberSearch}
-    onChange={(e) => setPhoneNumberSearch(e.target.value)}
-  />
-</div>
-<div className="col-md-3">
-  <label>Pincode {pincodeFilter && <span style={{color: 'green', fontWeight: 'bold'}}>({filtered.filter(p => {
-    const propPincode = p.pinCode || p.pincode || p.postalCode;
-    return String(propPincode) === pincodeFilter;
-  }).length} properties)</span>}</label>
-  <Form.Control
-    type="text"
-    placeholder="Search by Pincode"
-    value={pincodeFilter}
-    onChange={(e) => setPincodeFilter(e.target.value)}
-  />
-</div>
- <div className="col-md-3">
-<select value={featureStatusFilter} onChange={(e) => setFeatureStatusFilter(e.target.value)}>
-  <option value="">All Feature Status</option>
-  <option value="yes">Yes</option>
-  <option value="no">No </option>
-</select>
-</div>
-<div className="col-md-3">
-<select value={propertyModeFilter} onChange={(e) => setPropertyModeFilter(e.target.value)}>
-  <option value="">All Property Mode</option>
-  <option value="Residential">Residential</option>
-  <option value="Commercial">Commercial</option>
-</select>
-</div>
-<div className="col-md-3">
-<label>Bill Type</label>
-<select value={billTypeFilter} onChange={(e) => setBillTypeFilter(e.target.value)}>
-  <option value="">All</option>
-  <option value="Office Bill">Office Bill</option>
-  <option value="Online Bill">Online Bill</option>
-</select>
-</div>
-        <div className="col-md-2">
+          <label>Phone Number</label>
+          <Form.Control
+            type="text"
+            placeholder="Search by Phone Number"
+            value={phoneNumberSearch}
+            onChange={(e) => setPhoneNumberSearch(e.target.value)}
+          />
+        </div>
+        <div className="col-md-3">
+          <label>Pincode {pincodeFilter && <span style={{color: 'green', fontWeight: 'bold'}}>({filtered.filter(p => {
+            const propPincode = p.pinCode || p.pincode || p.postalCode;
+            return String(propPincode) === pincodeFilter;
+          }).length} properties)</span>}</label>
+          <Form.Control
+            type="text"
+            placeholder="Search by Pincode"
+            value={pincodeFilter}
+            onChange={(e) => setPincodeFilter(e.target.value)}
+          />
+        </div>
+        <div className="col-md-3">
+          <label>Feature Status</label>
+          <select className="form-control" value={featureStatusFilter} onChange={(e) => setFeatureStatusFilter(e.target.value)}>
+            <option value="">All Feature Status</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div className="col-md-3">
+          <label>OTP Status</label>
+          <select className="form-control" value={otpStatusFilter} onChange={(e) => setOtpStatusFilter(e.target.value)}>
+            <option value="">All OTP Status</option>
+            <option value="verified">Verified</option>
+            <option value="unverified">Unverified</option>
+          </select>
+        </div>
+
+        <div className="col-md-3">
+          <label>Property Mode</label>
+          <select className="form-control" value={propertyModeFilter} onChange={(e) => setPropertyModeFilter(e.target.value)}>
+            <option value="">All Property Mode</option>
+            <option value="Residential">Residential</option>
+            <option value="Commercial">Commercial</option>
+          </select>
+        </div>
+        <div className="col-md-3">
+          <label>Bill Type</label>
+          <select className="form-control" value={billTypeFilter} onChange={(e) => setBillTypeFilter(e.target.value)}>
+            <option value="">All</option>
+            <option value="Office Bill">Office Bill</option>
+            <option value="Online Bill">Online Bill</option>
+          </select>
+        </div>
+        <div className="col-md-3">
+          <label>Start Date</label>
           <Form.Control
             type="date"
             placeholder="Start Date"
@@ -904,39 +930,40 @@ const handlePrint = (prop) => {
             onChange={(e) => setStartDate(e.target.value)}
           />
         </div>
-        <div className="col-md-2">
+        <div className="col-md-3">
+          <label>End Date</label>
           <Form.Control
             type="date"
             placeholder="End Date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
-         
         </div>
-                 <div className="d-flex flex-wrap gap-2 my-2">
-          <Button onClick={() => setSortOption('priceLowHigh')}>Price: Low to High</Button>
-          <Button onClick={() => setSortOption('priceHighLow')}>Price: High to Low</Button>
-          <Button onClick={() => setSortOption('oldToNew')}>Date: Old to New</Button>
-          <Button onClick={() => setSortOption('newToOld')}>Date: New to Old</Button>
-          
-          <Button onClick={() => setHasLocation('yes')}>With Location</Button>
-          <Button onClick={() => setHasLocation('no')}>Without Location</Button>
-          
-          <Button onClick={() => setHasPhoto('yes')}>With Photo</Button>
-          <Button onClick={() => setHasPhoto('no')}>Without Photo</Button>
-          
-          <Button onClick={() => setNotViewed(true)}>Not Viewed</Button>
-          
-          {/* <Button onClick={() => setBankLoan('yes')}>Bank Loan: Yes</Button>
-          <Button onClick={() => setBankLoan('no')}>Bank Loan: No</Button>
-           */}
-          <Button onClick={() => setPriceFilter('house30')}>House below 30L</Button>
-          <Button onClick={() => setPriceFilter('house30to50')}>House 30L - 50L</Button>
-          <Button onClick={() => setPriceFilter('commerical10k')}>commerical below 10k</Button>
-          
-          <Button onClick={() => setPropertyTypeFilter('agri')}>Agri Land</Button>
+        
+        <div className="col-12 mt-3">
+          <div className="d-flex flex-wrap gap-2">
+            <Button onClick={() => setSortOption('priceLowHigh')}>Price: Low to High</Button>
+            <Button onClick={() => setSortOption('priceHighLow')}>Price: High to Low</Button>
+            <Button onClick={() => setSortOption('oldToNew')}>Date: Old to New</Button>
+            <Button onClick={() => setSortOption('newToOld')}>Date: New to Old</Button>
+            
+            <Button onClick={() => setHasLocation('yes')}>With Location</Button>
+            <Button onClick={() => setHasLocation('no')}>Without Location</Button>
+            
+            <Button onClick={() => setHasPhoto('yes')}>With Photo</Button>
+            <Button onClick={() => setHasPhoto('no')}>Without Photo</Button>
+            
+            <Button onClick={() => setNotViewed(true)}>Not Viewed</Button>
+            
+            <Button onClick={() => setPriceFilter('house30')}>House below 30L</Button>
+            <Button onClick={() => setPriceFilter('house30to50')}>House 30L - 50L</Button>
+            <Button onClick={() => setPriceFilter('commerical10k')}>Commercial below 10k</Button>
+            
+            <Button onClick={() => setPropertyTypeFilter('agri')}>Agri Land</Button>
           </div>
-        <div >
+        </div>
+
+        <div className="col-12 mt-3">
           <Button variant="primary" onClick={handleSearch}>
             Search
           </Button>
@@ -1023,7 +1050,7 @@ const handlePrint = (prop) => {
               {/* <th>View Details</th> */}
               <th>Create Bill</th>
               <th>Feature Status</th>
-              <th>Features Property Status</th>
+              {/* <th>Features Property Status</th> */}
               <th>Move To</th>
               <th>FollowUp Admin Name</th>
               <th>Bill Date</th>
@@ -1125,14 +1152,14 @@ const handlePrint = (prop) => {
                         >
                           <MdDeleteForever />
                         </Button>
-                        <Button
+                        {/* <Button
                           variant="danger"
                           size="sm"
                           className="mt-2"
                           onClick={() => handlePermanentDelete(prop.rentId)}
                         >
                           <MdDeleteForever /> Permanent
-                        </Button>
+                        </Button> */}
                       </>
                     )}
                   </td>
@@ -1146,7 +1173,7 @@ const handlePrint = (prop) => {
                     </button>
                   </td>
                   <td>{prop.featureStatus}</td>
-                  <td>
+                  {/* <td>
                     <Button
                       variant={prop.featureStatus === "yes" ? "danger" : "success"}
                       size="sm"
@@ -1154,7 +1181,7 @@ const handlePrint = (prop) => {
                     >
                       {prop.featureStatus === "yes" ? "Set to No" : "Set to Yes"}
                     </Button>
-                  </td>
+                  </td> */}
                   <td>
                     <Button
                       variant="info"
