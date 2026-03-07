@@ -23,6 +23,8 @@ const PreApprovedCar = () => {
   const [deletionReason, setDeletionReason] = useState('');
   const [phoneNumberSearch, setPhoneNumberSearch] = useState('');
   const [featureStatusFilter, setFeatureStatusFilter] = useState('');
+  const [followUpFilter, setFollowUpFilter] = useState('');
+  const [otpStatusFilter, setOtpStatusFilter] = useState('');
   const [billMap, setBillMap] = useState({});
   const [followUpMap, setFollowUpMap] = useState({});
 
@@ -318,6 +320,14 @@ const PreApprovedCar = () => {
       result = result.filter((prop) => prop.status === featureStatusFilter);
     }
 
+    if (otpStatusFilter) {
+      if (otpStatusFilter === 'verified') {
+        result = result.filter((prop) => prop.otpStatus === 'verified');
+      } else if (otpStatusFilter === 'unverified') {
+        result = result.filter((prop) => prop.otpStatus !== 'verified');
+      }
+    }
+
     result = result.filter((prop) => {
       const createdDate = new Date(prop.createdAt).toISOString().split("T")[0];
       const matchStart = !startDate || createdDate >= startDate;
@@ -325,12 +335,19 @@ const PreApprovedCar = () => {
       return matchStart && matchEnd;
     });
 
+    // Follow-up filter
+    if (followUpFilter === 'yes') {
+      result = result.filter(prop => followUpMap[prop.rentId]);
+    } else if (followUpFilter === 'no') {
+      result = result.filter(prop => !followUpMap[prop.rentId]);
+    }
+
     setFiltered(result);
   };
 
   useEffect(() => {
     handleSearch();
-  }, [properties, rentIdSearch, startDate, endDate, featureStatusFilter]);
+  }, [properties, rentIdSearch, startDate, endDate, featureStatusFilter, followUpFilter, otpStatusFilter, followUpMap]);
 
   const handleReset = () => {
     setPhoneNumberSearch('');
@@ -338,6 +355,8 @@ const PreApprovedCar = () => {
     setStartDate('');
     setEndDate('');
     setFeatureStatusFilter('');
+    setFollowUpFilter('');
+    setOtpStatusFilter('');
     setFiltered(properties);
   };
 
@@ -523,6 +542,17 @@ const handleUndo = async (rentId) => {
           <option value="delete">Deleted</option>
         </select>
 
+        <select
+          className="form-select"
+          value={otpStatusFilter}
+          onChange={(e) => setOtpStatusFilter(e.target.value)}
+          style={{ maxWidth: "150px" }}
+        >
+          <option value="">All OTP Status</option>
+          <option value="verified">Verified</option>
+          <option value="unverified">Unverified</option>
+        </select>
+
         <input
           type="date"
           className="form-control"
@@ -539,6 +569,17 @@ const handleUndo = async (rentId) => {
           style={{ maxWidth: "150px" }}
         />
 
+        <select
+          className="form-select"
+          value={followUpFilter}
+          onChange={(e) => setFollowUpFilter(e.target.value)}
+          style={{ maxWidth: "150px" }}
+        >
+          <option value="">All FollowUp</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+
         <button type="button" className="btn btn-outline-primary" onClick={handleSearch}>
           Search
         </button>
@@ -553,7 +594,7 @@ const handleUndo = async (rentId) => {
               <button className="btn btn-secondary mb-3 mt-2 ms-2" style={{background:"#217346"}} onClick={handleExcel}>
   Excel
 </button>
-              <button 
+              {/* <button 
                 className="btn btn-info mb-3 mt-2 ms-2" 
                 onClick={() => {
                   console.log("🔄 Manual refresh triggered");
@@ -562,8 +603,8 @@ const handleUndo = async (rentId) => {
                 }}
               >
                 🔄 Refresh Follow-ups & Bills
-              </button>
-      <h3 className="text-success mt-3 mb-4">Pre Approved Properties All Datas</h3>
+              </button> */}
+      <h3 className="text-success mt-10 mb-10">Pre Approved Properties All Datas</h3>
 <div ref={tableRef}>
       <Table striped bordered hover responsive className="table-sm align-middle">
         <thead className="sticky-top">
@@ -587,7 +628,7 @@ const handleUndo = async (rentId) => {
             <th>Set rentId Status</th>
             <th>Set rentId Assigned Date</th>
             <th>Set rentId Assigned PhoneNumber</th>
-            <th>Plan Name</th>
+            {/* <th>Plan Name</th>
             <th>Plan Type</th>
             <th>Plan Created</th>
             <th>Plan Expiry</th>
@@ -599,7 +640,7 @@ const handleUndo = async (rentId) => {
             <th>payU Date</th>
             <th>Deletion Reason</th>
             <th>Deleted At</th>
-            <th>Feature Status</th>
+            <th>Feature Status</th> */}
             <th>Status</th>
             <th>Action</th>
             {/* <th>Change Status</th> */}
@@ -653,7 +694,7 @@ const handleUndo = async (rentId) => {
                 <td>{prop.setrentId ? 'True' : 'False'}</td>
                 <td>{prop.setrentIdAssignedAt ? new Date(prop.setrentIdAssignedAt).toLocaleDateString() : 'N/A'}</td>
                 <td>{prop.assignedPhoneNumber || 'N/A'}</td>
-                <td>{prop.planName}</td>
+                {/* <td>{prop.planName}</td>
                 <td>{prop.packageType}</td>
                 <td>{new Date(prop.planCreatedAt).toLocaleDateString()}</td>
                 <td>{prop.planExpiryDate}</td>
@@ -674,7 +715,7 @@ const handleUndo = async (rentId) => {
                   >
                     {prop.featureStatus === "yes" ? "Set to No" : "Set to Yes"}
                   </Button>
-                </td>
+                </td> */}
 
                 <td>
                   <span style={{
@@ -721,14 +762,14 @@ const handleUndo = async (rentId) => {
                       >
                         <MdDeleteForever />
                       </Button>
-                      <Button
+                      {/* <Button
                         variant="danger"
                         size="sm"
                         className="mt-2"
                         onClick={() => handlePermanentDelete(prop.rentId)}
                       >
                         <MdDeleteForever /> Permanent
-                      </Button>
+                      </Button> */}
                     </>
                   )}
                 </td>
