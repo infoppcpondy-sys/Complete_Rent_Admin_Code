@@ -298,7 +298,7 @@ const handleReset = () => {
             <th>Created At</th>
             <th>Deleted At</th>
             <th>Undo</th>
-            <th>Permanent Delete</th>
+            {/* <th>Permanent Delete</th> */}
           </tr>
         </thead>
         <tbody>
@@ -353,7 +353,7 @@ const handleReset = () => {
                     Undo
                   </Button>
                 </td>
-                <td>
+                {/* <td>
                   <Button
                     variant="danger"
                     size="sm"
@@ -362,7 +362,7 @@ const handleReset = () => {
                   >
                     {deletingId === request.Ra_Id ? "Deleting..." : "Permanent Delete"}
                   </Button>
-                </td>
+                </td> */}
               </tr>
             ))
           )}
