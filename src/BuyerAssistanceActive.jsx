@@ -3,10 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Table, Badge } from 'react-bootstrap';
-import { FaTrash, FaUndo, FaInfoCircle, FaFileExcel } from 'react-icons/fa';
+import { FaTrash, FaUndo, FaInfoCircle, FaFileExcel, FaEdit } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 const BuyerAssistanceActive = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -154,6 +156,10 @@ const handleUndoDelete = async (_id) => {
   }
 };
 
+const handleEdit = (Ra_Id) => {
+  navigate('/dashboard/edit-buyer-assistance', { state: { Ra_Id } });
+};
+
 const getTotalMatchedPropertiesCount = () => {
   return data.length;
 };
@@ -196,7 +202,7 @@ const handleExportToExcel = () => {
  
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Expired Buyer Assistance</h2>
+      <h2 className="text-xl font-bold mb-4">Active Buyer Assistance</h2>
 
       {/* Filter Form */}
       <form     style={{ 
@@ -219,6 +225,19 @@ const handleExportToExcel = () => {
               placeholder="Enter Phone Number"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
+              className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              RA ID
+            </label>
+            <input
+              type="text"
+              placeholder="Enter RA ID"
+              value={baId}
+              onChange={(e) => setBaId(e.target.value)}
               className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -325,6 +344,7 @@ onClick={handleReset}
               <th className="border px-4 py-2">Package Type</th>
               <th className="border px-4 py-2">Status</th>
               <th className="border px-4 py-2">Actions</th>
+              <th className="border px-4 py-2">Edit Bill</th>
             </tr>
           </thead>
           <tbody>
@@ -364,23 +384,43 @@ onClick={handleReset}
 
 
 <td className="border px-4 py-2">
-  {item.isDeleted ? (
-    <button
-      onClick={() => handleUndoDelete(item._id)}   // ✅ use _id
-      className="d-flex align-items-center justify-content-center btn btn-outline-primary btn-sm mx-auto"
-    >
-      <FaUndo className="me-1" /> Undo
-    </button>
-  ) : (
-    <button
-      onClick={() => handleSoftDelete(item._id)}   // ✅ use _id
-      className="d-flex align-items-center justify-content-center btn btn-outline-danger btn-sm mx-auto"
-    >
-      <FaTrash className="me-1" /> Delete
-    </button>
-  )}
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    {!item.isDeleted && (
+      <button
+        onClick={() => handleEdit(item.Ra_Id)}
+        className="d-flex align-items-center justify-content-center btn btn-outline-info btn-sm mx-auto"
+        title="Edit this record"
+      >
+        <FaEdit className="me-1" /> Edit
+      </button>
+    )}
+    {item.isDeleted ? (
+      <button
+        onClick={() => handleUndoDelete(item._id)}
+        className="d-flex align-items-center justify-content-center btn btn-outline-primary btn-sm mx-auto"
+      >
+        <FaUndo className="me-1" /> Undo
+      </button>
+    ) : (
+      <button
+        onClick={() => handleSoftDelete(item._id)}
+        className="d-flex align-items-center justify-content-center btn btn-outline-danger btn-sm mx-auto"
+      >
+        <FaTrash className="me-1" /> Delete
+      </button>
+    )}
+  </div>
 </td>
 
+<td className="border px-4 py-2">
+  <button
+    onClick={() => navigate(`/dashboard/edit-buyer-bill/${item.Ra_Id}`)}
+    className="d-flex align-items-center justify-content-center btn btn-outline-warning btn-sm mx-auto"
+    title="Edit bill for this record"
+  >
+    <FaEdit className="me-1" /> Edit Bill
+  </button>
+</td>
 
               </tr>
             ))}
