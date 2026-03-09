@@ -566,7 +566,7 @@ const menuItems = [
     <NavLink to="/dashboard/active-buyer-assistant" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
-      Active - Tenant Assistant
+      Approved - Tenant Assistant
     </NavLink>
   </li>
 
@@ -592,6 +592,14 @@ const menuItems = [
     </NavLink>
   </li>
 
+  <li className="p-0 mt-2">
+    <NavLink to="/dashboard/removed-tenant" 
+     onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+      <FaUsers />
+      Removed Tenant Assistant
+    </NavLink>
+  </li>
+
 
   <li className="p-0 mt-2">
     <NavLink to="/dashboard/ba-free-bills" 
@@ -608,13 +616,13 @@ const menuItems = [
     </NavLink>
   </li>
   
-    <li className="p-0 mt-2">
+    {/* <li className="p-0 mt-2">
     <NavLink to="/dashboard/removed-tenant" 
      onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
       <FaUsers />
       Removed Tenant Assistant
     </NavLink>
-  </li>
+  </li> */}
 
   {/* <li className="p-0 mt-2">
     <NavLink to="/dashboard/expired-assistant" 
