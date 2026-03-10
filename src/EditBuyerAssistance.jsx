@@ -101,10 +101,12 @@ import { motion } from 'framer-motion';
 
 const EditBuyerAssistance = () => {
   const [formData, setFormData] = useState({
+    tenantName: "",
     phoneNumber: "",
     altPhoneNumber: "",
     city: "",
     area: "",
+    pinCode: "",
     minPrice: "",
     maxPrice: "",
     facing:"",
@@ -149,12 +151,16 @@ const EditBuyerAssistance = () => {
   padding: "5px",
   border: "1px solid #ccc",
   borderTop: "none",
-  maxHeight: "150px",
+  maxHeight: "200px",
   overflowY: "auto",
   position: "absolute",
+  top: "100%",
+  left: 0,
   width: "100%",
   background: "#ffffff",
-  zIndex: 1000,
+  zIndex: 9999,
+  marginTop: "5px",
+  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
 };
 
 const suggestionItemStyle = {
@@ -164,6 +170,84 @@ const suggestionItemStyle = {
 
 const suggestionItemHoverStyle = {
   backgroundColor: "#f0f0f0",
+};
+
+const areaPincodeMap = {
+  "Abishegapakkam": "605007",
+  "Ariyankuppam": "605007",
+  "Arumbarthapuram": "605110",
+  "Bahour": "605101",
+  "Bommaiyarpalayam": "605106",
+  "Cathedral": "605001",
+  "Chinna Kalapet": "605014",
+  "Chinna Veerampatinam": "605007",
+  "Dharmapuri": "605003",
+  "Dupleix Nagar": "605001",
+  "Embalam": "605106",
+  "Heritage Town": "605001",
+  "Iyyanar Koil": "605013",
+  "Jipmer Campus": "605006",
+  "Kadirkamam": "605009",
+  "Kalapet": "605014",
+  "Kanniakoil": "605010",
+  "Karayamputhur": "605106",
+  "Karuvadikuppam": "605008",
+  "Katterikuppam": "605009",
+  "Kirumampakkam": "605502",
+  "Koodapakkam": "605502",
+  "Korkadu": "605501",
+  "Kottakuppam": "605104",
+  "Kottakuppam Puduthurai": "605007",
+  "Kunichempet": "605006",
+  "Kuruvinatham": "605007",
+  "Kurusukuppam": "605012",
+  "Lawspet": "605008",
+  "Madukarai": "605107",
+  "Madagadipet": "605107",
+  "Manalipet": "605010",
+  "Manapattu": "605105",
+  "Mangalam": "605004",
+  "Mannadipet": "605501",
+  "Mettupalayam": "605009",
+  "MG Road": "605001",
+  "Mission Street": "605001",
+  "Moolakulam": "605010",
+  "Mudaliarpet": "605004",
+  "Murungapakkam": "605004",
+  "Nallambal": "605006",
+  "Natesan Nagar": "605005",
+  "Nellithope": "605005",
+  "Olandai Keerapalayam": "605010",
+  "Orleanpet": "605001",
+  "Osudu": "605110",
+  "Ousteri": "605009",
+  "Pillaiyarkuppam (Ariyankuppam)": "605007",
+  "Pillaiyarkuppam (Bahour)": "605101",
+  "Pondicherry University": "605014",
+  "Pudhu Nagar": "605010",
+  "Rainbow Nagar": "605011",
+  "Reddiarpalayam": "605010",
+  "Sanjay Gandhi Nagar": "605005",
+  "Saram": "605013",
+  "Seedhankuppam": "605005",
+  "Seliamedu": "605106",
+  "Sita Nagar": "605013",
+  "Solai Nagar": "605010",
+  "Sri Aurobindo Ashram": "605002",
+  "Subbaiah Salai": "605001",
+  "Sultanpet": "605003",
+  "Thavalakuppam": "605009",
+  "Thengaithittu": "605004",
+  "Thondamanatham": "605502",
+  "Thirubuvanai": "605107",
+  "Thirukanchi": "605009",
+  "Thiruthani": "605006",
+  "Vaithikuppam": "605012",
+  "Vadhanur": "605111",
+  "Veerampattinam": "605007",
+  "Velrampet": "605004",
+  "Villianur": "605110",
+  "White Town": "605001"
 };
 
   const location = useLocation();
@@ -184,6 +268,7 @@ const Ra_Id = Number(location.state?.Ra_Id); // 🔁 Convert to Number
     
         const [citySuggestions, setCitySuggestions] = useState([]);
     const [areaSuggestions, setAreaSuggestions] = useState([]);
+    const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
 
   const [isScrolling, setIsScrolling] = useState(false);
 
@@ -227,9 +312,11 @@ const Ra_Id = Number(location.state?.Ra_Id); // 🔁 Convert to Number
 
    const fieldIcons = {
       // Contact Details
+      tenantName: <FaUserAlt color="#4F4B7E" />,
       phoneNumber: <FaPhone color="#4F4B7E" />,
       alternatePhone: <FaPhone color="#4F4B7E" />,
       email: <FaEnvelope color="#4F4B7E" />,
+      pinCode: <TbMapPinCode color="#4F4B7E" />,
       propertyType: <MdSchedule color="#4F4B7E" />,
       
       // Property Location
@@ -292,6 +379,8 @@ const Ra_Id = Number(location.state?.Ra_Id); // 🔁 Convert to Number
       carParking: <FaCar color="#4F4B7E" />,
     };
 const fieldLabels = {
+  tenantName: "Tenant Name",
+  pinCode: "Pin Code",
   propertyMode: "Property Mode",
   propertyType: "Property Type",
     rentType: "rent Type",
@@ -347,6 +436,8 @@ requirementType:"Requirement Type",
   alternatePhone: "Alternate Phone",
   alternatePhoneCountryCode: "Alternate Phone Country Code",
   bestTimeToCall: "Best Time to Call",
+  tenantName: "Tenant Name",
+  pinCode: "Pin Code",
 };
   const handleFilterChange = (e) => {
       setDropdownState((prevState) => ({ ...prevState, filterText: e.target.value }));
@@ -636,11 +727,12 @@ requirementType:"Requirement Type",
      </div>
    );
  };
-  const nonDropdownFields = ["alternatePhone", "totalArea", "baName", "city", "area", "description",];
+  const nonDropdownFields = ["tenantName", "alternatePhone", "totalArea", "pinCode", "baName", "city", "area", "description"];
 
 const dropdownFieldOrder = [
     "minPrice",
   "maxPrice",
+   "tenantName",
    "altPhoneNumber",
   "propertyMode",
   "propertyType",
@@ -710,6 +802,66 @@ const fetchAreaSuggestions = (input) => {
   }, 300);
 };
 
+// Handle area input change with smart sorting
+const handleAreaInputChange = (e) => {
+  const value = e.target.value;
+  setFormData(prev => ({ ...prev, area: value }));
+
+  if (value.trim().length > 0) {
+    const allAreas = Object.keys(areaPincodeMap);
+    const lowerValue = value.toLowerCase();
+    
+    // Areas that START with the typed letter (priority)
+    const startsWithFilter = allAreas.filter(a => 
+      a.toLowerCase().startsWith(lowerValue)
+    );
+    
+    // Areas that CONTAIN but don't start with the typed letter
+    const containsFilter = allAreas.filter(a => 
+      !a.toLowerCase().startsWith(lowerValue) && 
+      a.toLowerCase().includes(lowerValue)
+    );
+    
+    // Combine: starting first, then containing
+    const sortedSuggestions = [...startsWithFilter, ...containsFilter];
+    
+    setAreaSuggestions(sortedSuggestions);
+    setShowAreaSuggestions(sortedSuggestions.length > 0);
+  } else {
+    // Show all areas when input is empty but focused
+    setAreaSuggestions(Object.keys(areaPincodeMap));
+    setShowAreaSuggestions(true);
+  }
+};
+
+// Handle area focus - show all areas if empty
+const handleAreaFocus = () => {
+  if (formData.area.trim().length === 0) {
+    setAreaSuggestions(Object.keys(areaPincodeMap));
+    setShowAreaSuggestions(true);
+  } else {
+    handleAreaInputChange({ target: { value: formData.area } });
+  }
+};
+
+// Handle area blur - hide suggestions with delay
+const handleAreaBlur = () => {
+  setTimeout(() => {
+    setShowAreaSuggestions(false);
+    setAreaSuggestions([]);
+  }, 200);
+};
+
+// Handle area selection and auto-fill pincode
+const handleAreaSelect = (selectedArea) => {
+  setFormData(prev => ({
+    ...prev,
+    area: selectedArea,
+    pinCode: areaPincodeMap[selectedArea] || prev.pinCode  // AUTO-FILL PINCODE HERE
+  }));
+  setShowAreaSuggestions(false);
+  setAreaSuggestions([]);
+};
 
    const convertToIndianRupees = (num) => {
         const number = parseInt(num, 10);
@@ -821,10 +973,12 @@ await axios.put(`${process.env.REACT_APP_API_URL}/update-buyer-Assistance/${Ra_I
       }
 
       setFormData({
+        tenantName: "",
         phoneNumber: "",
         altPhoneNumber: "",
         city: "",
     area: "",
+    pinCode: "",
     minPrice: "",
     maxPrice: "",
     facing:"",
@@ -1014,7 +1168,7 @@ const formatPrice = (price) => {
       style={{ display: "none" }}
       required
     >
-      <option value="">Select minPrice</option>
+      <option value="">Select Min Rental Amount</option>
       {dataList.minPrice?.map((option, index) => (
         <option key={index} value={option}>
          {formatPrice(option)}
@@ -1139,6 +1293,7 @@ const formatPrice = (price) => {
       onChange={handleFieldChange}
       className="form-control"
       style={{ display: "none" }}
+      required
     >
       <option value="">Select maxPrice</option>
       {dataList.maxPrice?.map((option, index) => (
@@ -1190,6 +1345,52 @@ const formatPrice = (price) => {
 
     </div>
 
+<div className="form-group mb-1">
+  <div className="input-card p-0 rounded-2" style={{ 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    width: '100%',  
+    boxShadow: '0 4px 10px rgba(38, 104, 190, 0.1)',
+    background: "#fff",
+    paddingRight: "10px"
+  }}>
+    
+    <div
+  style={{
+    display: "flex",
+    alignItems: "stretch",
+    width: "100%",
+  }}
+> 
+     <span
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "0 14px",
+      borderRight: "1px solid #4F4B7E",
+      background: "#fff",
+    }}
+  >
+     {fieldIcons.tenantName}
+  </span>
+  <input
+      type="text"
+      name="tenantName"
+      value={formData.tenantName}
+      onChange={handleFieldChange}
+      className="form-input m-0"
+      placeholder="Tenant Name"
+        style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
+    />
+  </div>
+   {formData.tenantName && (
+      <GoCheckCircleFill style={{ color: "green", margin: "5px" }} />
+    )}
+</div>
+</div>
+
       {/* <div className="col-12 mb-3">
         <label  style={{fontWeight:600}}>PhoneNumber</label>
   <div className="input-card p-0 rounded-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', border: '1px solid #4F4B7E', background: "#fff" }}>
@@ -1219,7 +1420,7 @@ const formatPrice = (price) => {
     
   
   <img src={phone} alt="" style={{ width: 20, height: 20 ,marginLeft:"10px"}} />
-     {/* <FaPhone className="input-icon" style={{ color: '#4F4B7E', marginLeft:"10px"}} /> */}
+  <sup style={{ color: 'red' }}>*</sup>
     
     <div style={{ flex: '0 0 10%' }}>
   <label className="m-0">
@@ -1252,7 +1453,9 @@ const formatPrice = (price) => {
         style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
     />
   </div>
+      {formData.phoneNumber && (
       <GoCheckCircleFill style={{ color: "green", margin: "5px" }} />
+    )}
     </div>
 </div>
 
@@ -1346,7 +1549,7 @@ const formatPrice = (price) => {
       background: "#fff", // optional
     }}
   >
- {fieldIcons.propertyMode} <sup style={{ color: 'red' }}>*</sup>  </span>
+{fieldIcons.propertyMode} <sup style={{ color: 'red' }}>*</sup>  </span>
 
   <div style={{ flex: "1" }}>
     <select
@@ -1498,7 +1701,7 @@ const formatPrice = (price) => {
       background: "#fff", // optional
     }}
   >
-            {fieldIcons.rentType} 
+            {fieldIcons.rentType} <sup style={{ color: 'red' }}>*</sup>
           </span>
       <div style={{ flex: "1" }}>
         <select
@@ -1571,7 +1774,7 @@ const formatPrice = (price) => {
       background: "#fff", // optional
     }}
   >
-              {fieldIcons.bedrooms || <FaHome />}
+              {fieldIcons.bedrooms || <FaHome />} <sup style={{ color: 'red' }}>*</sup>
             </span> <div style={{ flex: "1" }}>
           <select
           
@@ -1879,7 +2082,7 @@ const formatPrice = (price) => {
       background: "#fff", // optional
     }}
   >
-              {fieldIcons.floorNo}
+              {fieldIcons.floorNo} <sup style={{ color: 'red' }}>*</sup>
             </span>  <div style={{ flex: "1" }}>
           <select
             name="floorNo"
@@ -2065,7 +2268,7 @@ const formatPrice = (price) => {
       background: "#fff", // optional
     }}
   >
-              {fieldIcons.state || <FaHome />}
+              {fieldIcons.state || <FaHome />} <sup style={{ color: 'red' }}>*</sup>
             </span>    <div style={{ flex: "1" }}>
           <select
             name="state"
@@ -2287,12 +2490,14 @@ const formatPrice = (price) => {
       background: "#fff", // optional
     }}
   >
- {fieldIcons.area}</span>
+ {fieldIcons.area} <sup style={{ color: 'red' }}>*</sup></span>
   <input
       type="text"
       name="area"
       value={formData.area}
-      onChange={handleFieldChange}
+      onChange={handleAreaInputChange}
+      onFocus={handleAreaFocus}
+      onBlur={handleAreaBlur}
       className="form-input m-0"
       placeholder="Area"
         style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
@@ -2303,7 +2508,7 @@ const formatPrice = (price) => {
     )}
 </div>
 
- {areaSuggestions.length > 0 && (
+ {showAreaSuggestions && areaSuggestions.length > 0 && (
   <ul style={suggestionListStyle}>
     {areaSuggestions.map((area, index) => (
       <li
@@ -2314,9 +2519,9 @@ const formatPrice = (price) => {
         }}
         onMouseEnter={() => setHoveredAreaIndex(index)}
         onMouseLeave={() => setHoveredAreaIndex(null)}
-        onClick={() => {
-          setFormData({ ...formData, area });
-          setAreaSuggestions([]);
+        onMouseDown={(e) => {
+          e.preventDefault();
+          handleAreaSelect(area);
         }}
       >
         {area}
@@ -2325,6 +2530,52 @@ const formatPrice = (price) => {
   </ul>
 )}</div>
 
+
+<div className="form-group">
+  <div className="input-card p-0 rounded-2 mb-2" style={{ 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    width: '100%',  
+    boxShadow: '0 4px 10px rgba(38, 104, 190, 0.1)',
+    background: "#fff",
+    paddingRight: "10px"
+  }}>
+    
+    <div
+  style={{
+    display: "flex",
+    alignItems: "stretch",
+    width: "100%",
+  }}
+> 
+     <span
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "0 14px",
+      borderRight: "1px solid #4F4B7E",
+      background: "#fff",
+    }}
+  >
+     {fieldIcons.pinCode} <sup style={{ color: 'red' }}>*</sup>
+  </span>
+  <input
+      type="text"
+      name="pinCode"
+      value={formData.pinCode}
+      onChange={handleFieldChange}
+      className="form-input m-0"
+      placeholder="Pin Code"
+        style={{ flex: '1', padding: '12px', fontSize: '14px', border: 'none', outline: 'none' , color:"grey"}}
+    />
+  </div>
+   {formData.pinCode && (
+      <GoCheckCircleFill style={{ color: "green", margin: "5px" }} />
+    )}
+</div>
+</div>
 
 <h6 style={{ color: "#4F4B7E", fontWeight: "bold", marginBottom: "10px" }}> Description   </h6>             
 

@@ -651,6 +651,7 @@ const handleSubmit = async ({ rentalAmount, rentId }) => {
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-data-on-demand-rent?rentId=${rentId}`);
         console.log("Property data received:", response.data.user);
         console.log("Video field:", response.data.user?.video);
+        console.log("Phone field in propertyDetails:", response.data.user?.phoneNumber); // Debug log
         setPropertyDetails(response.data.user);
       } catch (err) {
         setError("Failed to fetch property details.");
@@ -683,6 +684,18 @@ const handleSubmit = async ({ rentalAmount, rentId }) => {
       setVideoUrl(""); // No video available
     }
   }, [propertyDetails?.video]); // Runs when `propertyDetails.video` changes
+  
+  // Initialize contact number from propertyDetails when it loads
+  useEffect(() => {
+    if (propertyDetails) {
+      const phoneNumber = propertyDetails?.phoneNumber || propertyDetails?.phone || '';
+      if (phoneNumber) {
+        setFinalContactNumber(phoneNumber);
+        console.log("Initialized contact number from propertyDetails:", phoneNumber);
+      }
+    }
+  }, [propertyDetails?.phoneNumber, propertyDetails?.phone]); // Runs when phone number fields change
+  
   const handleVideoPlay = () => {
     setShowPopup(true);
   };
@@ -934,8 +947,9 @@ const handleOwnerContactClick = async () => {
   setTimeout(() => setViewed(false), 300);
 
   // For admin panel, show contact details directly from propertyDetails
-  // Set the final contact number from the property phone number
-  const contactNumber = propertyDetails?.phoneNumber || phoneNumber || '';
+  // Try multiple potential field names for phone number
+  const contactNumber = propertyDetails?.phoneNumber || propertyDetails?.phone || '';
+  console.log("Initial contact number from propertyDetails:", contactNumber); // Debug log
   setFinalContactNumber(contactNumber);
   setShowContactDetails(true);
   
@@ -964,8 +978,14 @@ const handleOwnerContactClick = async () => {
 
       if (success) {
         const finalNumber = setRentId ? assignedPhoneNumber : postedUserPhoneNumber;
+        console.log("Phone number from contact-rent API:", finalNumber); // Debug log
         if (finalNumber) {
           setFinalContactNumber(finalNumber);
+        } else {
+          // If API doesn't return phone, use the initial one from propertyDetails
+          if (!contactNumber) {
+            console.warn("No phone number available from propertyDetails or API");
+          }
         }
         setSetrentId(setRentId);
         setAssignedPhoneNumber(assignedPhoneNumber);

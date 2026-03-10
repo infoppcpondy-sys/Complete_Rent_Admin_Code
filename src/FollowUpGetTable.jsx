@@ -503,7 +503,7 @@ const FollowUpGetTable = () => {
 
       {/* Create New Follow-Up Button - Right Side */}
       <div className="mb-3" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>+ Create New Follow-Up</button>
+        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>+ Create Property Follow-Up</button>
       </div>
 
       {/* Filter Buttons */}
@@ -563,7 +563,7 @@ const FollowUpGetTable = () => {
         <p>No follow-up records found.</p>
       ) : (
         <div ref={printRef}>
-          <h3 className='mt-5 mb-3'>Get FollowUp Data</h3>
+          <h3 className='mt-5 mb-3'>All Property Followup Data (Today,Future,Past)</h3>
           <Table striped bordered hover responsive className="table-sm align-middle">
             <thead className="sticky-top">
               <tr className="bg-gray-100 text-center">
@@ -585,6 +585,231 @@ const FollowUpGetTable = () => {
                 const { code, backgroundColor, textColor } = getPropertyStatusDisplay(item.rentId);
                 return (
                   <tr key={item._id} className="text-center">
+                    <td>{index + 1}</td>
+                    <td>{item.rentId}</td>
+                    <td>
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        display: 'inline-block'
+                      }}>
+                        {code}
+                      </span>
+                    </td>
+                    <td>{item.phoneNumber || '-'}</td>
+                    <td>{item.followupStatus}</td>
+                    <td>{item.followupType}</td>
+                    <td>{new Date(item.followupDate).toLocaleDateString()}</td>
+                    <td>
+                      <span style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        ...getDayStatusBadgeColor(getFollowUpDayStatus(item.followupDate))
+                      }}>
+                        {getFollowUpDayStatus(item.followupDate)}
+                      </span>
+                    </td>
+                    <td>{item.adminName}</td>
+                    <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button 
+                        className="btn btn-sm btn-warning" 
+                        onClick={() => handleEdit(item)}
+                        style={{ marginRight: '5px' }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </div>
+      )}
+
+      {/* Today Follow-Ups Table */}
+      {followups.filter(item => getFollowUpDayStatus(item.followupDate) === 'Today' && item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').length > 0 && (
+        <div style={{ marginTop: '40px' }}>
+          <h3 className='mt-5 mb-3' style={{ color: '#ffc107', borderBottom: '2px solid #ffc107', paddingBottom: '10px' }}>
+            📅 Today Follow-Ups
+          </h3>
+          <Table striped bordered hover responsive className="table-sm align-middle">
+            <thead className="sticky-top">
+              <tr style={{ backgroundColor: '#fff3cd', color: '#856404' }}>
+                <th>S.No</th>
+                <th>Rent ID</th>
+                <th>Property Status</th>
+                <th>Phone Number</th>
+                <th>Follow-Up Status</th>
+                <th>Follow-Up Type</th>
+                <th>Follow-Up Date</th>
+                <th>Follow-up Day</th>
+                <th>Admin Name</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {followups.filter(item => getFollowUpDayStatus(item.followupDate) === 'Today' && item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').map((item, index) => {
+                const { code, backgroundColor, textColor } = getPropertyStatusDisplay(item.rentId);
+                return (
+                  <tr key={item._id} className="text-center" style={{ backgroundColor: '#fffbf0' }}>
+                    <td>{index + 1}</td>
+                    <td>{item.rentId}</td>
+                    <td>
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        display: 'inline-block'
+                      }}>
+                        {code}
+                      </span>
+                    </td>
+                    <td>{item.phoneNumber || '-'}</td>
+                    <td>{item.followupStatus}</td>
+                    <td>{item.followupType}</td>
+                    <td>{new Date(item.followupDate).toLocaleDateString()}</td>
+                    <td>
+                      <span style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        ...getDayStatusBadgeColor(getFollowUpDayStatus(item.followupDate))
+                      }}>
+                        {getFollowUpDayStatus(item.followupDate)}
+                      </span>
+                    </td>
+                    <td>{item.adminName}</td>
+                    <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button 
+                        className="btn btn-sm btn-warning" 
+                        onClick={() => handleEdit(item)}
+                        style={{ marginRight: '5px' }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </div>
+      )}
+
+      {/* Future Follow-Ups Table */}
+      {followups.filter(item => getFollowUpDayStatus(item.followupDate) === 'Future' && item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').length > 0 && (
+        <div style={{ marginTop: '40px' }}>
+          <h3 className='mt-5 mb-3' style={{ color: '#28a745', borderBottom: '2px solid #28a745', paddingBottom: '10px' }}>
+            ➡️ Future Follow-Ups
+          </h3>
+          <Table striped bordered hover responsive className="table-sm align-middle">
+            <thead className="sticky-top">
+              <tr style={{ backgroundColor: '#d4edda', color: '#155724' }}>
+                <th>S.No</th>
+                <th>Rent ID</th>
+                <th>Property Status</th>
+                <th>Phone Number</th>
+                <th>Follow-Up Status</th>
+                <th>Follow-Up Type</th>
+                <th>Follow-Up Date</th>
+                <th>Follow-up Day</th>
+                <th>Admin Name</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {followups.filter(item => getFollowUpDayStatus(item.followupDate) === 'Future' && item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').map((item, index) => {
+                const { code, backgroundColor, textColor } = getPropertyStatusDisplay(item.rentId);
+                return (
+                  <tr key={item._id} className="text-center" style={{ backgroundColor: '#f1f9f1' }}>
+                    <td>{index + 1}</td>
+                    <td>{item.rentId}</td>
+                    <td>
+                      <span style={{
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        display: 'inline-block'
+                      }}>
+                        {code}
+                      </span>
+                    </td>
+                    <td>{item.phoneNumber || '-'}</td>
+                    <td>{item.followupStatus}</td>
+                    <td>{item.followupType}</td>
+                    <td>{new Date(item.followupDate).toLocaleDateString()}</td>
+                    <td>
+                      <span style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        ...getDayStatusBadgeColor(getFollowUpDayStatus(item.followupDate))
+                      }}>
+                        {getFollowUpDayStatus(item.followupDate)}
+                      </span>
+                    </td>
+                    <td>{item.adminName}</td>
+                    <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button 
+                        className="btn btn-sm btn-warning" 
+                        onClick={() => handleEdit(item)}
+                        style={{ marginRight: '5px' }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </div>
+      )}
+
+      {/* Past Follow-Ups Table */}
+      {followups.filter(item => getFollowUpDayStatus(item.followupDate) === 'Past' && item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').length > 0 && (
+        <div style={{ marginTop: '40px' }}>
+          <h3 className='mt-5 mb-3' style={{ color: '#dc3545', borderBottom: '2px solid #dc3545', paddingBottom: '10px' }}>
+            ⏰ Past Follow-Ups (Overdue)
+          </h3>
+          <Table striped bordered hover responsive className="table-sm align-middle">
+            <thead className="sticky-top">
+              <tr style={{ backgroundColor: '#f8d7da', color: '#721c24' }}>
+                <th>S.No</th>
+                <th>Rent ID</th>
+                <th>Property Status</th>
+                <th>Phone Number</th>
+                <th>Follow-Up Status</th>
+                <th>Follow-Up Type</th>
+                <th>Follow-Up Date</th>
+                <th>Follow-up Day</th>
+                <th>Admin Name</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {followups.filter(item => getFollowUpDayStatus(item.followupDate) === 'Past' && item.followupStatus !== 'Not Interested-Closed' && item.followupStatus !== 'Paid Closed').map((item, index) => {
+                const { code, backgroundColor, textColor } = getPropertyStatusDisplay(item.rentId);
+                return (
+                  <tr key={item._id} className="text-center" style={{ backgroundColor: '#fff5f5' }}>
                     <td>{index + 1}</td>
                     <td>{item.rentId}</td>
                     <td>

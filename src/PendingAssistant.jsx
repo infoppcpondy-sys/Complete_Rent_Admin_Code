@@ -242,7 +242,7 @@ const handleGetFollowUp = () => {
           <input
             type="text"
             className="form-control"
-            placeholder="Search by BA ID"
+            placeholder="Search by RA ID"
             value={searchBaId}
             onChange={(e) => setSearchBaId(e.target.value)}
           />
@@ -306,9 +306,9 @@ const handleGetFollowUp = () => {
               <th>PropertyType</th>
               <th>ra_Status</th>
               <th>Created At</th>
-              <th>Plan Name</th>
+              {/* <th>Plan Name</th>
     <th>Plan Created</th>
-    <th>Expires</th>
+    <th>Expires</th> */}
     <th>Status Changed</th>
     {/* <th>Actions</th> */}
         <th>Create FollowUp</th>
@@ -334,9 +334,9 @@ const handleGetFollowUp = () => {
                   <td>{item.propertyType}</td>
                   <td>{item.ra_status}</td>
                   <td>{new Date(item.createdAt).toLocaleDateString()}</td>
-                  <td>{item.planDetails.planName}</td>
+                  {/* <td>{item.planDetails.planName}</td>
       <td>{item.planDetails.planCreatedAt}</td>
-      <td>{item.planDetails.planExpiryDate}</td>
+      <td>{item.planDetails.planExpiryDate}</td> */}
       <td>
   {item.isDeleted ? (
     <Badge bg="danger" className="d-flex align-items-center">
