@@ -295,6 +295,7 @@ const handleGetFollowUp = () => {
       <Table striped bordered hover responsive className="table-sm align-middle">
       <thead className="sticky-top">
             <tr>
+              <th>SI.NO</th>
               <th>RA ID</th>
               <th>Name</th>
               <th>Phone</th>
@@ -318,8 +319,9 @@ const handleGetFollowUp = () => {
           </thead>
           <tbody>
             {filtered.length > 0 ? (
-              filtered.map((item) => (
+              filtered.map((item, idx) => (
                 <tr key={item.Ra_Id}>
+                  <td>{idx + 1}</td>
                   <td>{item.Ra_Id}</td>
                   <td>{item.raName}</td>
                   <td>{item.phoneNumber}</td>

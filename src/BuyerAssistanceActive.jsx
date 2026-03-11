@@ -326,8 +326,7 @@ onClick={handleReset}
         <h3 className="text-primary">All Buyer Assistance With Plan Datas</h3>
     <div ref={tableRef}>    <Table striped bordered hover responsive className="table-sm align-middle">
           <thead className="sticky-top">
-            <tr>
-              <th className="border px-4 py-2">Ra_Id</th>
+            <tr>              <th className="border px-4 py-2">SI.NO</th>              <th className="border px-4 py-2">Ra_Id</th>
               <th className="border px-4 py-2">Phone Number</th>
               <th className="border px-4 py-2">Tanent Name</th>
               <th className="border px-4 py-2">PropertyMode</th>
@@ -350,6 +349,7 @@ onClick={handleReset}
           <tbody>
             {filteredData.map((item, idx) => (
               <tr key={idx} className="text-center">
+                <td className="border px-4 py-2">{idx + 1}</td>
                 <td className="border px-4 py-2">{item.Ra_Id}</td>
                 <td className="border px-4 py-2">{item.phoneNumber}</td>
                 <td className="border px-4 py-2">{item.raName}</td>

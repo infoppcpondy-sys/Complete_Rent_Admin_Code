@@ -206,6 +206,7 @@ const BuyerAssistanceTable = () => {
             <Table striped bordered hover responsive>
             <thead className="sticky-top bg-white">
               <tr>
+                <th>SI.NO</th>
                 <th>RA ID</th>
                 <th>Phone Number</th>
                 <th>City</th>
@@ -227,6 +228,7 @@ const BuyerAssistanceTable = () => {
                 const id = request._id || request.Ra_Id;
                 return (
                   <tr key={index}>
+                      <td>{index + 1}</td>
                       <td    onClick={() =>
                               navigate(`/dashboard/detail-rent-assis`, {
                                 state: { Ra_Id: request.Ra_Id, phoneNumber: request.phoneNumber },
