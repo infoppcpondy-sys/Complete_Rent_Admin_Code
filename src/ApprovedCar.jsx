@@ -1033,8 +1033,8 @@ const handlePrint = (prop) => {
               <th>Set rentId Assigned PhoneNumber</th>
               <th>Bill no</th>
               <th>Bill Type</th>
-              <th>Plan Name</th>
               <th>Plan Type</th>
+              <th>Plan Name</th>
           <th>Plan Created</th>
                         <th>Plan Expiry</th>
                 <th>PayU Status</th>
