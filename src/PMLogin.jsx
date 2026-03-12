@@ -69,7 +69,9 @@ const SendMessageModal = ({ onClose, onSent }) => {
 
       if (isSuccess) {
         setSuccess("✅ Message sent successfully! Using database credentials.");
-        setTimeout(() => { onSent(formattedNumber, message.trim()); onClose(); }, 1500);
+        setPhoneNumber("");
+        onSent(formattedNumber, message.trim());
+        setTimeout(() => { setSuccess(""); }, 3000);
       } else {
         setError(`❌ ${response.data?.message || "Failed to send message"}`);
       }
@@ -469,6 +471,46 @@ const LoginForm = ({ onLoginSuccess }) => {
   );
 };
 
+/* ── Helper function to render message with links ───────────────────────────────*/
+const MessageWithLinks = ({ text }) => {
+  // Regex to match URLs
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+  
+  const parts = text.split(urlRegex);
+  
+  return (
+    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+      {parts.map((part, index) => {
+        if (urlRegex.test(part)) {
+          // Reset regex lastIndex
+          urlRegex.lastIndex = 0;
+          const isUrl = /(https?:\/\/|www\.)/.test(part);
+          if (isUrl) {
+            const href = part.startsWith('http') ? part : 'https://' + part;
+            return (
+              <a
+                key={index}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: "#0066cc",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  wordBreak: "break-all"
+                }}
+              >
+                {part}
+              </a>
+            );
+          }
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </div>
+  );
+};
+
 /* ── Main Page ───────────────────────────────────────────────────────────────── */
 const PMLogin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -668,8 +710,8 @@ const PMLogin = () => {
                     <td style={{ ...styles.tableCell, width: "20%", textAlign: "left", color: "#1a202c", fontWeight: 500 }}>
                       {msg.phoneNumber}
                     </td>
-                    <td style={{ ...styles.tableCell, width: "50%", textAlign: "left", color: "#4a5568", wordBreak: "break-word" }}>
-                      {msg.message}
+                    <td style={{ ...styles.tableCell, width: "50%", textAlign: "left", color: "#4a5568", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                      <MessageWithLinks text={msg.message} />
                     </td>
                     <td style={{ ...styles.tableCell, width: "22%", textAlign: "center", color: "#718096", fontSize: 12 }}>
                       {msg.sendTime}
@@ -894,7 +936,7 @@ const styles = {
     width: "100%", padding: "10px 13px", borderRadius: 8,
     border: "1.5px solid #e2e8f0", fontSize: 13.5, outline: "none",
     resize: "vertical", boxSizing: "border-box", fontFamily: "inherit",
-    color: "#1a202c", lineHeight: 1.4,
+    color: "#1a202c", lineHeight: 1.4, whiteSpace: "pre-wrap", wordWrap: "break-word",
   },
   counter:    { fontSize: 11.5, color: "#a0aec0", margin: "5px 0 0", textAlign: "right" },
   errorBox:   {
