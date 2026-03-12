@@ -45,8 +45,6 @@ const MatchedDataTable = () => {
   const [loading, setLoading] = useState(true);
   const [sendingAll, setSendingAll] = useState(false);
   const [message, setMessage] = useState(null);
-  const [freeProperties, setFreeProperties] = useState([]);
-  const [paidProperties, setPaidProperties] = useState([]);
   const [freeTenants, setFreeTenants] = useState([]);
   const [paidTenants, setPaidTenants] = useState([]);
   const [filters, setFilters] = useState({
@@ -62,6 +60,9 @@ const MatchedDataTable = () => {
     ownerPlan: '',
     tenantPlan: ''
   });
+
+  // ===== PROPERTY PLAN DATA MAP =====
+  const [propertyPlanMap, setPropertyPlanMap] = useState({});
 
   // ===== AUTOMATION STATE =====
   const [isAutomationRunning, setIsAutomationRunning] = useState(false);
@@ -423,28 +424,65 @@ const MatchedDataTable = () => {
 
   const fetchOwnerPlanData = async () => {
     try {
-      const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
-      const freeProps = [];
-      (freeRes.data.data || []).forEach(item => {
-        (item.properties || []).forEach(prop => { if (prop.rentId) freeProps.push(String(prop.rentId).trim()); });
-      });
-      setFreeProperties(freeProps);
-    } catch (e) { console.error("Error fetching free properties:", e.message); }
+      const planMap = {};
 
-    try {
-      const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
-      const paidProps = [];
-      (paidRes.data.data || []).forEach(item => {
-        (item.properties || []).forEach(prop => { if (prop.rentId) paidProps.push(String(prop.rentId).trim()); });
-      });
-      setPaidProperties(paidProps);
-    } catch (e) { console.error("Error fetching paid properties:", e.message); }
+      // Fetch free properties
+      try {
+        const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+        if (freeRes.data.data && Array.isArray(freeRes.data.data)) {
+          freeRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                if (prop.rentId) {
+                  const rentId = String(prop.rentId).trim();
+                  planMap[rentId] = {
+                    planType: 'Free',
+                    planName: prop.planName || 'Free Plan',
+                    packageType: 'Free'
+                  };
+                }
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching free plans:", e.message);
+      }
+
+      // Fetch paid properties
+      try {
+        const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+        if (paidRes.data.data && Array.isArray(paidRes.data.data)) {
+          paidRes.data.data.forEach(item => {
+            if (item.properties && Array.isArray(item.properties)) {
+              item.properties.forEach(prop => {
+                if (prop.rentId) {
+                  const rentId = String(prop.rentId).trim();
+                  planMap[rentId] = {
+                    planType: 'Paid',
+                    planName: prop.planName || 'Paid Plan',
+                    packageType: prop.packageType || 'Paid'
+                  };
+                }
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching paid plans:", e.message);
+      }
+
+      setPropertyPlanMap(planMap);
+    } catch (e) {
+      console.error("Error fetching owner plan data:", e.message);
+    }
   };
 
   const getOwnerPlan = (rentId) => {
     const id = String(rentId).trim();
-    if (freeProperties.includes(id)) return 'Free';
-    if (paidProperties.includes(id)) return 'Paid';
+    if (propertyPlanMap[id]) {
+      return propertyPlanMap[id].planType;
+    }
     return '-';
   };
 
@@ -791,7 +829,7 @@ const MatchedDataTable = () => {
 
       {/* TABLE */}
       <div className="table-responsive">
-        <h3>Get Matched Property Datas</h3>
+        <h3>Get Matched Property Data</h3>
         <Table striped bordered hover responsive className="table-sm align-middle">
           <thead className="sticky-top">
             <tr>
