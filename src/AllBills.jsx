@@ -14,7 +14,8 @@ const [filters, setFilters] = useState({
   billNo: '',
   billDate: '',
   rentId: '',
-  planName: ''
+  planName: '',
+  phoneNumber: ''
 });
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const [filters, setFilters] = useState({
 };
 
 const handleResetFilters = () => {
-  setFilters({ billNo: '', billDate: '', rentId: '', planName: '' });
+  setFilters({ billNo: '', billDate: '', rentId: '', planName: '', phoneNumber: '' });
 };
     const tableRef = useRef();
   
@@ -77,6 +78,7 @@ const filteredBills = bills.filter((bill) => {
     (!filters.billNo || bill.billNo?.toLowerCase().includes(filters.billNo.toLowerCase())) &&
     (!filters.rentId || bill.rentId?.toLowerCase().includes(filters.rentId.toLowerCase())) &&
     (!filters.planName || bill.planName?.toLowerCase().includes(filters.planName.toLowerCase())) &&
+    (!filters.phoneNumber || bill.ownerPhone?.includes(filters.phoneNumber)) &&
     (!filters.billDate || bill.billDate === filters.billDate)
   );
 });
@@ -117,6 +119,16 @@ const filteredBills = bills.filter((bill) => {
       onChange={handleFilterChange}
       className="form-control"
       placeholder="Plan Name"
+    />
+  </div>
+  <div className="col-md-2">
+    <input
+      type="text"
+      name="phoneNumber"
+      value={filters.phoneNumber}
+      onChange={handleFilterChange}
+      className="form-control"
+      placeholder="Phone Number"
     />
   </div>
   <div className="col-md-2">
