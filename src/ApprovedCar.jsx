@@ -89,11 +89,24 @@ const navigate = useNavigate();
         // Fetch follow-up data to map admin names correctly
         const followUpRes = await axios.get(`${process.env.REACT_APP_API_URL}/followup-list`);
         
+        // Fetch paid payment data for N/A entries validation
+        const paymentsRes = await axios.get(`${process.env.REACT_APP_API_URL}/payments/paid`);
+        
         // Create a map of rentId -> follow-up admin name
         const followUpAdminMap = {};
         if (followUpRes.data.data && Array.isArray(followUpRes.data.data)) {
           followUpRes.data.data.forEach(followUp => {
             followUpAdminMap[followUp.rentId] = followUp.adminName;
+          });
+        }
+        
+        // Create a map of rentId -> successful payment status
+        const paidPaymentMap = {};
+        if (paymentsRes.data && paymentsRes.data.payments && Array.isArray(paymentsRes.data.payments)) {
+          paymentsRes.data.payments.forEach(payment => {
+            if (payment.status === 'success' && payment.rentId) {
+              paidPaymentMap[payment.rentId] = true;
+            }
           });
         }
         
@@ -124,11 +137,21 @@ const navigate = useNavigate();
         
         // Update properties with correct plan names and follow-up admin names
         const sortedUsers = res.data.users
-          .map(prop => ({
-            ...prop,
-            planName: planTypeMap[prop.rentId] || 'Free',
-            followUpAdminName: followUpAdminMap[prop.rentId] || 'N/A'
-          }))
+          .map(prop => {
+            // For N/A entries (not in free/paid plans), check if there's a successful payment
+            let planName = planTypeMap[prop.rentId];
+            if (!planName && paidPaymentMap[prop.rentId]) {
+              planName = 'Paid';
+            } else if (!planName) {
+              planName = 'Free';
+            }
+            
+            return {
+              ...prop,
+              planName: planName,
+              followUpAdminName: followUpAdminMap[prop.rentId] || 'N/A'
+            };
+          })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         
         setProperties(sortedUsers);
