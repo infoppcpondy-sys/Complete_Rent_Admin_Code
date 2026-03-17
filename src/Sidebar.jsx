@@ -1465,7 +1465,7 @@ All Views Data        </NavLink>
   style={{ borderRadius: "5px", background: "#8BC34A", cursor: "pointer" }}
 >
   <FaMapMarkedAlt style={{ marginRight: '10px' }} />
-  Exclusive Location
+  Place To Stay
 </li>
 
 <ul
@@ -1481,7 +1481,7 @@ All Views Data        </NavLink>
       }
     >
       <FaMapMarkedAlt/>
-      Exclusive Property <br /> (Add, Edit, Delete)
+      Place To Stay <br /> (Add, Edit, Delete)
     </NavLink>
   </li>
 </ul>
@@ -1540,6 +1540,11 @@ All Views Data        </NavLink>
       </li>
       <ul className={`collapse ${activeMenu === 'settings' ? 'show' : ''}`} id="SettingsMenu">
 
+      <li className="p-0 mt-2">
+        <NavLink to="/dashboard/roles"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+          <FaUserShield size={20} /> Roles & Permissions
+        </NavLink>
+      </li>
       <li className="p-0 mt-2">
         <NavLink to="/dashboard/user-rolls"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
           <RiShieldUserFill size={20} /> User Rolls
