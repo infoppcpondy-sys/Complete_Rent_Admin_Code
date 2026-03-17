@@ -41,6 +41,12 @@ const AdminDashboard = () => {
     const [existingImages, setExistingImages] = useState([]);
     const [dragActive, setDragActive] = useState(false);
     
+    // Videos
+    const [videos, setVideos] = useState([]);
+    const [videoPreviews, setVideoPreviews] = useState([]);
+    const [existingVideos, setExistingVideos] = useState([]);
+    const [dragActiveVideo, setDragActiveVideo] = useState(false);
+    
     // Filters
     const [filters, setFilters] = useState({
         page: 1,
@@ -181,12 +187,16 @@ const AdminDashboard = () => {
         setImages([]);
         setImagePreviews([]);
         setExistingImages([]);
+        setVideos([]);
+        setVideoPreviews([]);
+        setExistingVideos([]);
         setIsEdit(false);
         setCurrentPropertyId(null);
         setShowForm(false);
         setError(null);
         setPhoneNumberCount(0);
         setDragActive(false);
+        setDragActiveVideo(false);
     };
 
     // Handle add new property button
@@ -216,6 +226,7 @@ const AdminDashboard = () => {
             floor: property.floor || 'Ground Floor'
         });
         setExistingImages(property.images || []);
+        setExistingVideos(property.videos || []);
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -237,21 +248,27 @@ const AdminDashboard = () => {
         setSelectedImageIndex(0);
     };
 
-    // Handle next image in gallery
+    // Handle next image/video in gallery
     const handleNextImage = () => {
-        if (selectedImage && selectedImage.images) {
-            setSelectedImageIndex((prev) => 
-                prev === selectedImage.images.length - 1 ? 0 : prev + 1
-            );
+        if (selectedImage) {
+            const totalMedia = (selectedImage.images?.length || 0) + (selectedImage.videos?.length || 0);
+            if (totalMedia > 0) {
+                setSelectedImageIndex((prev) => 
+                    prev === totalMedia - 1 ? 0 : prev + 1
+                );
+            }
         }
     };
 
-    // Handle previous image in gallery
+    // Handle previous image/video in gallery
     const handlePreviousImage = () => {
-        if (selectedImage && selectedImage.images) {
-            setSelectedImageIndex((prev) => 
-                prev === 0 ? selectedImage.images.length - 1 : prev - 1
-            );
+        if (selectedImage) {
+            const totalMedia = (selectedImage.images?.length || 0) + (selectedImage.videos?.length || 0);
+            if (totalMedia > 0) {
+                setSelectedImageIndex((prev) => 
+                    prev === 0 ? totalMedia - 1 : prev - 1
+                );
+            }
         }
     };
 
@@ -449,6 +466,74 @@ const AdminDashboard = () => {
         setExistingImages(prev => prev.filter((_, i) => i !== index));
     };
 
+    // Handle video selection
+    const handleVideoChange = async (e) => {
+        const files = e.target.files ? Array.from(e.target.files) : Array.from(e.dataTransfer.files);
+        const validFiles = files.filter((file) => file.type.startsWith('video/'));
+        
+        // Limit to 5 videos total
+        const totalVideos = videos.length + validFiles.length;
+        if (totalVideos > 5) {
+            alert('Maximum 5 videos allowed!');
+            return;
+        }
+        
+        // Check file size (max 100MB per video)
+        const invalidFiles = validFiles.filter(file => file.size > 100 * 1024 * 1024);
+        if (invalidFiles.length > 0) {
+            alert('Video files must be under 100MB!');
+            return;
+        }
+        
+        try {
+            const videoPrevData = await Promise.all(
+                validFiles.map(async (file) => {
+                    const dataURL = await readFileAsDataURL(file);
+                    return {
+                        src: dataURL,
+                        name: file.name,
+                        size: (file.size / 1024 / 1024).toFixed(2)
+                    };
+                })
+            );
+            
+            setVideos(prev => [...prev, ...validFiles]);
+            setVideoPreviews(prev => [...prev, ...videoPrevData]);
+        } catch (error) {
+            console.error('Error processing videos:', error);
+            alert('Error processing videos. Please try again.');
+        }
+    };
+
+    // Remove video by index
+    const handleRemoveVideo = (index) => {
+        setVideos(prev => prev.filter((_, i) => i !== index));
+        setVideoPreviews(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Remove existing video
+    const handleRemoveExistingVideo = (index) => {
+        setExistingVideos(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Drag handlers for videos
+    const handleDragVideo = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActiveVideo(true);
+        } else if (e.type === 'dragleave') {
+            setDragActiveVideo(false);
+        }
+    };
+
+    const handleDropVideo = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActiveVideo(false);
+        handleVideoChange(e);
+    };
+
     // Drag handlers
     const handleDrag = (e) => {
         e.preventDefault();
@@ -486,15 +571,23 @@ const AdminDashboard = () => {
                 }
             });
 
-            // Add new images
+            // Add new images and videos together as "files"
             images.forEach(image => {
-                submitData.append('images', image);
+                submitData.append('files', image);
             });
 
-            // Add existing images URLs (for edit mode)
+            videos.forEach(video => {
+                submitData.append('files', video);
+            });
+
+            // Add existing images and videos URLs (for edit mode)
             if (isEdit) {
                 existingImages.forEach(img => {
                     submitData.append('existingImages', img.url);
+                });
+                
+                existingVideos.forEach(vid => {
+                    submitData.append('existingVideos', vid.url);
                 });
             }
 
@@ -550,7 +643,7 @@ const AdminDashboard = () => {
     return (
         <div className="admin-dashboard">
             <div className="dashboard-header">
-                <h1>🏠 Exclusive Locations</h1>
+                <h1>🏠 Place To Stay</h1>
                 {!showForm && (
                     <button className="btn btn-primary" onClick={handleAddNew}>
                         + Add New Property
@@ -597,10 +690,11 @@ const AdminDashboard = () => {
                                     name="propertyMode"
                                     value={formData.propertyMode}
                                     onChange={handleInputChange}
+                                    disabled
                                     required
                                 >
                                     <option value="Commercial">Commercial</option>
-                                    <option value="Residential">Residential</option>
+                                    {/* <option value="Residential">Residential</option> */}
                                 </select>
                             </div>
 
@@ -687,7 +781,7 @@ const AdminDashboard = () => {
 
                             {/* Advance Amount */}
                             <div className="form-group">
-                                <label>Advance Amount (₹)</label>
+                                <label> Security Deposit (₹)</label>
                                 <input
                                     type="number"
                                     name="advanceAmount"
@@ -908,6 +1002,103 @@ const AdminDashboard = () => {
                                                 </div>
                                             );
                                         })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Existing Videos (Edit Mode) */}
+                        {isEdit && existingVideos.length > 0 && (
+                            <div className="form-group">
+                                <label>Existing Videos</label>
+                                <div className="existing-videos">
+                                    {existingVideos.map((vid, index) => (
+                                        <div key={index} className="video-preview">
+                                            <video 
+                                                src={`${process.env.REACT_APP_MEDIA_URL}${vid.url}`}
+                                                controls
+                                                width="120"
+                                                height="120"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn-remove-image"
+                                                onClick={() => handleRemoveExistingVideo(index)}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Upload New Videos */}
+                        <div className="form-group">
+                            <label>🎬 {isEdit ? 'Add More Videos' : 'Upload Videos'} (Max 5, 100MB each)</label>
+                            
+                            {/* Drag and Drop Area for Videos */}
+                            <div
+                                className={`upload-card ${dragActiveVideo ? 'drag-active' : ''}`}
+                                onDragEnter={handleDragVideo}
+                                onDragLeave={handleDragVideo}
+                                onDragOver={handleDragVideo}
+                                onDrop={handleDropVideo}
+                            >
+                                <input
+                                    type="file"
+                                    accept="video/*"
+                                    multiple
+                                    onChange={handleVideoChange}
+                                    className="file-input-hidden"
+                                    id="videoInput"
+                                />
+                                <label htmlFor="videoInput" className="upload-label">
+                                    <div className="upload-icon">📹</div>
+                                    <h3>Drag & drop videos here</h3>
+                                    <p>or click to browse</p>
+                                    <small>Supported formats: MP4, WebM, OGG (Max 100MB per video)</small>
+                                </label>
+                            </div>
+                            
+                            {/* Video Count Badge */}
+                            {videos.length > 0 && (
+                                <div className="image-count-badge">
+                                    ✅ {videos.length} video{videos.length !== 1 ? 's' : ''} selected
+                                </div>
+                            )}
+                            
+                            {/* Video Previews */}
+                            {videoPreviews.length > 0 && (
+                                <div className="image-previews-container">
+                                    <h4>🎥 Preview ({videoPreviews.length})</h4>
+                                    <div className="image-preview-grid">
+                                        {videoPreviews.map((preview, index) => (
+                                            <div key={index} className="preview-item">
+                                                <div className="preview-image-wrapper">
+                                                    <video 
+                                                        src={preview.src}
+                                                        width="140"
+                                                        height="140"
+                                                        style={{objectFit: 'cover', width: '100%', height: '100%'}}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="btn-remove-preview"
+                                                        onClick={() => handleRemoveVideo(index)}
+                                                        title="Remove video"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                                <div className="preview-info">
+                                                    <p className="preview-name">{preview.name.slice(0, 20)}...</p>
+                                                    <p className="preview-size">
+                                                        {preview.size} MB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -1212,8 +1403,8 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* IMAGE LIGHTBOX GALLERY MODAL */}
-            {selectedImage && ((selectedImage.images && selectedImage.images.length > 0) || true) && (
+            {/* IMAGE/VIDEO LIGHTBOX GALLERY MODAL */}
+            {selectedImage && (
                 <div className="image-lightbox-overlay" onClick={handleCloseImageModal}>
                     <div className="image-lightbox-container" onClick={(e) => e.stopPropagation()}>
                         {/* Close Button */}
@@ -1225,70 +1416,124 @@ const AdminDashboard = () => {
                             ✕
                         </button>
 
-                        {/* Main Image Display */}
-                        <div className="lightbox-image-wrapper">
-                            {selectedImage?.images?.length > 0 && selectedImage.images[selectedImageIndex]?.url ? (
-                                <img 
-                                    src={`${process.env.REACT_APP_MEDIA_URL}${selectedImage.images[selectedImageIndex].url}`}
-                                    alt={`Property ${selectedImageIndex + 1}`}
-                                    className="lightbox-image" 
-                                />
-                            ) : (
-                                <img 
-                                    src={DEFAULT_IMAGE}
-                                    alt="Default Property Image"
-                                    className="lightbox-image"
-                                />
-                            )}
-                        </div>
+                        {/* Combined Media Array (Images + Videos) */}
+                        {(() => {
+                            // Ensure we have arrays, never undefined
+                            const images = selectedImage?.images ? (Array.isArray(selectedImage.images) ? selectedImage.images : []) : [];
+                            const videos = selectedImage?.videos ? (Array.isArray(selectedImage.videos) ? selectedImage.videos : []) : [];
+                            
+                            const allMedia = [
+                                ...images.map((img, idx) => ({ ...img, type: 'image', originalIndex: idx })),
+                                ...videos.map((vid, idx) => ({ ...vid, type: 'video', originalIndex: idx }))
+                            ];
+                            
+                            console.log('Media Debug:', { images: images.length, videos: videos.length, total: allMedia.length, currentIndex: selectedImageIndex });
+                            
+                            if (allMedia.length === 0) {
+                                return (
+                                    <div className="lightbox-image-wrapper">
+                                        <img 
+                                            src={DEFAULT_IMAGE}
+                                            alt="Default Property Image"
+                                            className="lightbox-image"
+                                        />
+                                    </div>
+                                );
+                            }
 
-                        {/* Navigation Arrows (only show if multiple images) */}
-                        {selectedImage?.images?.length > 1 && (
-                            <>
-                                <button
-                                    className="lightbox-nav-btn lightbox-prev-btn"
-                                    onClick={handlePreviousImage}
-                                    title="Previous image"
-                                >
-                                    ❮
-                                </button>
-                                <button
-                                    className="lightbox-nav-btn lightbox-next-btn"
-                                    onClick={handleNextImage}
-                                    title="Next image"
-                                >
-                                    ❯
-                                </button>
-                            </>
-                        )}
+                            // Ensure selectedImageIndex doesn't exceed total media
+                            const safeIndex = Math.min(selectedImageIndex, allMedia.length - 1);
+                            const currentMedia = allMedia[safeIndex];
+                            const totalMedia = allMedia.length;
 
-                        {/* Image Counter */}
-                        {selectedImage?.images?.length > 1 && (
-                            <div className="lightbox-counter">
-                                {selectedImageIndex + 1} / {selectedImage.images.length}
-                            </div>
-                        )}
+                            return (
+                                <>
+                                    {/* Main Media Display */}
+                                    <div className="lightbox-image-wrapper">
+                                        {currentMedia?.type === 'video' ? (
+                                            <video 
+                                                key={`video-${currentMedia.public_id}`}
+                                                src={`${process.env.REACT_APP_MEDIA_URL}${currentMedia.url}`}
+                                                controls
+                                                className="lightbox-video"
+                                                autoPlay
+                                            />
+                                        ) : (
+                                            <img 
+                                                key={`image-${currentMedia.public_id}`}
+                                                src={`${process.env.REACT_APP_MEDIA_URL}${currentMedia.url}`}
+                                                alt={`Property ${safeIndex + 1}`}
+                                                className="lightbox-image" 
+                                            />
+                                        )}
+                                    </div>
 
-                        {/* Thumbnail Strip */}
-                        {selectedImage?.images?.length > 1 && (
-                            <div className="lightbox-thumbnails">
-                                {selectedImage.images.filter(img => img?.url).map((img, index) => (
-                                    <img
-                                        key={index}
-                                        src={`${process.env.REACT_APP_MEDIA_URL}${img.url}`}
-                                        alt={`Thumbnail ${index + 1}`}
-                                        className={`lightbox-thumbnail ${index === selectedImageIndex ? 'active' : ''}`}
-                                        onClick={() => setSelectedImageIndex(index)}
-                                        title={`Image ${index + 1}`}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                                    {/* Navigation Arrows (only show if multiple media) */}
+                                    {totalMedia > 1 && (
+                                        <>
+                                            <button
+                                                className="lightbox-nav-btn lightbox-prev-btn"
+                                                onClick={handlePreviousImage}
+                                                title="Previous media"
+                                            >
+                                                ❮
+                                            </button>
+                                            <button
+                                                className="lightbox-nav-btn lightbox-next-btn"
+                                                onClick={handleNextImage}
+                                                title="Next media"
+                                            >
+                                                ❯
+                                            </button>
+                                        </>
+                                    )}
 
-                        {/* Info Text */}
-                        <div className="lightbox-info">
-                            <p>{selectedImage?.images?.length > 0 ? '💡 Use arrows or click thumbnails to browse • Click ✕ or outside to close' : '📷 Default thumbnail - No images uploaded yet'}</p>
-                        </div>
+                                    {/* Media Counter */}
+                                    {totalMedia > 1 && (
+                                        <div className="lightbox-counter">
+                                            {safeIndex + 1} / {totalMedia}
+                                        </div>
+                                    )}
+
+                                    {/* Thumbnail Strip */}
+                                    {totalMedia > 1 && (
+                                        <div className="lightbox-thumbnails">
+                                            {allMedia.map((media, index) => (
+                                                <div
+                                                    key={`thumb-${media.type}-${media.originalIndex}`}
+                                                    className={`lightbox-thumbnail-wrapper ${index === safeIndex ? 'active' : ''}`}
+                                                    onClick={() => setSelectedImageIndex(index)}
+                                                    title={`${media.type === 'video' ? 'Video' : 'Image'} ${index + 1}`}
+                                                >
+                                                    {media.type === 'video' ? (
+                                                        <>
+                                                            <video 
+                                                                src={`${process.env.REACT_APP_MEDIA_URL}${media.url}`}
+                                                                className="lightbox-thumbnail"
+                                                            />
+                                                            <span className="media-type-badge">🎬</span>
+                                                        </>
+                                                    ) : (
+                                                        <img
+                                                            src={`${process.env.REACT_APP_MEDIA_URL}${media.url}`}
+                                                            alt={`Thumbnail ${index + 1}`}
+                                                            className="lightbox-thumbnail"
+                                                        />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Info Text */}
+                                    <div className="lightbox-info">
+                                        <p>
+                                            {totalMedia > 0 ? `💡 ${currentMedia?.type === 'video' ? '🎬 Video' : '📷 Image'} - Use arrows or click thumbnails to browse • Click ✕ or outside to close` : '📷 Default thumbnail - No media uploaded yet'}
+                                        </p>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             )}
