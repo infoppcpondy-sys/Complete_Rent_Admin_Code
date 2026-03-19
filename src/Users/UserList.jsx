@@ -7,7 +7,7 @@ import { FaEdit } from 'react-icons/fa';
 import { MdDeleteForever } from 'react-icons/md';
 import { Table } from 'react-bootstrap';
 
-const UserForm = ({ user, onSave, onDelete }) => {
+const UserForm = ({ user, onSave, onDelete, existingUsers = [] }) => {
     const [formData, setFormData] = useState({
         name: '',
         address: '',
@@ -123,6 +123,15 @@ const UserForm = ({ user, onSave, onDelete }) => {
             return;
         }
 
+        // Check for duplicate username when creating a new user
+        if (!user || !user._id) {
+            const userNameExists = existingUsers.some(existingUser => existingUser.name === formData.name);
+            if (userNameExists) {
+                toast.error('Username already exists. Please choose a different username.');
+                return;
+            }
+        }
+
         // Ensure selected office exists in fetched offices (accept either _id or officeName for compatibility)
         const officeIds = offices.map(o => o._id);
         const officeNames = offices.map(o => o.officeName);
@@ -142,7 +151,9 @@ const UserForm = ({ user, onSave, onDelete }) => {
         try {
                 // Send office as officeName (the backend expects the office name string, not _id)
                 const payload = { ...formData };
-                // office is already the officeName from the select dropdown
+                // Get the current logged-in admin name
+                const createdByAdmin = localStorage.getItem('adminName') || 'Unknown';
+                payload.createdByAdmin = createdByAdmin;
 
                 if (user && user._id) {
                     await axios.post(`${process.env.REACT_APP_API_URL}/admin-updates/${user._id}`, payload);
@@ -236,7 +247,7 @@ const UserForm = ({ user, onSave, onDelete }) => {
                             disabled={loading}
                         >
                             <option value="">Select Office</option>
-                            {offices.map((office) => (
+                            {offices.filter((office) => office.officeName === 'AUROBINDO').map((office) => (
                                 <option key={office._id} value={office.officeName}>
                                     {office.officeName}
                                 </option>
@@ -286,7 +297,7 @@ const UserForm = ({ user, onSave, onDelete }) => {
                             onChange={handleChange}
                         />
                     </div>
-
+                     
                     <div className="form-group">
                         <label>Role: <span className='text-danger'><strong>*</strong></span></label>
                         <select
@@ -307,20 +318,19 @@ const UserForm = ({ user, onSave, onDelete }) => {
                     </div>
                 </div>
 
-                <div className="form-group w-50">
+                {/* <div className="form-group w-50">
                     <label>User Type: <span className='text-danger'><strong>*</strong></span></label>
                     <select
                         name="userType"
                         value={formData.userType}
                         onChange={handleChange}
-                        required
                     >
                         <option value="">Select User Type</option>
                         <option value="all">All</option>
                         <option value="PUC">PUC</option>
                         <option value="TUC">TUC</option>
                     </select>
-                </div>
+                </div> */}
                 <div className="form-group">
                     <label>Mobile:</label>
                     <input
@@ -677,7 +687,7 @@ const UserList = () => {
     return (
         <div>
             <h1 style={{color:"rgb(47,116,127)"}} className='text-center mb-4'>Staff Management</h1>
-            <UserForm user={selectedUser} onSave={handleSave} onDelete={handleDelete} />
+            <UserForm user={selectedUser} onSave={handleSave} onDelete={handleDelete} existingUsers={users} />
             <h2>Staff Details - Edit - Delete</h2>
                           <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
@@ -688,10 +698,10 @@ const UserList = () => {
                     <tr>
                         <th>Sl</th>
                         <th>UserName</th>
-                        <th>Bycrpt Password</th>
-                        <th>Admin Set Password</th>
-                        <th>Role</th>
-                        <th>UserType</th>
+                        {/* <th>Bycrpt Password</th> */}
+                        {/* <th>Admin Set Password</th> */}
+                        {/* <th>Role</th> */}
+                        {/* <th>UserType</th> */}
                         <th>Office</th>
                         <th>Mobile Number</th>
                         <th>Edit / Delete</th>
@@ -702,10 +712,10 @@ const UserList = () => {
                         <tr key={user._id}>
                             <td>{index + 1}</td>
                             <td>{user.name}</td>
-                            <td>{user.password}</td>
-                            <td>{user.plainPassword}</td>
-                            <td>{user.role}</td>
-                            <td>{user.userType}</td>
+                            {/* <td>{user.password}</td> */}
+                            {/* <td>{user.plainPassword}</td> */}
+                            {/* <td>{user.role}</td> */}
+                            {/* <td>{user.userType}</td> */}
                             <td>{user.office}</td>
                             <td>{user.mobile}</td>
                             <td>
