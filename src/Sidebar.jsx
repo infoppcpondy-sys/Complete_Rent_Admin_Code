@@ -1441,7 +1441,7 @@ All Views Data        </NavLink>
           <RiFileListFill size={20} /> User Log
         </NavLink>
       </li>
-
+{/* 
   <li className="p-0 mt-2">
         <NavLink to="/dashboard/contact-usage" 
          onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
@@ -1455,7 +1455,7 @@ All Views Data        </NavLink>
          onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
           <RiBarChart2Fill size={20} /> Daily Usage
         </NavLink>
-      </li>
+      </li> */}
       
 </ul>
 
@@ -1550,6 +1550,23 @@ All Views Data        </NavLink>
           <RiShieldUserFill size={20} /> User Rolls
         </NavLink>
       </li>
+
+
+  <li className="p-0 mt-2">
+        <NavLink to="/dashboard/contact-usage" 
+         onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+          <RiBarChart2Fill size={20} /> Contact Usage
+        </NavLink>
+      </li>
+      
+      
+      <li className="p-0 mt-2">
+        <NavLink to="/dashboard/daily-usage" 
+         onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
+          <RiBarChart2Fill size={20} /> Daily Usage
+        </NavLink>
+      </li>
+
       <li className="p-0 mt-2">
         <NavLink to="/dashboard/limits" 
         onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
