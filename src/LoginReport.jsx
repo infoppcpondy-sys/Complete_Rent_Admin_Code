@@ -661,8 +661,8 @@ const handleSetActiveStatus = async (user) => {
           <label className="mr-2 font-medium">Filter by Remarks:</label>
           <select value={remarksFilter} onChange={e => setRemarksFilter(e.target.value)} className="border p-2 rounded">
             <option value="all">All</option>
-            <option value="seller">Seller</option>
-            <option value="buyer">Buyer</option>
+            <option value="seller">Owner</option>
+            <option value="buyer">Tenant</option>
             <option value="visitor">Visitor</option>
           </select>
         </div>
@@ -712,8 +712,8 @@ const handleSetActiveStatus = async (user) => {
                 className="form-select mb-3"
               >
                 <option value="">-- Select Remark --</option>
-                <option value="seller">Seller</option>
-                <option value="buyer">Buyer</option>
+                <option value="seller">Owner</option>
+                <option value="buyer">Tenant</option>
                 <option value="visitor">Visitor</option>
               </select>
             ) : (
