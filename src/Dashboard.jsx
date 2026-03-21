@@ -182,7 +182,6 @@ import ExclusiveLocation from './605010';
 import BulkWhatsapp from './BulkWhatsapp';
 import SingleSendMessage from './SingleSendMessage';
 import SearchPincode from './SearchPincode';
-import Roles from './Roles';
 
 const routes = [
   { path: "/loginreport", element: <LoginReport /> }, 
@@ -258,7 +257,6 @@ const routes = [
   { path: "/user-log", element: <UsersLog /> },
   { path: "/office", element: <OfficeList /> },
   { path: "/rolls", element: <Roll /> },
-  { path: "/roles", element: <Roles /> },
   { path: "/car-model", element: <CarModel /> },
   { path: "/pending-assistant", element: <PendingAssistant /> },
   { path: "/buyers-list-interest-tried", element: <BuyerListInterestTriede /> },
