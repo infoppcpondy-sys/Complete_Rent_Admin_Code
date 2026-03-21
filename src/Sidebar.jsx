@@ -1541,13 +1541,8 @@ All Views Data        </NavLink>
       <ul className={`collapse ${activeMenu === 'settings' ? 'show' : ''}`} id="SettingsMenu">
 
       <li className="p-0 mt-2">
-        <NavLink to="/dashboard/roles"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <FaUserShield size={20} /> Roles & Permissions
-        </NavLink>
-      </li>
-      <li className="p-0 mt-2">
         <NavLink to="/dashboard/user-rolls"  onClick={toggleSidebar} className={({ isActive }) => (isActive ? "active-link rounded" : "")}>
-          <RiShieldUserFill size={20} /> User Rolls
+          <RiShieldUserFill size={20} /> Roles & Access
         </NavLink>
       </li>
 
