@@ -1,9 +1,10 @@
 import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
-import moment from 'moment';
-import { Routes, Route, Router } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from "./Navbar";
+import ProtectedRoute from './ProtectedRoute';
+
 import LoginReport from "./LoginReport";
 import AdminReport from "./AdminReport";
 import Plan from "./Plan";
@@ -90,15 +91,12 @@ import Detail from './Detail';
 import AdminSetForm from './DataAddAdmin/AdminSetForm';
 import InterestTables from './Detail/InterestTables';
 import AddPropertyList from './AddPropertyList';
-import FavoriteTable from './Detail/FavoriteTables';
 import FavoriteTables from './Detail/FavoriteTables';
-import NeedHelpLeadTable from './HelpLoanLead';
 import ContactTables from './Detail/ContactTables';
 import SoldOutTables from './Detail/SoldOutTables';
 import ReportPropertyTables from './Detail/ReportPropertyTables';
 import NeedHelpTables from './Detail/NeedHelpTables';
 import FavoriteRemoved from './Detail/ShortListRemovedTable';
-
 import GetBuyerAssistance from './GetBuyerAssistance';
 import TextEditor from './TextEditer';
 import MatchedPropertyTable from './Detail/MatchedPropertyTable';
@@ -113,7 +111,7 @@ import PyProperty from './Detail/PyProperty';
 import UserViewsTable from './AdminViewsTable';
 import CreateFollowUp from './CreateFollowUp';
 import FollowUpGetTable from './FollowUpGetTable';
-import DeveloperProperty from './DeveloperProperty'; 
+import DeveloperProperty from './DeveloperProperty';
 import CreateBill from './CreateBill';
 import GetBillDatas from './GetBillDatas';
 import AddBuyerAssistance from './AddBuyerAssistance';
@@ -136,7 +134,6 @@ import WithOutUserStatics from './WithOutStatics';
 import WithoutProperty30DaysUser from './Without30days';
 import WithUsersTable from './WithAllUser';
 import LoginDirectVerifyUser from './LoginDirectVerifyUser';
-import UploadImages from './UpLoadImagesGroom';
 import UpLoadImagesGroom from './UpLoadImagesGroom';
 import UpLoadImagesBride from './UploadImagesBride';
 import DirectLogoutUsers from './DirectLogoutUsers';
@@ -157,7 +154,6 @@ import GroomImageClickTable from './UserClickGroomImages';
 import BrideImageClickTable from './UserClickBrideImages';
 import LoginUserDatas from './LoginUsersDatas';
 import LoginSeparateUser from './LoginSeparateUser';
-
 import SetOnDemandPrice from './ApplyOnDemand';
 import DetailRentAssistance from './RentAssistanceDetail';
 import CalledListDatas from './Detail/CalledListDatas';
@@ -183,219 +179,202 @@ import BulkWhatsapp from './BulkWhatsapp';
 import SingleSendMessage from './SingleSendMessage';
 import SearchPincode from './SearchPincode';
 
+// ── permissionKey must exactly match the key in ALL_FILES inside UserRolls.jsx ──
 const routes = [
-  { path: "/loginreport", element: <LoginReport /> }, 
-  { path: "/adminreport", element: <AdminReport /> },
-  { path: "/plan", element: <AddPlan /> },
-  { path: "/buyerplan", element: <BuyerPlan /> },
-  { path: "/statistics", element: <Statistics /> },
-  { path: "/admin-notification", element: <AdminNotification /> },
-  { path: "/add-car", element: <AddCar /> },
-  { path: "/adminlog", element: <AdminLog /> },
-  { path: "/agent-car", element: <AgentCar /> },
-  { path: "/all-car", element: <AllCar /> },
-  { path: "/approved-car", element: <ApprovedCar /> },
-  { path: "/assist-pay-later", element: <AssistPayLater /> },
-  { path: "/assist-payu-money", element: <AssistPayU /> },
-  { path: "/assist-subscriber", element: <AssistSubscriber /> },
-  { path: "/ba-free-bills", element: <BaFreeBills /> },
-  { path: "/ba-loan-lead", element: <BaLoanLead /> },
-  { path: "/buyerlist-interest", element: <BuyerListInterest /> },
-  { path: "/buyers-assistant", element: <BuyersAssistant /> },
-  { path: "/buyers-contacted", element: <BuyersContacted /> },
-  { path: "/buyers-follow-ups", element: <BuyersFollowUps /> },
-  { path: "/buyers-shortlisted", element: <BuyersShortlized /> },
-  { path: "/buyers-statics", element: <BuyersStatics /> },
-  { path: "/callback-form", element: <CallBackForm /> },
-  { path: "/car-follow-ups", element: <CarFollowUps /> },
-  { path: "/car-make", element: <CarMake /> },
-  { path: "/carstatics", element: <CarStatics /> },
-  { path: "/city", element: <City /> },
-  { path: "/customer-car", element: <CustomerCar /> },
-  { path: "/daily-usage", element: <DailyUsage /> },
-  { path: "/dealer-car", element: <DealerCar /> },
-  { path: "/district", element: <District /> },
-  { path: "/downloadleads", element: <DownloadLeads /> },
-  { path: "/expire-car", element: <ExpireCar /> },
-  { path: "/expired-assistant", element: <ExpiredAssistant /> },
-  { path: "/free-bills", element: <FreeBills /> },
-  { path: "/free-car", element: <FreeCar /> },
-  { path: "/free-user-lead", element: <FreeUserLead /> },
-  { path: "/help", element: <Help /> },
-  { path: "/help-loan-lead", element: <HelpLoanLead /> },
-  { path: "/insurance-lead", element: <InsuranceLead /> },
-  { path: "/last-viewed-property", element: <LastViewedCar /> },
-  { path: "/limits", element: <Limits /> },
-  { path: "/matched-buyer", element: <MatchedBuyer /> },
-  { path: "/mobile-view-lead", element: <MobileViewLead /> },
-  { path: "/my-account", element: <MyAccount /> },
-  { path: "/new-car-lead", element: <NewCarLead /> },
-  { path: "/offers-raised", element: <OfferesRaised /> },
-  { path: "/paid-bills", element: <PaidBills /> },
-  { path: "/paid-car", element: <PaidCar /> },
-  { path: "/pay-later", element: <PayLater /> },
-  { path: "/paymenttype", element: <PaymentType /> },
-  { path: "/pay-u-money", element: <PayUMoney /> },
-  { path: "/pending-car", element: <PendingCar /> },
-  { path: "/photo-request", element: <PhotoRequest /> },
-  { path: "/profile", element: <Profile /> },
-  { path: "/puc-banner", element: <PucBanner /> },
-  { path: "/puc-car", element: <PucCar /> },
-  { path: "/puc-number", element: <PucNumber /> },
-  { path: "/received-interest", element: <RecievedInterest /> },
-  { path: "/removed-car", element: <RemovedCar /> },
-  { path: "/reported-cars", element: <ReportedCar /> },
-  { path: "/searchcar", element: <SearchCar /> },
-  { path: "/searched-data", element: <SearchedData /> },
-  { path: "/daily-report-rent", element: <Subscriber /> },
-  { path: "/transfer-assistant", element: <TransferAssistant /> },
-  { path: "/transfer-follow-ups", element: <TRansferFollowUps /> },
-  { path: "/tuc-banner", element: <TucBanner /> },
-  { path: "/usage-statics", element: <UsageStatics /> },
-  { path: "/user-rolls", element: <UserRolls /> },
-  { path: "/users", element: <UserList /> },
-  { path: "/user-log", element: <UsersLog /> },
-  { path: "/office", element: <OfficeList /> },
-  { path: "/rolls", element: <Roll /> },
-  { path: "/car-model", element: <CarModel /> },
-  { path: "/pending-assistant", element: <PendingAssistant /> },
-  { path: "/buyers-list-interest-tried", element: <BuyerListInterestTriede /> },
-  { path: "/ba-paid-bills", element: <BaPaidBill /> },
-  { path: "/preapproved-car", element: <PreApprovedCar /> },
-  { path: "/area", element: <Area /> },
-  { path: "/state", element: <State /> },
-  { path: "/edit-property", element: <EditProperty /> },
-  { path: "/detail", element: <Detail /> },
-  { path: "/set-property", element: <AdminSetForm /> },
-  { path: "/interest-table", element: <InterestTables /> },
-  { path: "/favorite-table", element: <FavoriteTables /> },
-  { path: "/needhelp-table", element: <NeedHelpTables /> },
-  { path: "/contact-table", element: <ContactTables /> },
-  { path: "/soldout-table", element: <SoldOutTables /> },
-  { path: "/report-property-table", element: <ReportPropertyTables /> },
-  { path: "/property-list", element: <AddPropertyList /> },
-  { path: "/get-buyer-assistance", element: <GetBuyerAssistance /> },
-  { path: "/text-editor", element: <TextEditor /> },
-  { path: "/get-matched-properties", element: <MatchedPropertyTable /> },
-  { path: "/matched-property-list", element: <MatchedList /> },
-  { path: "/feature-property", element: <FeaturedProperty /> },
-  { path: "/viewed-property", element: <ViewedProperties /> },
-  { path: "/notification-send", element: <NotificationForm /> },
-  { path: "/profile-table", element: <ProfileTable /> },
-  { path: "/user-call-list", element: <GetUserCalledList /> },
-  { path: "/deleted-properties", element: <DeletedProperties /> },
-  { path: "/py-properties", element: <PyProperty /> },
-  { path: "/featured-properties", element: <FeaturedProperty /> },
-  { path: "/admin-views", element: <UserViewsTable /> },
-  { path: "/create-followup", element: <CreateFollowUp /> },
-  { path: "/favorite-removed", element: <FavoriteRemoved /> },
-  { path: "/developer-property", element: <DeveloperProperty /> },
-  { path: "/followup-list", element: <FollowUpGetTable /> },
-  { path: "/create-bill", element: <CreateBill /> },
-  { path: "/bill-datas", element: <GetBillDatas /> },
-  { path: "/add-buyer-assistance", element: <AddBuyerAssistance /> },
-  { path: "/view-buyer-assistance", element: <ViewBuyerAssistance /> },
-  { path: "/edit-bill/:rentId", element: <EditBill /> },
-  { path: "/postby-property", element: <PostedByProperty /> },
-  { path: "/promotor-property", element: <PromotorProperty /> },
-  { path: "/active-buyer-assistant", element: <BuyerAssistanceActive /> },
-  { path: "/set-rentId", element: <SetPPCID /> },
-  { path: "/edit-buyer-assistance", element: <EditBuyerAssistance /> },
-  { path: "/fetch-all-address", element: <AddressTable /> },
-  { path: "/create-followup-buyer", element: <CreateBuyerFollowUp /> },
-  { path: "/followup-list-buyer", element: <FollowUpBuyerGetTable /> },
-  { path: "/all-property-statics", element: <GetAllPropertyStatics /> },
-  { path: "/all-buyer-statics", element: <GetAllBuyerStatics /> },
-  { path: "/all-usage-statics", element: <GetAllUsageStatics /> },
-  { path: "/without-property-user", element: <WithOutPropertyUser /> },
-    { path: "/all-views-datas", element: <AllViewsDatas /> },
-  { path: "/without-all-statics", element: <WithOutUserStatics /> },
-  { path: "/without-30-days-user", element: < WithoutProperty30DaysUser /> },
-  { path: "/all-user-datas", element: < WithUsersTable /> },
-    { path: "/login-direct-user", element: < LoginDirectVerifyUser /> },
-    { path: "/upload-images-groom", element: < UpLoadImagesGroom /> },
-        { path: "/upload-images-bride", element: < UpLoadImagesBride /> },
-        { path: "/upload-images-ads", element: < UpLoadImagesAds /> },
-        { path: "/upload-images-ads-detail", element: < UpLoadDetailAds /> },
-        { path: "/rentid-statics", element: < RentIdStatics /> },
-
-
-    { path: "/logout-direct-user", element: < DirectLogoutUsers /> },
-    { path: "/remove-plan-phone", element: < RemovePlanPhoneNumber /> },
-    { path: "/payment-failed", element: < PaymentPaidFailed /> },
-        { path: "/payment-success", element: < PaymentPaidSuccess /> },
-    { path: "/payment-paynow", element: < PaymentPaidPayNow /> },
-    { path: "/payment-paylater", element: < PaymentPaidPayLater /> },
-
-  { path: "/payment-failed-buyer", element: < PayuBuyerPayFailed /> },
-        { path: "/payment-success-buyer", element: < PayuBuyerPaid /> },
-    { path: "/payment-paynow-buyer", element: < PayuBuyerPaynow /> },
-    { path: "/payment-paylater-buyer", element: < PayuBuyerPaylater /> },
-    { path: "/all-bills", element: < AllBillsTable /> },
-    { path: "/buyer-create-bill", element: < CreateBuyerBill /> },
-    { path: "/detail-rent-assis", element: < DetailRentAssistance /> },
-
-    { path: "/edit-buyer-bill/:ba_id", element: < EditBuyerBill /> },
-    { path: "/all-buyer-bills", element: < AllBuyerBills /> },
-
-    { path: "/groom-click-datas", element: < GroomImageClickTable /> },
-    { path: "/bride-click-datas", element: < BrideImageClickTable /> },
-
-        { path: "/login-user-datas", element: < LoginUserDatas /> },
-
-                { path: "/separate-login-user", element: < LoginSeparateUser /> },
-                { path: "/apply-on-demand", element: < SetOnDemandPrice /> },
-                                { path: "/called-list-datas", element: < CalledListDatas /> },
-                { path: "/get-all-property-datas", element: < PropertyStatusTable /> },
-                { path: "/friend-property", element: < FriendProperty /> },
-                { path: "/tanent-property", element: < TanentProperty /> },
-                { path: "/contact-usage", element: < ContactUsage /> },
-                { path: "/set-property-message", element: < SetPropertyMessage /> },
-                { path: "/get-all-buyerlist-viewed", element: < BuyerAssistViewsTable /> },
-                { path: "/with-all-user", element: < WithUsersTable /> },
-                { path: "/sale-property", element: < SalePropertyViewsUser /> },
-                { path: "/get-all-address-request", element: < AddressRequestsTable /> },
-                { path: "/detail-daily-report", element: < DetailDailyReport /> },
-                { path: "/property-payment-daily-report", element: < PropertyPaymentDailyReport /> },
-
-                { path: "/contact-form-datas", element: < GetAllContactFormDatas /> },
-    { path: "/owner-tenant-menu", element: <OwnerTenantMenu /> },
-    { path: "/add-property-marketing", element: <AddPropertyFormMarketing /> },
-    {path: "/removed-tenant", element: <RemovedTenant /> },
-    { path: "/exclusive-location", element: <ExclusiveLocation /> },
-    { path: "/bulk-whatsapp", element: <BulkWhatsapp /> },
-    { path: "/single-send-whatsapp", element: <SingleSendMessage /> },
-    { path: "/search-pincode", element: <SearchPincode /> },
-
-
+  { path: "/loginreport",                 element: <LoginReport />,               permissionKey: "Login Report" },
+  { path: "/adminreport",                 element: <AdminReport />,               permissionKey: "Admin Report" },
+  { path: "/plan",                        element: <AddPlan />,                   permissionKey: "AddPlan" },
+  { path: "/buyerplan",                   element: <BuyerPlan />,                 permissionKey: "BuyerPlan" },
+  { path: "/statistics",                  element: <Statistics />,                permissionKey: "Statistics" },
+  { path: "/admin-notification",          element: <AdminNotification />,         permissionKey: "Admin Notification" },
+  { path: "/add-car",                     element: <AddCar />,                    permissionKey: "Add Property" },
+  { path: "/adminlog",                    element: <AdminLog />,                  permissionKey: "AdminLog" },
+  { path: "/agent-car",                   element: <AgentCar />,                  permissionKey: "Agent Property" },
+  { path: "/all-car",                     element: <AllCar />,                    permissionKey: null },
+  { path: "/approved-car",               element: <ApprovedCar />,               permissionKey: "Approved Property" },
+  { path: "/assist-pay-later",            element: <AssistPayLater />,            permissionKey: null },
+  { path: "/assist-payu-money",           element: <AssistPayU />,               permissionKey: null },
+  { path: "/assist-subscriber",           element: <AssistSubscriber />,          permissionKey: "Tenant Assist Payment Daily" },
+  { path: "/ba-free-bills",              element: <BaFreeBills />,               permissionKey: "BaFree Bills" },
+  { path: "/ba-loan-lead",               element: <BaLoanLead />,                permissionKey: null },
+  { path: "/buyerlist-interest",          element: <BuyerListInterest />,         permissionKey: "BuyerList Interest" },
+  { path: "/buyers-assistant",            element: <BuyersAssistant />,           permissionKey: null },
+  { path: "/buyers-contacted",            element: <BuyersContacted />,           permissionKey: null },
+  { path: "/buyers-follow-ups",           element: <BuyersFollowUps />,           permissionKey: "Buyer FllowUp" },
+  { path: "/buyers-shortlisted",          element: <BuyersShortlized />,          permissionKey: null },
+  { path: "/buyers-statics",              element: <BuyersStatics />,             permissionKey: "BuyerStatics" },
+  { path: "/callback-form",              element: <CallBackForm />,               permissionKey: null },
+  { path: "/car-follow-ups",             element: <CarFollowUps />,               permissionKey: "Property FllowUp" },
+  { path: "/car-make",                   element: <CarMake />,                    permissionKey: null },
+  { path: "/carstatics",                 element: <CarStatics />,                 permissionKey: "Property Statics" },
+  { path: "/city",                       element: <City />,                       permissionKey: "City" },
+  { path: "/customer-car",               element: <CustomerCar />,               permissionKey: "Customer Care" },
+  { path: "/daily-usage",                element: <DailyUsage />,                 permissionKey: "Daily Usage" },
+  { path: "/dealer-car",                 element: <DealerCar />,                  permissionKey: "Owner Property" },
+  { path: "/district",                   element: <District />,                   permissionKey: "District" },
+  { path: "/downloadleads",              element: <DownloadLeads />,              permissionKey: null },
+  { path: "/expire-car",                 element: <ExpireCar />,                  permissionKey: "Expire Property" },
+  { path: "/expired-assistant",          element: <ExpiredAssistant />,           permissionKey: "Expired Assistant" },
+  { path: "/free-bills",                 element: <FreeBills />,                  permissionKey: "Free Bills" },
+  { path: "/free-car",                   element: <FreeCar />,                    permissionKey: "Free Property" },
+  { path: "/free-user-lead",             element: <FreeUserLead />,               permissionKey: "FreeUser Lead" },
+  { path: "/help",                       element: <Help />,                       permissionKey: null },
+  { path: "/help-loan-lead",             element: <HelpLoanLead />,               permissionKey: "Help LoanLead" },
+  { path: "/insurance-lead",             element: <InsuranceLead />,              permissionKey: null },
+  { path: "/last-viewed-property",       element: <LastViewedCar />,              permissionKey: "LastViewed Property" },
+  { path: "/limits",                     element: <Limits />,                     permissionKey: "Limits" },
+  { path: "/matched-buyer",              element: <MatchedBuyer />,               permissionKey: null },
+  { path: "/mobile-view-lead",           element: <MobileViewLead />,             permissionKey: null },
+  { path: "/my-account",                 element: <MyAccount />,                  permissionKey: "MyAccount" },
+  { path: "/new-car-lead",               element: <NewCarLead />,                 permissionKey: "New Property Lead" },
+  { path: "/offers-raised",              element: <OfferesRaised />,              permissionKey: "Offers Raised Table" },
+  { path: "/paid-bills",                 element: <PaidBills />,                  permissionKey: "Paid Bills" },
+  { path: "/paid-car",                   element: <PaidCar />,                    permissionKey: "Paid Property" },
+  { path: "/pay-later",                  element: <PayLater />,                   permissionKey: null },
+  { path: "/paymenttype",                element: <PaymentType />,                permissionKey: "Payment Type" },
+  { path: "/pay-u-money",                element: <PayUMoney />,                  permissionKey: null },
+  { path: "/pending-car",                element: <PendingCar />,                 permissionKey: "Pending Property" },
+  { path: "/photo-request",              element: <PhotoRequest />,               permissionKey: "PhotoRequest Table" },
+  { path: "/profile",                    element: <Profile />,                    permissionKey: "Profile" },
+  { path: "/puc-banner",                 element: <PucBanner />,                  permissionKey: null },
+  { path: "/puc-car",                    element: <PucCar />,                     permissionKey: "RP All Property" },
+  { path: "/puc-number",                 element: <PucNumber />,                  permissionKey: null },
+  { path: "/received-interest",          element: <RecievedInterest />,           permissionKey: null },
+  { path: "/removed-car",               element: <RemovedCar />,                 permissionKey: "Removed Property" },
+  { path: "/reported-cars",              element: <ReportedCar />,                permissionKey: null },
+  { path: "/searchcar",                  element: <SearchCar />,                  permissionKey: "Search Property" },
+  { path: "/searched-data",              element: <SearchedData />,               permissionKey: "Search Data" },
+  { path: "/daily-report-rent",          element: <Subscriber />,                 permissionKey: "Rent Property Daily Report" },
+  { path: "/transfer-assistant",         element: <TransferAssistant />,          permissionKey: "Transfer Assistant" },
+  { path: "/transfer-follow-ups",        element: <TRansferFollowUps />,          permissionKey: "Transfer FllowUps" },
+  { path: "/tuc-banner",                 element: <TucBanner />,                  permissionKey: null },
+  { path: "/usage-statics",              element: <UsageStatics />,               permissionKey: "Usage Statics" },
+  { path: "/user-rolls",                 element: <UserRolls />,                  permissionKey: "User Roles" },
+  { path: "/users",                      element: <UserList />,                   permissionKey: "Users" },
+  { path: "/user-log",                   element: <UsersLog />,                   permissionKey: "Users Log" },
+  { path: "/office",                     element: <OfficeList />,                 permissionKey: "Office" },
+  { path: "/rolls",                      element: <Roll />,                       permissionKey: "Roll" },
+  { path: "/car-model",                  element: <CarModel />,                   permissionKey: null },
+  { path: "/pending-assistant",          element: <PendingAssistant />,           permissionKey: "Pending Assistant" },
+  { path: "/buyers-list-interest-tried", element: <BuyerListInterestTriede />,    permissionKey: null },
+  { path: "/ba-paid-bills",             element: <BaPaidBill />,                 permissionKey: "BaPaid Bill" },
+  { path: "/preapproved-car",            element: <PreApprovedCar />,             permissionKey: "PreApproved Property" },
+  { path: "/area",                       element: <Area />,                       permissionKey: "Area" },
+  { path: "/state",                      element: <State />,                      permissionKey: "State" },
+  { path: "/edit-property",             element: <EditProperty />,               permissionKey: null },
+  { path: "/detail",                    element: <Detail />,                     permissionKey: null },
+  { path: "/set-property",              element: <AdminSetForm />,               permissionKey: "AdminSetForm" },
+  { path: "/interest-table",            element: <InterestTables />,             permissionKey: "Interest Table" },
+  { path: "/favorite-table",            element: <FavoriteTables />,             permissionKey: "ShortList Favorite Table" },
+  { path: "/needhelp-table",            element: <NeedHelpTables />,             permissionKey: "Help Request Table" },
+  { path: "/contact-table",             element: <ContactTables />,              permissionKey: "Contact Table" },
+  { path: "/soldout-table",             element: <SoldOutTables />,              permissionKey: "SoldOut Table" },
+  { path: "/report-property-table",     element: <ReportPropertyTables />,       permissionKey: "Report Property Table" },
+  { path: "/property-list",             element: <AddPropertyList />,            permissionKey: "Manage Property" },
+  { path: "/get-buyer-assistance",       element: <GetBuyerAssistance />,         permissionKey: "Get Buyer Assistances" },
+  { path: "/text-editor",               element: <TextEditor />,                  permissionKey: "Text Editer" },
+  { path: "/get-matched-properties",    element: <MatchedPropertyTable />,       permissionKey: "Matched Property Table" },
+  { path: "/matched-property-list",     element: <MatchedList />,                permissionKey: null },
+  { path: "/feature-property",          element: <FeaturedProperty />,           permissionKey: "Feature Property" },
+  { path: "/viewed-property",           element: <ViewedProperties />,           permissionKey: "Viewed Property Table" },
+  { path: "/notification-send",         element: <NotificationForm />,           permissionKey: "Notification Send" },
+  { path: "/profile-table",             element: <ProfileTable />,               permissionKey: "Get User Profile" },
+  { path: "/user-call-list",            element: <GetUserCalledList />,           permissionKey: null },
+  { path: "/deleted-properties",        element: <DeletedProperties />,          permissionKey: "Delete Properties" },
+  { path: "/py-properties",             element: <PyProperty />,                  permissionKey: "Py Property" },
+  { path: "/featured-properties",       element: <FeaturedProperty />,           permissionKey: "Feature Property" },
+  { path: "/admin-views",               element: <UserViewsTable />,             permissionKey: "Admin Views Table" },
+  { path: "/create-followup",           element: <CreateFollowUp />,             permissionKey: null },
+  { path: "/favorite-removed",          element: <FavoriteRemoved />,            permissionKey: "ShortList FavoriteRemoved Table" },
+  { path: "/developer-property",        element: <DeveloperProperty />,          permissionKey: "Developer Property" },
+  { path: "/followup-list",             element: <FollowUpGetTable />,            permissionKey: "All Property FollowUp" },
+  { path: "/create-bill",               element: <CreateBill />,                 permissionKey: null },
+  { path: "/bill-datas",                element: <GetBillDatas />,               permissionKey: null },
+  { path: "/add-buyer-assistance",      element: <AddBuyerAssistance />,         permissionKey: "Add Buyer Assistance" },
+  { path: "/view-buyer-assistance",     element: <ViewBuyerAssistance />,        permissionKey: null },
+  { path: "/edit-bill/:rentId",         element: <EditBill />,                   permissionKey: null },
+  { path: "/postby-property",           element: <PostedByProperty />,           permissionKey: "PostBy Property" },
+  { path: "/promotor-property",         element: <PromotorProperty />,           permissionKey: "Promotor Property" },
+  { path: "/active-buyer-assistant",    element: <BuyerAssistanceActive />,      permissionKey: "Buyer Active Assistant" },
+  { path: "/set-rentId",                element: <SetPPCID />,                   permissionKey: "Set RentId" },
+  { path: "/edit-buyer-assistance",     element: <EditBuyerAssistance />,        permissionKey: null },
+  { path: "/fetch-all-address",         element: <AddressTable />,               permissionKey: "Fetch All Address" },
+  { path: "/create-followup-buyer",     element: <CreateBuyerFollowUp />,        permissionKey: null },
+  { path: "/followup-list-buyer",       element: <FollowUpBuyerGetTable />,      permissionKey: null },
+  { path: "/all-property-statics",      element: <GetAllPropertyStatics />,      permissionKey: null },
+  { path: "/all-buyer-statics",         element: <GetAllBuyerStatics />,         permissionKey: null },
+  { path: "/all-usage-statics",         element: <GetAllUsageStatics />,         permissionKey: null },
+  { path: "/without-property-user",     element: <WithOutPropertyUser />,        permissionKey: "Without Property User" },
+  { path: "/all-views-datas",           element: <AllViewsDatas />,              permissionKey: "All Views Datas" },
+  { path: "/without-all-statics",       element: <WithOutUserStatics />,         permissionKey: "Without All Statics" },
+  { path: "/without-30-days-user",      element: <WithoutProperty30DaysUser />,  permissionKey: "Without 30 Days User" },
+  { path: "/all-user-datas",            element: <WithUsersTable />,             permissionKey: null },
+  { path: "/login-direct-user",         element: <LoginDirectVerifyUser />,      permissionKey: "Login Verify Directly" },
+  { path: "/upload-images-groom",       element: <UpLoadImagesGroom />,          permissionKey: "Upload Groom" },
+  { path: "/upload-images-bride",       element: <UpLoadImagesBride />,          permissionKey: "Upload Bride" },
+  { path: "/upload-images-ads",         element: <UpLoadImagesAds />,            permissionKey: "Upload Ads Images" },
+  { path: "/upload-images-ads-detail",  element: <UpLoadDetailAds />,            permissionKey: "Upload Detail Ads Images" },
+  { path: "/rentid-statics",            element: <RentIdStatics />,              permissionKey: "RentId Statics" },
+  { path: "/logout-direct-user",        element: <DirectLogoutUsers />,          permissionKey: null },
+  { path: "/remove-plan-phone",         element: <RemovePlanPhoneNumber />,      permissionKey: null },
+  { path: "/payment-failed",            element: <PaymentPaidFailed />,          permissionKey: "Payment Failed" },
+  { path: "/payment-success",           element: <PaymentPaidSuccess />,         permissionKey: "Payment Success" },
+  { path: "/payment-paynow",            element: <PaymentPaidPayNow />,          permissionKey: "Payment PayNow" },
+  { path: "/payment-paylater",          element: <PaymentPaidPayLater />,        permissionKey: "Payment PayLater" },
+  { path: "/payment-failed-buyer",      element: <PayuBuyerPayFailed />,         permissionKey: "Buyer Payment Failed" },
+  { path: "/payment-success-buyer",     element: <PayuBuyerPaid />,              permissionKey: "Buyer Payment Success" },
+  { path: "/payment-paynow-buyer",      element: <PayuBuyerPaynow />,            permissionKey: "Buyer Payment PayNow" },
+  { path: "/payment-paylater-buyer",    element: <PayuBuyerPaylater />,          permissionKey: "Buyer Payment PayLater" },
+  { path: "/all-bills",                 element: <AllBillsTable />,              permissionKey: "All Bills" },
+  { path: "/buyer-create-bill",         element: <CreateBuyerBill />,            permissionKey: null },
+  { path: "/detail-rent-assis",         element: <DetailRentAssistance />,       permissionKey: null },
+  { path: "/edit-buyer-bill/:ba_id",    element: <EditBuyerBill />,              permissionKey: null },
+  { path: "/all-buyer-bills",           element: <AllBuyerBills />,              permissionKey: "All Buyer Bills" },
+  { path: "/groom-click-datas",         element: <GroomImageClickTable />,       permissionKey: "Groom Click Datas" },
+  { path: "/bride-click-datas",         element: <BrideImageClickTable />,       permissionKey: "Bride Click Datas" },
+  { path: "/login-user-datas",          element: <LoginUserDatas />,             permissionKey: "Login Users Datas" },
+  { path: "/separate-login-user",       element: <LoginSeparateUser />,          permissionKey: "Login Separate User" },
+  { path: "/apply-on-demand",           element: <SetOnDemandPrice />,           permissionKey: "Apply OnDemad Property" },
+  { path: "/called-list-datas",         element: <CalledListDatas />,            permissionKey: "Called List" },
+  { path: "/get-all-property-datas",    element: <PropertyStatusTable />,        permissionKey: "Get All Property Datas" },
+  { path: "/friend-property",           element: <FriendProperty />,             permissionKey: null },
+  { path: "/tanent-property",           element: <TanentProperty />,             permissionKey: null },
+  { path: "/contact-usage",             element: <ContactUsage />,               permissionKey: "Contact Usage" },
+  { path: "/set-property-message",      element: <SetPropertyMessage />,         permissionKey: "Set Property Message" },
+  { path: "/get-all-buyerlist-viewed",  element: <BuyerAssistViewsTable />,      permissionKey: "Buyer Assistant Viewed" },
+  { path: "/with-all-user",             element: <WithUsersTable />,             permissionKey: null },
+  { path: "/sale-property",             element: <SalePropertyViewsUser />,      permissionKey: null },
+  { path: "/get-all-address-request",   element: <AddressRequestsTable />,       permissionKey: "Address Request" },
+  { path: "/detail-daily-report",       element: <DetailDailyReport />,          permissionKey: "Rent Detail DailyReport" },
+  { path: "/property-payment-daily-report", element: <PropertyPaymentDailyReport />, permissionKey: "Rent Property Payment DailyReport" },
+  { path: "/contact-form-datas",        element: <GetAllContactFormDatas />,     permissionKey: "Contact Form Datas" },
+  { path: "/owner-tenant-menu",         element: <OwnerTenantMenu />,            permissionKey: null },
+  { path: "/add-property-marketing",    element: <AddPropertyFormMarketing />,   permissionKey: "Add Property Marketing" },
+  { path: "/removed-tenant",            element: <RemovedTenant />,              permissionKey: "Removed Tenant" },
+  { path: "/exclusive-location",        element: <ExclusiveLocation />,          permissionKey: "Exclusive Location" },
+  { path: "/bulk-whatsapp",             element: <BulkWhatsapp />,               permissionKey: "Bulk Whatsapp" },
+  { path: "/single-send-whatsapp",      element: <SingleSendMessage />,          permissionKey: "Single Whatsapp" },
+  { path: "/search-pincode",            element: <SearchPincode />,              permissionKey: "Search Pincode" },
 ];
 
-
 const Dashboard = () => {
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Safety check - if not authenticated, logout
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     const adminName = localStorage.getItem('adminName');
     const adminRole = localStorage.getItem('adminRole');
     const otpVerified = localStorage.getItem('otpVerified');
-    
-    // Check all required authentication conditions
-    if (!isAuthenticated || isAuthenticated !== 'true' || 
-        !adminName || !adminRole || 
+
+    if (!isAuthenticated || isAuthenticated !== 'true' ||
+        !adminName || !adminRole ||
         !otpVerified || otpVerified !== 'true') {
-      // Not authenticated - force logout and redirect
-      console.warn('⚠️ Dashboard: Authentication failed, redirecting to login');
       localStorage.clear();
       window.location.href = '/process/admin';
     }
   }, []);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-  };
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
   return (
     <div className="p-2" style={{ background: "#F0F2F5" }}>
@@ -403,11 +382,18 @@ const Dashboard = () => {
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
         <div className="main-content" style={{ background: "#F0F2F5" }}>
           <Navbar toggleSidebar={toggleSidebar} />
-          {/* <div>Welcome to your Dashboard, {adminName} ({adminRole})!</div> */}
-
           <Routes>
             {routes.map((route, index) => (
-              <Route key={index} path={route.path} element={route.element} />
+              <Route
+                key={index}
+                path={route.path}
+                element={
+                  <ProtectedRoute
+                    element={route.element}
+                    permissionKey={route.permissionKey}
+                  />
+                }
+              />
             ))}
           </Routes>
         </div>
@@ -417,11 +403,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-
-
-
-
-
-
-
