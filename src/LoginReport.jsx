@@ -13,7 +13,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 // Memoized table row component for better performance
-const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatusBadge }) => {
+const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatusBadge, onMarkPaid }) => {
   const loginDate = useMemo(() => moment(item.loginDate).format('DD-MM-YYYY HH:mm'), [item.loginDate]);
   const updateDate = useMemo(() => item.updatedBy ? moment(item.updateDate).format('DD-MM-YYYY') : null, [item.updateDate, item.updatedBy]);
   const reportDate = useMemo(() => item.reportedBy ? moment(item.reportDate).format('DD-MM-YYYY') : null, [item.reportDate, item.reportedBy]);
@@ -22,6 +22,7 @@ const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatus
   const unReportedDate = useMemo(() => item.unReportedBy ? moment(item.unReportedDate).format('DD-MM-YYYY') : null, [item.unReportedDate, item.unReportedBy]);
   const unBannedDate = useMemo(() => item.unBannedBy ? moment(item.unBannedDate).format('DD-MM-YYYY') : null, [item.unBannedDate, item.unBannedBy]);
   const unDeletedDate = useMemo(() => item.unDeletedBy ? moment(item.unDeletedDate).format('DD-MM-YYYY') : null, [item.unDeletedDate, item.unDeletedBy]);
+  const conversionDate = useMemo(() => item.conversionDate ? moment(item.conversionDate).format('DD-MM-YYYY') : null, [item.conversionDate]);
 
   return (
     <tr>
@@ -58,6 +59,28 @@ const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatus
         {item.unDeletedBy ? `${item.unDeletedBy} (${unDeletedDate})` : 'N/A'}
       </td>
       <td className="border px-4 py-2">{item.permanentlyLoggedOut ? 'Yes' : 'No'}</td>
+      <td className="border px-4 py-2 text-center">
+        <select 
+          className="form-select form-select-sm"
+          value={item.conversionStatus || 'pending'}
+          onChange={(e) => onMarkPaid(item, e.target.value)}
+        >
+          <option value="pending">Pending</option>
+          <option value="free">Free</option>
+          <option value="paid">Paid</option>
+        </select>
+      </td>
+      <td className="border px-4 py-2 text-center">
+        {item.conversionStatus === 'paid' && (
+          <span className="badge bg-success">Paid ({conversionDate})</span>
+        )}
+        {item.conversionStatus === 'free' && (
+          <span className="badge bg-info">Free ({conversionDate})</span>
+        )}
+        {item.conversionStatus === 'pending' && (
+          <span className="badge bg-secondary">Pending</span>
+        )}
+      </td>
       <td className="border px-4 py-2 text-center">
         <div className="d-flex justify-content-center gap-2">
           {(item.status !== 'active' && item.status) && (
@@ -326,6 +349,61 @@ const handleSetActiveStatus = async (user) => {
       setLoading(false);
     }
   };
+
+  // ✅ Handle Conversion Status Change
+  const handleMarkConversionPaid = async (user, status) => {
+    const originalStatus = user.conversionStatus;
+    const phoneToUpdate = user.phone;
+    
+    // Optimistic update - update UI immediately
+    setUsers(prevUsers =>
+      prevUsers.map(u =>
+        u.phone === phoneToUpdate
+          ? { ...u, conversionStatus: status, conversionDate: status !== 'pending' ? new Date().toISOString() : null, conversion: status !== 'pending' }
+          : u
+      )
+    );
+    
+    setLoading(true);
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/user/update-conversion-status`, {
+        phone: phoneToUpdate,
+        adminName: adminName,
+        conversionStatus: status
+      });
+
+      console.log('Conversion update response:', response.data);
+      
+      // Use the API response data directly to update the state
+      if (response.data.data) {
+        const updatedUser = response.data.data;
+        setUsers(prevUsers =>
+          prevUsers.map(u =>
+            u.phone === updatedUser.phone ? updatedUser : u
+          )
+        );
+        console.log('State updated with fresh server data:', updatedUser);
+      }
+      
+      alert(`Conversion marked as ${status} successfully!`);
+    } catch (error) {
+      console.error('Error updating conversion status:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+      alert(`Failed to update conversion: ${errorMessage}`);
+      
+      // Rollback to original status on error
+      setUsers(prevUsers =>
+        prevUsers.map(u =>
+          u.phone === phoneToUpdate
+            ? { ...u, conversionStatus: originalStatus, conversion: originalStatus !== 'pending' }
+            : u
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
     const tableRef = useRef();
   
   const handlePrint = () => {
@@ -376,7 +454,10 @@ const handleSetActiveStatus = async (user) => {
       'Un Reported By': item.unReportedBy ? `${item.unReportedBy} (${moment(item.unReportedDate).format('DD-MM-YYYY')})` : 'N/A',
       'Un Banned By': item.unBannedBy ? `${item.unBannedBy} (${moment(item.unBannedDate).format('DD-MM-YYYY')})` : 'N/A',
       'Un Deleted By': item.unDeletedBy ? `${item.unDeletedBy} (${moment(item.unDeletedDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Permanently Logged Out': item.permanentlyLoggedOut ? 'Yes' : 'No'
+      'Permanently Logged Out': item.permanentlyLoggedOut ? 'Yes' : 'No',
+      'Conversion Status': item.conversionStatus || 'pending',
+      'Conversion Date': item.conversionDate ? moment(item.conversionDate).format('DD-MM-YYYY') : 'N/A',
+      'Conversion Updated By': item.conversionUpdatedBy || 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -824,13 +905,15 @@ const handleSetActiveStatus = async (user) => {
             <th className="border px-4 py-2">Un Banned By</th>
             <th className="border px-4 py-2">Un Deleted By</th>
             <th className="border px-4 py-2">Permanently Logged Out</th>
+            <th className="border px-4 py-2">Conversion</th>
+            <th className="border px-4 py-2">Conversion Status</th>
             <th className="border px-4 py-2">Actions</th>
           </tr>
         </thead>
         <tbody>
             {loading ? (
     <tr>
-      <td className="border px-4 py-2 text-center" colSpan="21">
+      <td className="border px-4 py-2 text-center" colSpan="23">
         Loading...
       </td>
     </tr>
@@ -843,11 +926,12 @@ const handleSetActiveStatus = async (user) => {
               loading={loading}
               showConfirmation={showConfirmation}
               getStatusBadge={getStatusBadge}
+              onMarkPaid={handleMarkConversionPaid}
             />
           ))
         ) : (
             <tr>
-              <td className="border px-4 py-2 text-center" colSpan="21">
+              <td className="border px-4 py-2 text-center" colSpan="23">
                 No records found.
               </td>
             </tr>
