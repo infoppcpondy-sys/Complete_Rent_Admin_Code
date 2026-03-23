@@ -27,6 +27,7 @@ const UserForm = ({ user, onSave, onDelete, existingUsers = [] }) => {
     const [roles, setRoles] = useState([]); // State to store roles from API
     const [loading, setLoading] = useState(false);
     const [rolesLoading, setRolesLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false); // State to prevent duplicate submissions
 
     // Fetch offices from API
     useEffect(() => {
@@ -148,6 +149,7 @@ const UserForm = ({ user, onSave, onDelete, existingUsers = [] }) => {
             return;
         }
 
+        setIsSubmitting(true);
         try {
                 // Send office as officeName (the backend expects the office name string, not _id)
                 const payload = { ...formData };
@@ -168,6 +170,8 @@ const UserForm = ({ user, onSave, onDelete, existingUsers = [] }) => {
                 const serverMsg = err?.response?.data?.message || err?.response?.data || err?.message;
                 toast.error(`Error saving user: ${serverMsg}`);
                 console.error('Create/Update user error:', err);
+            } finally {
+                setIsSubmitting(false);
             }
     };
 
@@ -341,9 +345,11 @@ const UserForm = ({ user, onSave, onDelete, existingUsers = [] }) => {
                     />
                 </div>
                 <div>
-                    <button type="submit">{user ? 'Update' : 'Create'} User</button>
+                    <button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? (user ? 'Updating...' : 'Creating...') : (user ? 'Update' : 'Create')} User
+                    </button>
                     {user && (
-                        <button type="button" onClick={handleDelete}>
+                        <button type="button" onClick={handleDelete} disabled={isSubmitting}>
                             Delete
                         </button>
                     )}
