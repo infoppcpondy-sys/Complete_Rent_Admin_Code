@@ -250,7 +250,7 @@ const UserRolls = () => {
 
   const deleteRoll = async (id) => {
     if (!window.confirm("Delete this role?")) return;
-    try { await axios.delete(`${process.env.REACT_APP_API_URL}/roll-delete-rent/${id}`); setRolls(rolls.filter(r => r._id !== id)); toast.success("Role deleted"); }
+    try { await axios.delete(`${process.env.REACT_APP_API_URL}/roll-delete/${id}`); setRolls(rolls.filter(r => r._id !== id)); toast.success("Role deleted"); }
     catch (_) { toast.error("Failed to delete role"); }
   };
 
