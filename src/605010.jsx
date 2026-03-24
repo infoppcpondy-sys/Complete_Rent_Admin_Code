@@ -630,15 +630,15 @@ const AdminDashboard = () => {
     };
 
     // Permission checks
-    if (loading) return <p>Loading...</p>;
+    // if (loading) return <p>Loading...</p>;
     
-    if (!allowedRoles.includes(fileName)) {
-        return (
-            <div className="text-center text-red-500 font-semibold text-lg mt-10">
-                Only admin is allowed to view this file.
-            </div>
-        );
-    }
+    // if (!allowedRoles.includes(fileName)) {
+    //     return (
+    //         <div className="text-center text-red-500 font-semibold text-lg mt-10">
+    //             Only admin is allowed to view this file.
+    //         </div>
+    //     );
+    // }
 
     return (
         <div className="admin-dashboard">
