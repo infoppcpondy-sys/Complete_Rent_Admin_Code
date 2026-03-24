@@ -186,7 +186,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </>
         )}
 
-        {/* ── MARKETING TEAM ── */}
+        {/*
+        ── MARKETING TEAM ──
         {sv(["Add Property Marketing"]) && (
           <>
             <li className="p-3 mt-2 text-white" onClick={() => toggleMenu("marketingTeam")} style={{ borderRadius: "5px", background: "#8BC34A", cursor: "pointer" }}>
@@ -197,6 +198,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </ul>
           </>
         )}
+        */}
 
         {/* ── TENANT ASSISTANT ── */}
         {sv(["Matched Property Table", "Add Buyer Assistance", "Get Buyer Assistances", "Buyer Active Assistant", "Pending Assistant", "Buyer Assistant Viewed", "Expired Assistant", "Removed Tenant", "BaFree Bills", "BaPaid Bill"]) && (
