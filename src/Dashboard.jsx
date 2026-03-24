@@ -172,7 +172,7 @@ import DetailDailyReport from './DetailDailyReport';
 import PropertyPaymentDailyReport from './PropertyPaymentDailyReport';
 import GetAllContactFormDatas from './GetAllContactFormDatas';
 import OwnerTenantMenu from './Tomenu.jsx';
-import AddPropertyFormMarketing from './AddPropertyFormMarketing';
+// import AddPropertyFormMarketing from './AddPropertyFormMarketing';
 import RemovedTenant from './RemovedTenant';
 import ExclusiveLocation from './605010';
 import BulkWhatsapp from './BulkWhatsapp';
@@ -349,7 +349,7 @@ const routes = [
   { path: "/property-payment-daily-report", element: <PropertyPaymentDailyReport />, permissionKey: "Rent Property Payment DailyReport" },
   { path: "/contact-form-datas",        element: <GetAllContactFormDatas />,     permissionKey: "Contact Form Datas" },
   { path: "/owner-tenant-menu",         element: <OwnerTenantMenu />,            permissionKey: null },
-  { path: "/add-property-marketing",    element: <AddPropertyFormMarketing />,   permissionKey: "Add Property Marketing" },
+  // { path: "/add-property-marketing",    element: <AddPropertyFormMarketing />,   permissionKey: "Add Property Marketing" },
   { path: "/removed-tenant",            element: <RemovedTenant />,              permissionKey: "Removed Tenant" },
   { path: "/exclusive-location",        element: <ExclusiveLocation />,          permissionKey: "Exclusive Location" },
   { path: "/bulk-whatsapp",             element: <BulkWhatsapp />,               permissionKey: "Bulk Whatsapp" },
