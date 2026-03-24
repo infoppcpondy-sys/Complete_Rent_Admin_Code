@@ -51,8 +51,8 @@ const ALL_FILES = [
   { key: "Text Editer", label: "Text Editors T&C - Policy", section: "Office Setup" },
   { key: "AdminSetForm", label: "Admin Set Property", section: "Office Setup" },
   { key: "Get User Profile", label: "RP User Profile", section: "Office Setup" },
-  // Marketing Team
-  { key: "Add Property Marketing", label: "Add Property (Marketing)", section: "Marketing Team" },
+  // // Marketing Team
+  // { key: "Add Property Marketing", label: "Add Property (Marketing)", section: "Marketing Team" },
   // Tenant Assistant
   { key: "Matched Property Table", label: "Matched Properties", section: "Tenant Assistant" },
   { key: "Add Buyer Assistance", label: "Add Tenant Assistance", section: "Tenant Assistant" },
@@ -163,7 +163,8 @@ const ALL_FILES = [
 const SECTION_COLORS = {
   "Dashboard": "#3B82F6", "Login User Report": "#8B5CF6", "Login Direct": "#EC4899",
   "Notification": "#F59E0B", "Whatsapp Send": "#25D366", "Office Setup": "#10B981",
-  "Marketing Team": "#F97316", "Tenant Assistant": "#06B6D4", "RENT Property": "#F97316",
+  // "Marketing Team": "#F97316", 
+  "Tenant Assistant": "#06B6D4", "RENT Property": "#F97316",
   "RP Property Accounts": "#84CC16", "Mobile view Leads - Ads": "#A855F7",
   "Customer Care": "#EF4444", "Property List": "#6366F1", "Tenant Account": "#14B8A6",
   "Business Support": "#F43F5E", "Lead Menu": "#A855F7", "No Property Users": "#64748B",
