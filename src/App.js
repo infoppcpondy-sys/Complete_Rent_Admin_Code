@@ -18,6 +18,7 @@ import PropertyAssistance from "./PropertyAssistance";
 import PMLogin from "./PMLogin";
 import PMDashboard from "./PMDashboard";
 import PMBulkdashboard from "./PMBulkdashboard";
+import AddPropertyFormMarketing from "./AddPropertyFormMarketing";
  
 import { useDispatch } from 'react-redux';
 import { setName } from './redux/adminSlice';
@@ -89,6 +90,7 @@ const App = () => {
       <Route path="/admin" element={<Admin />} />
       <Route path="/dashboard/pm" element={<ProtectedPM />} />
       <Route path="/dashboard/pm-bulk" element={<ProtectedPMBulk />} />
+      <Route path="/dashboard/add-property-marketing" element={<AddPropertyFormMarketing />} />
       <Route path="/dashboard/*" element={<ProtectedDashboard />} />
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
