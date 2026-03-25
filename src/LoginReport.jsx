@@ -1,28 +1,36 @@
- 
-
-
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import moment from 'moment';
-import { FaFlag, FaBan, FaTrash, FaUndo, FaCheck } from 'react-icons/fa';
+import { FaBan, FaTrash, FaUndo } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
-import { Table, Modal, Button, Badge } from 'react-bootstrap';
+import { Table, Modal, Button } from 'react-bootstrap';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
-// Memoized table row component for better performance
-const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatusBadge, onMarkPaid }) => {
-  const loginDate = useMemo(() => moment(item.loginDate).format('DD-MM-YYYY HH:mm'), [item.loginDate]);
-  const updateDate = useMemo(() => item.updatedBy ? moment(item.updateDate).format('DD-MM-YYYY') : null, [item.updateDate, item.updatedBy]);
-  const reportDate = useMemo(() => item.reportedBy ? moment(item.reportDate).format('DD-MM-YYYY') : null, [item.reportDate, item.reportedBy]);
-  const bannedDate = useMemo(() => item.bannedBy ? moment(item.bannedDate).format('DD-MM-YYYY') : null, [item.bannedDate, item.bannedBy]);
-  const deletedDate = useMemo(() => item.deletedBy ? moment(item.deletedDate).format('DD-MM-YYYY') : null, [item.deletedDate, item.deletedBy]);
-  const unReportedDate = useMemo(() => item.unReportedBy ? moment(item.unReportedDate).format('DD-MM-YYYY') : null, [item.unReportedDate, item.unReportedBy]);
-  const unBannedDate = useMemo(() => item.unBannedBy ? moment(item.unBannedDate).format('DD-MM-YYYY') : null, [item.unBannedDate, item.unBannedBy]);
-  const unDeletedDate = useMemo(() => item.unDeletedBy ? moment(item.unDeletedDate).format('DD-MM-YYYY') : null, [item.unDeletedDate, item.unDeletedBy]);
-  const conversionDate = useMemo(() => item.conversionDate ? moment(item.conversionDate).format('DD-MM-YYYY') : null, [item.conversionDate]);
+const remarksMap = {
+  visitor: 'Visitor',
+  seller: 'Owner',
+  buyer: 'Tenant',
+};
+
+const getDisplayRemarks = (r) => remarksMap[r] || r || 'N/A';
+
+// ─────────────────────────────────────────────────────────────
+// TableRow
+// ─────────────────────────────────────────────────────────────
+const TableRow = React.memo(({ item, index, updatingPhones, showConfirmation, onMarkPaid, onMarkRemark }) => {
+  const isUpdating = updatingPhones.has(item.phone);
+
+  const fmt       = (d) => (d ? moment(d).format('DD-MM-YYYY') : null);
+  const fmtFull   = (d) => (d ? moment(d).format('DD-MM-YYYY HH:mm') : 'N/A');
+
+  const loginDate      = fmtFull(item.loginDate);
+  const bannedDate     = fmt(item.bannedDate);
+  const deletedDate    = fmt(item.deletedDate);
+  const unBannedDate   = fmt(item.unBannedDate);
+  const unDeletedDate  = fmt(item.unDeletedDate);
+  const conversionDate = fmt(item.conversionDate);
+  const updateDate     = fmt(item.updateDate);
 
   return (
     <tr>
@@ -31,125 +39,136 @@ const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatus
       <td className="border px-4 py-2">{item.otp || 'N/A'}</td>
       <td className="border px-4 py-2">{loginDate}</td>
       <td className="border px-4 py-2">{item.otpStatus}</td>
-      <td className="border px-4 py-2">{item.countryCode}</td>
-      <td className="border px-4 py-2">{item.loginMode}</td>
-      <td className="border px-4 py-2">{getStatusBadge(item.status || 'active')}</td>
-      <td className="border px-4 py-2">
-        {item.updatedBy ? `${item.updatedBy} (${updateDate})` : 'N/A'}
-      </td>
-      <td className="border px-4 py-2">{item.remarks || 'N/A'}</td>
       <td className="border px-4 py-2">{item.bannedReason || 'N/A'}</td>
       <td className="border px-4 py-2">{item.deleteReason || 'N/A'}</td>
+
+      {/* Banned By / Unbanned By */}
       <td className="border px-4 py-2">
-        {item.reportedBy ? `${item.reportedBy} (${reportDate})` : 'N/A'}
+        {item.bannedBy && (
+          <div>
+            <span className="badge bg-danger me-1">Banned</span>
+            {item.bannedBy}{bannedDate ? ` (${bannedDate})` : ''}
+          </div>
+        )}
+        {item.unBannedBy && (
+          <div className={item.bannedBy ? 'mt-1' : ''}>
+            <span className="badge bg-success me-1">Unbanned</span>
+            {item.unBannedBy}{unBannedDate ? ` (${unBannedDate})` : ''}
+          </div>
+        )}
+        {!item.bannedBy && !item.unBannedBy && 'N/A'}
       </td>
+
+      {/* Deleted By / Undeleted By */}
       <td className="border px-4 py-2">
-        {item.bannedBy ? `${item.bannedBy} (${bannedDate})` : 'N/A'}
+        {item.deletedBy && (
+          <div>
+            <span className="badge bg-dark me-1">Deleted</span>
+            {item.deletedBy}{deletedDate ? ` (${deletedDate})` : ''}
+          </div>
+        )}
+        {item.unDeletedBy && (
+          <div className={item.deletedBy ? 'mt-1' : ''}>
+            <span className="badge bg-success me-1">Undeleted</span>
+            {item.unDeletedBy}{unDeletedDate ? ` (${unDeletedDate})` : ''}
+          </div>
+        )}
+        {!item.deletedBy && !item.unDeletedBy && 'N/A'}
       </td>
-      <td className="border px-4 py-2">
-        {item.deletedBy ? `${item.deletedBy} (${deletedDate})` : 'N/A'}
-      </td>
-      <td className="border px-4 py-2">
-        {item.unReportedBy ? `${item.unReportedBy} (${unReportedDate})` : 'N/A'}
-      </td>
-      <td className="border px-4 py-2">
-        {item.unBannedBy ? `${item.unBannedBy} (${unBannedDate})` : 'N/A'}
-      </td>
-      <td className="border px-4 py-2">
-        {item.unDeletedBy ? `${item.unDeletedBy} (${unDeletedDate})` : 'N/A'}
-      </td>
-      <td className="border px-4 py-2">{item.permanentlyLoggedOut ? 'Yes' : 'No'}</td>
+
+      {/* Remark Dropdown */}
       <td className="border px-4 py-2 text-center">
-        <select 
+        <select
+          className="form-select form-select-sm"
+          value={item.remarks || ''}
+          onChange={(e) => onMarkRemark(item, e.target.value)}
+          disabled={isUpdating}
+        >
+          <option value="">Select Remark</option>
+          <option value="seller">Owner</option>
+          <option value="buyer">Tenant</option>
+          <option value="visitor">Visitor</option>
+        </select>
+      </td>
+
+      {/* Remark Status */}
+      <td className="border px-4 py-2 text-center">
+        {item.remarks === 'seller' && (
+          <div>
+            <span className="badge bg-primary d-block mb-1">Owner</span>
+            {item.updatedBy && <small className="text-muted d-block">{item.updatedBy}{updateDate ? ` (${updateDate})` : ''}</small>}
+          </div>
+        )}
+        {item.remarks === 'buyer' && (
+          <div>
+            <span className="badge bg-info d-block mb-1">Tenant</span>
+            {item.updatedBy && <small className="text-muted d-block">{item.updatedBy}{updateDate ? ` (${updateDate})` : ''}</small>}
+          </div>
+        )}
+        {item.remarks === 'visitor' && (
+          <div>
+            <span className="badge bg-warning d-block mb-1">Visitor</span>
+            {item.updatedBy && <small className="text-muted d-block">{item.updatedBy}{updateDate ? ` (${updateDate})` : ''}</small>}
+          </div>
+        )}
+        {!item.remarks && <span className="badge bg-secondary">No Remark</span>}
+      </td>
+
+      {/* Conversion Dropdown */}
+      <td className="border px-4 py-2 text-center">
+        <select
           className="form-select form-select-sm"
           value={item.conversionStatus || 'pending'}
           onChange={(e) => onMarkPaid(item, e.target.value)}
+          disabled={isUpdating}
         >
           <option value="pending">Pending</option>
           <option value="free">Free</option>
           <option value="paid">Paid</option>
         </select>
       </td>
+
+      {/* Conversion Status */}
       <td className="border px-4 py-2 text-center">
         {item.conversionStatus === 'paid' && (
-          <span className="badge bg-success">Paid ({conversionDate})</span>
+          <div>
+            <span className="badge bg-success d-block mb-1">Paid{conversionDate ? ` (${conversionDate})` : ''}</span>
+            {item.conversionUpdatedBy && <small className="text-muted d-block">{item.conversionUpdatedBy}</small>}
+          </div>
         )}
         {item.conversionStatus === 'free' && (
-          <span className="badge bg-info">Free ({conversionDate})</span>
+          <div>
+            <span className="badge bg-info d-block mb-1">Free{conversionDate ? ` (${conversionDate})` : ''}</span>
+            {item.conversionUpdatedBy && <small className="text-muted d-block">{item.conversionUpdatedBy}</small>}
+          </div>
         )}
-        {item.conversionStatus === 'pending' && (
+        {(!item.conversionStatus || item.conversionStatus === 'pending') && (
           <span className="badge bg-secondary">Pending</span>
         )}
       </td>
+
+      {/* Actions */}
       <td className="border px-4 py-2 text-center">
         <div className="d-flex justify-content-center gap-2">
-          {(item.status !== 'active' && item.status) && (
-            <button 
-              className="btn btn-sm btn-primary"
-              title="Set Active"
-              onClick={() => showConfirmation(item, 'setActive')}
-              disabled={loading}
-            >
-              <FaCheck />
-            </button>
-          )}
-          
-          {item.status === 'reported' ? (
-            <button 
-              className="btn btn-sm btn-success"
-              title="Unreport"
-              onClick={() => showConfirmation(item, 'unreport')}
-              disabled={loading}
-            >
-              <FaUndo />
-            </button>
-          ) : (
-            <button 
-              className="btn btn-sm btn-warning"
-              title="Report"
-              onClick={() => showConfirmation(item, 'report')}
-              disabled={loading}
-            >
-              <FaFlag />
-            </button>
-          )}
-          
           {item.status === 'banned' ? (
-            <button 
-              className="btn btn-sm btn-success"
-              title="Unban"
-              onClick={() => showConfirmation(item, 'unban')}
-              disabled={loading}
-            >
+            <button className="btn btn-sm btn-success" title="Unban"
+              onClick={() => showConfirmation(item, 'unban')} disabled={isUpdating}>
               <FaUndo />
             </button>
           ) : (
-            <button 
-              className="btn btn-sm btn-danger"
-              title="Ban"
-              onClick={() => showConfirmation(item, 'ban')}
-              disabled={loading}
-            >
+            <button className="btn btn-sm btn-danger" title="Ban"
+              onClick={() => showConfirmation(item, 'ban')} disabled={isUpdating}>
               <FaBan />
             </button>
           )}
-          
           {item.status === 'deleted' ? (
-            <button 
-              className="btn btn-sm btn-success"
-              title="Undelete"
-              onClick={() => showConfirmation(item, 'undelete')}
-              disabled={loading}
-            >
+            <button className="btn btn-sm btn-success" title="Undelete"
+              onClick={() => showConfirmation(item, 'undelete')} disabled={isUpdating}>
               <FaUndo />
             </button>
           ) : (
-            <button 
-              className="btn btn-sm btn-dark"
-              title="Delete"
-              onClick={() => showConfirmation(item, 'delete')}
-              disabled={loading}
-            >
+            <button className="btn btn-sm btn-dark" title="Delete"
+              onClick={() => showConfirmation(item, 'delete')} disabled={isUpdating}>
               <FaTrash />
             </button>
           )}
@@ -159,480 +178,292 @@ const TableRow = React.memo(({ item, index, loading, showConfirmation, getStatus
   );
 });
 
+// ─────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────
 const LoginReportTable = () => {
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [actionType, setActionType] = useState('');
-  const [inputValue, setInputValue] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [phoneFilter, setPhoneFilter] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [isPolling, setIsPolling] = useState(false);
-const [otpStatusFilter, setOtpStatusFilter] = useState('all');
-const [remarksFilter, setRemarksFilter] = useState('all');
+  const reduxAdminName = useSelector((state) => state.admin.name);
+  const reduxAdminRole = useSelector((state) => state.admin.role);
+  const adminName = reduxAdminName || localStorage.getItem('adminName');
+  const adminRole = reduxAdminRole || localStorage.getItem('adminRole');
+
+  const [users, setUsers]                   = useState([]);
+  const [loading, setLoading]               = useState(false);
+  const [updatingPhones, setUpdatingPhones] = useState(new Set());
+  const [allowedRoles, setAllowedRoles]     = useState([]);
+
+  // filters
+  const [phoneFilter, setPhoneFilter]         = useState('');
+  const [startDate, setStartDate]             = useState('');
+  const [endDate, setEndDate]                 = useState('');
+  const [statusFilter, setStatusFilter]       = useState('all');
+  const [otpStatusFilter, setOtpStatusFilter] = useState('all');
   const [loginModeFilter, setLoginModeFilter] = useState('all');
+  const [remarksFilter, setRemarksFilter]     = useState('all');
 
-  const handleResetFilters = () => {
-    setPhoneFilter('');
-    setStartDate('');
-    setEndDate('');
-    setStatusFilter('all');
-    setOtpStatusFilter('all');
-    setRemarksFilter('all');
-    setLoginModeFilter('all');
-  };
+  // modal
+  const [selectedUser, setSelectedUser]         = useState(null);
+  const [actionType, setActionType]             = useState('');
+  const [confirmAction, setConfirmAction]       = useState(null);
+  const [inputValue, setInputValue]             = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const fetchUsers = async (options = { silent: false }) => {
-    if (!options.silent) {
-      setLoading(true);
-    } else {
-      setIsPolling(true);
-    }
+  const tableRef = useRef();
+  const fileName = 'Login Report';
 
-    try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/user/alls`);
+  // ── helpers ──────────────────────────────────────────────
 
-      if (!res.data) {
-        throw new Error("No data received from server");
-      }
+  const normalize = (phone) => String(phone || '').replace(/\D/g, '').slice(-10);
 
-      if (!Array.isArray(res.data.data)) {
-        throw new Error("Unexpected data format received");
-      }
+  const setPhoneUpdating = useCallback((phone, on) => {
+    setUpdatingPhones((prev) => {
+      const next = new Set(prev);
+      on ? next.add(phone) : next.delete(phone);
+      return next;
+    });
+  }, []);
 
-      // Normalize entries by phone: keep a single record per phone.
-      // Priority: if any record for a phone has otpStatus 'verified', prefer the latest verified record.
-      // Otherwise prefer the latest record by loginDate.
-      const normalizeByPhone = (arr) => {
-        const map = new Map();
-        arr.forEach((u) => {
-          const phone = u.phone || '';
-          if (!phone) return;
+  /**
+   * updateUser: directly patches a single user in state by phone.
+   * No polling to fight — state is the single source of truth after initial load.
+   */
+  const updateUser = useCallback((phone, fields) => {
+    const key = normalize(phone);
+    setUsers((prev) =>
+      prev.map((u) => (normalize(u.phone) === key ? { ...u, ...fields } : u))
+    );
+  }, []);
 
-          const existing = map.get(phone);
-          if (!existing) {
-            map.set(phone, u);
-            return;
-          }
-
-          const statusPriority = (s) => (s === 'verified' ? 2 : s === 'pending' ? 1 : 0);
-
-          const exPriority = statusPriority(existing.otpStatus);
-          const curPriority = statusPriority(u.otpStatus);
-
-          if (curPriority > exPriority) {
-            // current has higher otp priority (e.g., verified over pending)
-            map.set(phone, u);
-            return;
-          }
-
-          if (curPriority === exPriority) {
-            // choose latest loginDate
-            const exDate = existing.loginDate ? new Date(existing.loginDate) : null;
-            const curDate = u.loginDate ? new Date(u.loginDate) : null;
-            if (!exDate && curDate) {
-              map.set(phone, u);
-            } else if (exDate && curDate && curDate > exDate) {
-              map.set(phone, u);
-            }
-          }
-          // otherwise keep existing
-        });
-
-        return Array.from(map.values());
-      };
-
-      const normalized = normalizeByPhone(res.data.data);
-      setUsers(normalized);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      if (!options.silent) {
-        setLoading(false);
-      } else {
-        setIsPolling(false);
-      }
-    }
-  };
+  // ── initial fetch (ONCE only — no polling) ───────────────
 
   useEffect(() => {
-    fetchUsers(); // fetch once on mount
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/user/alls`);
+        if (!res.data || !Array.isArray(res.data.data)) return;
 
-    // Set up polling interval to refresh data every 15 seconds for real-time count updates
-    const refreshInterval = setInterval(() => {
-      // silent background refresh - do not toggle the main loading state
-      fetchUsers({ silent: true });
-    }, 15000);
+        // De-duplicate by phone
+        const map = new Map();
+        res.data.data.forEach((u) => {
+          const phone = u.phone || '';
+          if (!phone) return;
+          const existing = map.get(phone);
+          if (!existing) { map.set(phone, u); return; }
 
-    // Cleanup interval on component unmount
-    return () => clearInterval(refreshInterval);
-   }, []);
+          const pri = (s) => (s === 'verified' ? 2 : s === 'pending' ? 1 : 0);
+          const ep = pri(existing.otpStatus);
+          const cp = pri(u.otpStatus);
+          if (cp > ep) { map.set(phone, u); return; }
+          if (cp === ep) {
+            const ed = existing.loginDate ? new Date(existing.loginDate) : null;
+            const cd = u.loginDate        ? new Date(u.loginDate)        : null;
+            let keep = existing;
+            if (!ed && cd) keep = u;
+            else if (ed && cd && cd > ed) keep = u;
+            const other = keep === existing ? u : existing;
+            if (other.conversionStatus && other.conversionStatus !== 'pending') {
+              keep = {
+                ...keep,
+                conversionStatus:    other.conversionStatus,
+                conversionDate:      other.conversionDate,
+                conversionUpdatedBy: other.conversionUpdatedBy,
+                conversion:          other.conversion,
+              };
+            }
+            map.set(phone, keep);
+          }
+        });
 
- 
-const handleSetActiveStatus = async (user) => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/set-active-status`, {
-        phone: user.phone,
-        adminName
-      });
-      await fetchUsers();
-      alert(`User ${user.phone} status set to active successfully`);
-    } catch (error) {
-      console.error('Error setting active status:', error);
-      alert(`Failed to set active status: ${error.response?.data?.message || error.message}`);
-    } finally {
-      setLoading(false);
-      setShowConfirmModal(false); // Add this line to close the modal after action
-      setSelectedUser(null); // Also reset the selected user
-    }
-  };
+        setUsers(Array.from(map.values()));
+      } catch (err) {
+        console.error('fetchUsers error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+    // ← intentionally no interval / no re-fetch
+  }, []);
+
+  // ── permissions + record view ────────────────────────────
+
+  useEffect(() => {
+    if (reduxAdminName) localStorage.setItem('adminName', reduxAdminName);
+    if (reduxAdminRole) localStorage.setItem('adminRole', reduxAdminRole);
+  }, [reduxAdminName, reduxAdminRole]);
+
+  useEffect(() => {
+    if (!adminName || !adminRole) return;
+    axios
+      .post(`${process.env.REACT_APP_API_URL}/record-view`, {
+        userName: adminName,
+        role: adminRole,
+        viewedFile: fileName,
+        viewTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+      })
+      .catch(() => {});
+  }, [adminName, adminRole]);
+
+  useEffect(() => {
+    if (!adminRole) return;
+    axios
+      .get(`${process.env.REACT_APP_API_URL}/get-role-permissions`)
+      .then((res) => {
+        const perm = res.data.find((p) => p.role === adminRole);
+        setAllowedRoles(perm?.viewedFiles?.map((f) => f.trim()) || []);
+      })
+      .catch(() => {});
+  }, [adminRole]);
+
+  // ── actions ──────────────────────────────────────────────
 
   const handleAction = async () => {
     if (!selectedUser || !actionType || !inputValue) return;
-    setLoading(true);
+    const phone = selectedUser.phone;
+    setPhoneUpdating(phone, true);
+
+    const now    = new Date().toISOString();
+    const fields =
+      actionType === 'ban'
+        ? { status: 'banned',  bannedReason: inputValue, bannedDate: now,  bannedBy: adminName }
+        : { status: 'deleted', deleteReason: inputValue, deletedDate: now, deletedBy: adminName };
+
+    // snapshot for rollback
+    const snap = { ...users.find((u) => u.phone === phone) };
+
+    // update UI immediately
+    updateUser(phone, fields);
+    setSelectedUser(null);
+    setInputValue('');
+    setActionType('');
+    setShowConfirmModal(false);
+
     try {
-      const payload = {
-        phone: selectedUser.phone,
+      await axios.post(`${process.env.REACT_APP_API_URL}/users/${actionType}`, {
+        phone,
         adminName,
-        [actionType === 'report' ? 'remarks' : 'reason']: inputValue
-      };
-
-      await axios.post(`${process.env.REACT_APP_API_URL}/users/${actionType}`, payload);
-
-      setSelectedUser(null);
-      setInputValue('');
-      setActionType('');
-      setShowConfirmModal(false);
-      await fetchUsers();
-    } catch (error) {
-      console.error(`Error during ${actionType}:`, error);
-      alert(`Failed to ${actionType} user: ${error.response?.data?.message || error.message}`);
+        reason: inputValue,
+      });
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to ${actionType}: ${err.response?.data?.message || err.message}`);
+      if (snap.phone) updateUser(phone, snap); // rollback
     } finally {
-      setLoading(false);
+      setPhoneUpdating(phone, false);
     }
   };
 
   const handleUndoAction = async (type) => {
     if (!selectedUser) return;
-    setLoading(true);
+    const phone = selectedUser.phone;
+    setPhoneUpdating(phone, true);
+
+    const now    = new Date().toISOString();
+    const fields =
+      type === 'unban'
+        ? { status: 'active',    unBannedBy: adminName,  unBannedDate: now,  bannedDate: null,  bannedReason: null  }
+        : { status: 'unDeleted', unDeletedBy: adminName, unDeletedDate: now, deletedDate: null, deleteReason: null  };
+
+    const snap = { ...users.find((u) => u.phone === phone) };
+
+    updateUser(phone, fields);
+    setShowConfirmModal(false);
+    setSelectedUser(null);
+
     try {
-      const endpointMap = {
-        unreport: 'unreport',
-        unban: 'unban',
-        undelete: 'undelete'
+      await axios.post(`${process.env.REACT_APP_API_URL}/users/${type}`, { phone, adminName });
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to ${type}: ${err.response?.data?.message || err.message}`);
+      if (snap.phone) updateUser(phone, snap);
+    } finally {
+      setPhoneUpdating(phone, false);
+    }
+  };
+
+  const handleMarkConversionPaid = useCallback(
+    async (user, status) => {
+      const phone = user.phone;
+      const now   = new Date().toISOString();
+      const snap  = {
+        conversionStatus:    user.conversionStatus,
+        conversionDate:      user.conversionDate,
+        conversionUpdatedBy: user.conversionUpdatedBy,
+        updateDate:          user.updateDate,
+        conversion:          user.conversion,
       };
 
-      const endpoint = endpointMap[type];
-      if (!endpoint) return;
-
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/users/${endpoint}`,
-        {
-          phone: selectedUser.phone,
-          adminName: adminName
-        }
-      );
-      
-      await fetchUsers();
-      setShowConfirmModal(false);
-      setSelectedUser(null);
-    } catch (error) {
-      console.error(`Error during ${type}:`, error);
-      alert(`Failed to ${type} user: ${error.response?.data?.message || error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ Handle Conversion Status Change
-  const handleMarkConversionPaid = async (user, status) => {
-    const originalStatus = user.conversionStatus;
-    const phoneToUpdate = user.phone;
-    
-    // Optimistic update - update UI immediately
-    setUsers(prevUsers =>
-      prevUsers.map(u =>
-        u.phone === phoneToUpdate
-          ? { ...u, conversionStatus: status, conversionDate: status !== 'pending' ? new Date().toISOString() : null, conversion: status !== 'pending' }
-          : u
-      )
-    );
-    
-    setLoading(true);
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/user/update-conversion-status`, {
-        phone: phoneToUpdate,
-        adminName: adminName,
-        conversionStatus: status
+      setPhoneUpdating(phone, true);
+      updateUser(phone, {
+        conversionStatus:    status,
+        conversion:          status !== 'pending',
+        conversionDate:      status !== 'pending' ? now : null,
+        conversionUpdatedBy: adminName,
+        updateDate:          now,
       });
 
-      console.log('Conversion update response:', response.data);
-      
-      // Use the API response data directly to update the state
-      if (response.data.data) {
-        const updatedUser = response.data.data;
-        setUsers(prevUsers =>
-          prevUsers.map(u =>
-            u.phone === updatedUser.phone ? updatedUser : u
-          )
+      try {
+        const res = await axios.post(
+          `${process.env.REACT_APP_API_URL}/user/update-conversion-status`,
+          { phone, adminName, conversionStatus: status }
         );
-        console.log('State updated with fresh server data:', updatedUser);
+        if (res.data?.data) {
+          const s = res.data.data;
+          updateUser(phone, {
+            conversionStatus:    s.conversionStatus,
+            conversion:          s.conversion,
+            conversionDate:      s.conversionDate,
+            conversionUpdatedBy: s.conversionUpdatedBy,
+            updateDate:          s.updateDate,
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        alert(`Failed to update conversion: ${err.response?.data?.message || err.message}`);
+        updateUser(phone, snap);
+      } finally {
+        setPhoneUpdating(phone, false);
       }
-      
-      alert(`Conversion marked as ${status} successfully!`);
-    } catch (error) {
-      console.error('Error updating conversion status:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
-      alert(`Failed to update conversion: ${errorMessage}`);
-      
-      // Rollback to original status on error
-      setUsers(prevUsers =>
-        prevUsers.map(u =>
-          u.phone === phoneToUpdate
-            ? { ...u, conversionStatus: originalStatus, conversion: originalStatus !== 'pending' }
-            : u
-        )
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [adminName, updateUser, setPhoneUpdating]
+  );
 
-    const tableRef = useRef();
-  
-  const handlePrint = () => {
-    const printContent = tableRef.current.innerHTML;
-    const printWindow = window.open("", "", "width=1200,height=800");
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Table</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 10px; }
-            h1 { text-align: center; font-size: 24px; margin: 0 0 5px 0; font-weight: bold; }
-            h2 { text-align: center; font-size: 14px; margin: 0 0 20px 0; font-weight: bold; color: #333; }
-            table { border-collapse: collapse; width: 100%; font-size: 12px; }
-            th, td { border: 1px solid #000; padding: 6px; text-align: left; }
-            th { background: #f0f0f0; }
-          </style>
-        </head>
-        <body>
-          <h1>RENT PONDY</h1>
-          <h2>Login Report - ${moment().format('DD-MM-YYYY HH:mm')}</h2>
-          <table>${printContent}</table>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
+  const handleMarkRemark = useCallback(
+    async (user, remark) => {
+      const phone = user.phone;
+      const now   = new Date().toISOString();
+      const snap  = {
+        remarks:    user.remarks,
+        updatedBy:  user.updatedBy,
+        updateDate: user.updateDate,
+      };
 
-  // Export to Excel
-  const handleExportExcel = () => {
-    const exportData = filteredUsers.map((item, index) => ({
-      'S.No': index + 1,
-      'Phone': item.phone,
-      'OTP': item.otp || 'N/A',
-      'Login Date': moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
-      'OTP Status': item.otpStatus,
-      'Country Code': item.countryCode,
-      'Login Mode': item.loginMode,
-      'Status': item.status || 'active',
-      'Active Status UpdatedBy': item.updatedBy ? `${item.updatedBy} (${moment(item.updateDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Remarks': item.remarks || 'N/A',
-      'Banned Reason': item.bannedReason || 'N/A',
-      'Deleted Reason': item.deleteReason || 'N/A',
-      'Reported By': item.reportedBy ? `${item.reportedBy} (${moment(item.reportDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Banned By': item.bannedBy ? `${item.bannedBy} (${moment(item.bannedDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Deleted By': item.deletedBy ? `${item.deletedBy} (${moment(item.deletedDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Un Reported By': item.unReportedBy ? `${item.unReportedBy} (${moment(item.unReportedDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Un Banned By': item.unBannedBy ? `${item.unBannedBy} (${moment(item.unBannedDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Un Deleted By': item.unDeletedBy ? `${item.unDeletedBy} (${moment(item.unDeletedDate).format('DD-MM-YYYY')})` : 'N/A',
-      'Permanently Logged Out': item.permanentlyLoggedOut ? 'Yes' : 'No',
-      'Conversion Status': item.conversionStatus || 'pending',
-      'Conversion Date': item.conversionDate ? moment(item.conversionDate).format('DD-MM-YYYY') : 'N/A',
-      'Conversion Updated By': item.conversionUpdatedBy || 'N/A'
-    }));
+      setPhoneUpdating(phone, true);
+      updateUser(phone, { remarks: remark, updatedBy: adminName, updateDate: now });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Login Report');
-    
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(data, `Login_Report_${moment().format('DD-MM-YYYY')}.xlsx`);
-  };
-
-  // Export to PDF using HTML table approach
-  const handleExportPDF = () => {
-    if (filteredUsers.length === 0) {
-      alert('No data to export. Please adjust filters.');
-      return;
-    }
-
-    // Build HTML table for PDF
-    let tableHTML = '<table style="border-collapse: collapse; width: 100%; font-size: 11px;">';
-    tableHTML += '<thead><tr>';
-    const headers = ['S.No', 'Phone', 'OTP', 'Login Date', 'OTP Status', 'Country Code', 'Login Mode', 'Status', 'Remarks', 'Permanently Logged Out'];
-    headers.forEach(header => {
-      tableHTML += `<th style="border: 1px solid #000; padding: 8px; background: #f0f0f0; text-align: left; font-weight: bold;">${header}</th>`;
-    });
-    tableHTML += '</tr></thead><tbody>';
-
-    // Add filtered user data
-    filteredUsers.forEach((item, index) => {
-      tableHTML += '<tr>';
-      const rowData = [
-        index + 1,
-        item.phone,
-        item.otp || 'N/A',
-        moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
-        item.otpStatus,
-        item.countryCode,
-        item.loginMode,
-        item.status || 'active',
-        item.remarks || 'N/A',
-        item.permanentlyLoggedOut ? 'Yes' : 'No'
-      ];
-      rowData.forEach(value => {
-        tableHTML += `<td style="border: 1px solid #000; padding: 6px; text-align: left;">${value}</td>`;
-      });
-      tableHTML += '</tr>';
-    });
-
-    tableHTML += '</tbody></table>';
-
-    // Create PDF window
-    const pdfWindow = window.open("", "", "width=1400,height=900");
-    pdfWindow.document.write(`
-      <html>
-        <head>
-          <title>Login Report PDF - ${new Date().toLocaleString()}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 10px; }
-            h1 { margin: 0 0 5px 0; text-align: center; font-size: 24px; }
-            h2 { margin: 0 0 10px 0; text-align: center; font-size: 16px; }
-            p { margin: 5px 0; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background: #f0f0f0; font-weight: bold; }
-            tr:nth-child(even) { background: #f9f9f9; }
-          </style>
-        </head>
-        <body>
-          <h1>RENT PONDY</h1>
-          <h2>Login Report - ${new Date().toLocaleString()}</h2>
-          <p><strong>Total Records:</strong> ${filteredUsers.length}</p>
-          ${tableHTML}
-        </body>
-      </html>
-    `);
-    pdfWindow.document.close();
-    setTimeout(() => {
-      pdfWindow.print();
-    }, 500);
-  };
-
-  // Memoized filtered users for performance - only recalculates when filters or users change
-  const filteredUsers = useMemo(() => {
-    const phoneFilterTrimmed = phoneFilter.trim().toLowerCase();
-    const start = startDate ? moment(startDate, 'YYYY-MM-DD').startOf('day') : null;
-    const end = endDate ? moment(endDate, 'YYYY-MM-DD').endOf('day') : null;
-
-    return users.filter(user => {
-      // Quick string comparisons first (fastest)
-      if (statusFilter !== 'all' && user.status !== statusFilter) return false;
-      if (otpStatusFilter !== 'all' && user.otpStatus !== otpStatusFilter) return false;
-      if (loginModeFilter !== 'all' && (user.loginMode || '').toLowerCase() !== loginModeFilter) return false;
-      if (remarksFilter !== 'all' && user.remarks !== remarksFilter) return false;
-      if (phoneFilterTrimmed && !user.phone?.toLowerCase().includes(phoneFilterTrimmed)) return false;
-
-      // Date comparison (slower, do last)
-      if (start || end) {
-        const loginMoment = moment(user.loginDate);
-        if (!loginMoment.isValid()) return true;
-        if (start && loginMoment.isBefore(start)) return false;
-        if (end && loginMoment.isAfter(end)) return false;
-      }
-
-      return true;
-    });
-  }, [users, statusFilter, otpStatusFilter, loginModeFilter, remarksFilter, phoneFilter, startDate, endDate]);
-
-  const reduxAdminName = useSelector((state) => state.admin.name);
-  const reduxAdminRole = useSelector((state) => state.admin.role);
-  
-  const adminName = reduxAdminName || localStorage.getItem("adminName");
-  const adminRole = reduxAdminRole || localStorage.getItem("adminRole");
-  
-  const [allowedRoles, setAllowedRoles] = useState([]);
-  
-  const fileName = "Login Report";
-
-  useEffect(() => {
-    if (reduxAdminName) localStorage.setItem("adminName", reduxAdminName);
-    if (reduxAdminRole) localStorage.setItem("adminRole", reduxAdminRole);
-  }, [reduxAdminName, reduxAdminRole]);
-
-  useEffect(() => {
-    const recordDashboardView = async () => {
       try {
-        await axios.post(`${process.env.REACT_APP_API_URL}/record-view`, {
-          userName: adminName,
-          role: adminRole,
-          viewedFile: fileName,
-          viewTime: moment().format("YYYY-MM-DD HH:mm:ss"),
-        });
-      } catch {}
-    };
-    if (adminName && adminRole) recordDashboardView();
-  }, [adminName, adminRole]);
-
-  useEffect(() => {
-    const fetchPermissions = async () => {
-      try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/get-role-permissions`);
-        const rolePermissions = res.data.find((perm) => perm.role === adminRole);
-        const viewed = rolePermissions?.viewedFiles?.map(f => f.trim()) || [];
-        setAllowedRoles(viewed);
-      } catch {} finally {
-        setLoading(false);
+        const res = await axios.post(
+          `${process.env.REACT_APP_API_URL}/user/update-remarks`,
+          { phone, adminName, remarks: remark }
+        );
+        if (res.data?.data) {
+          const s = res.data.data;
+          updateUser(phone, { remarks: s.remarks, updatedBy: s.updatedBy, updateDate: s.updateDate });
+        }
+      } catch (err) {
+        console.error(err);
+        alert(`Failed to update remarks: ${err.response?.data?.message || err.message}`);
+        updateUser(phone, snap);
+      } finally {
+        setPhoneUpdating(phone, false);
       }
-    };
-    if (adminRole) fetchPermissions();
-  }, [adminRole]);
+    },
+    [adminName, updateUser, setPhoneUpdating]
+  );
 
-  const getActionTitle = (action) => {
-    const titles = {
-      report: 'Report User',
-      ban: 'Ban User',
-      delete: 'Delete User',
-      unreport: 'Unreport User',
-      unban: 'Unban User',
-      undelete: 'Undelete User',
-      setActive: 'Set Active Status'
-    };
-    return titles[action] || 'Confirm Action';
-  };
-
-  const getActionMessage = (action, phone) => {
-    const messages = {
-      report: `Are you sure you want to report user ${phone}?`,
-      ban: `Are you sure you want to ban user ${phone}?`,
-      delete: `Are you sure you want to delete user ${phone}? This action cannot be undone.`,
-      unreport: `Are you sure you want to remove report from user ${phone}?`,
-      unban: `Are you sure you want to unban user ${phone}?`,
-      undelete: `Are you sure you want to restore deleted user ${phone}?`,
-      setActive: `Are you sure you want to set user ${phone} status to active? This will clear all restrictions.`
-    };
-    return messages[action] || `Are you sure you want to perform this action on user ${phone}?`;
-  };
+  // ── modal helpers ────────────────────────────────────────
 
   const showConfirmation = useCallback((user, action) => {
     setSelectedUser(user);
@@ -641,94 +472,178 @@ const handleSetActiveStatus = async (user) => {
     setShowConfirmModal(true);
   }, []);
 
-
- 
-
   const executeConfirmedAction = async () => {
-  try {
-    if (confirmAction === 'setActive') {
-      await handleSetActiveStatus(selectedUser);
-    } else if (confirmAction === 'report' || confirmAction === 'ban' || confirmAction === 'delete') {
-      await handleAction(); // <-- FIX: this runs the correct logic and includes adminName
+    if (confirmAction === 'ban' || confirmAction === 'delete') {
+      setShowConfirmModal(false); // reason modal opens
     } else {
       await handleUndoAction(confirmAction);
     }
-  } catch (error) {
-    console.error('Error in executeConfirmedAction:', error);
-  } finally {
-    setShowConfirmModal(false); // Ensure modal is closed
-  }
-};
+  };
 
+  const getActionTitle = (a) =>
+    ({ ban: 'Ban User', delete: 'Delete User', unban: 'Unban User', undelete: 'Undelete User' }[a] || 'Confirm');
 
-  const getStatusBadge = useCallback((status) => {
-    const variants = {
-      active: 'success',
-      reported: 'warning',
-      banned: 'danger',
-      deleted: 'dark'
-    };
-    return <Badge bg={variants[status] || 'primary'}>{status || 'active'}</Badge>;
-  }, []);
+  const getActionMessage = (a, phone) =>
+    ({
+      ban:      `Are you sure you want to ban user ${phone}?`,
+      delete:   `Are you sure you want to delete user ${phone}? This cannot be undone.`,
+      unban:    `Are you sure you want to unban user ${phone}?`,
+      undelete: `Are you sure you want to restore deleted user ${phone}?`,
+    }[a] || `Confirm action on ${phone}?`);
 
-  if (!allowedRoles.includes(fileName)) {
-    return (
-      <div className="text-center text-danger font-weight-bold mt-5">
-        Only admin is allowed to view this file.
-      </div>
+  // ── filters ──────────────────────────────────────────────
+
+  const handleResetFilters = () => {
+    setPhoneFilter(''); setStartDate(''); setEndDate('');
+    setStatusFilter('all'); setOtpStatusFilter('all');
+    setLoginModeFilter('all'); setRemarksFilter('all');
+  };
+
+  const filteredUsers = useMemo(() => {
+    const q     = phoneFilter.trim().toLowerCase();
+    const start = startDate ? moment(startDate, 'YYYY-MM-DD').startOf('day') : null;
+    const end   = endDate   ? moment(endDate,   'YYYY-MM-DD').endOf('day')   : null;
+    return users.filter((u) => {
+      if (statusFilter    !== 'all' && u.status    !== statusFilter)                          return false;
+      if (otpStatusFilter !== 'all' && u.otpStatus !== otpStatusFilter)                       return false;
+      if (loginModeFilter !== 'all' && (u.loginMode || '').toLowerCase() !== loginModeFilter) return false;
+      if (remarksFilter   !== 'all' && u.remarks   !== remarksFilter)                         return false;
+      if (q && !u.phone?.toLowerCase().includes(q))                                           return false;
+      if (start || end) {
+        const m = moment(u.loginDate);
+        if (!m.isValid()) return true;
+        if (start && m.isBefore(start)) return false;
+        if (end   && m.isAfter(end))    return false;
+      }
+      return true;
+    });
+  }, [users, statusFilter, otpStatusFilter, loginModeFilter, remarksFilter, phoneFilter, startDate, endDate]);
+
+  // ── export ───────────────────────────────────────────────
+
+  const handlePrint = () => {
+    const w = window.open('', '', 'width=1200,height=800');
+    w.document.write(`<html><head><title>Print</title>
+      <style>body{font-family:Arial;margin:10px}
+      table{border-collapse:collapse;width:100%;font-size:12px}
+      th,td{border:1px solid #000;padding:6px;text-align:left}th{background:#f0f0f0}</style></head>
+      <body><h1 style="text-align:center">RENT PONDY</h1>
+      <h2 style="text-align:center">Login Report - ${moment().format('DD-MM-YYYY HH:mm')}</h2>
+      <table>${tableRef.current.innerHTML}</table></body></html>`);
+    w.document.close();
+    w.print();
+  };
+
+  const handleExportExcel = () => {
+    const data = filteredUsers.map((item, i) => ({
+      'S.No': i + 1,
+      Phone: item.phone,
+      OTP: item.otp || 'N/A',
+      'Login Date': moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
+      'OTP Status': item.otpStatus,
+      Remarks: item.remarks || 'N/A',
+      'Banned Reason': item.bannedReason || 'N/A',
+      'Deleted Reason': item.deleteReason || 'N/A',
+      'Banned By / Unbanned By': [
+        item.bannedBy   ? `Banned: ${item.bannedBy} (${moment(item.bannedDate).format('DD-MM-YYYY')})`       : '',
+        item.unBannedBy ? `Unbanned: ${item.unBannedBy} (${moment(item.unBannedDate).format('DD-MM-YYYY')})` : '',
+      ].filter(Boolean).join(' | ') || 'N/A',
+      'Deleted By / Undeleted By': [
+        item.deletedBy   ? `Deleted: ${item.deletedBy} (${moment(item.deletedDate).format('DD-MM-YYYY')})`       : '',
+        item.unDeletedBy ? `Undeleted: ${item.unDeletedBy} (${moment(item.unDeletedDate).format('DD-MM-YYYY')})` : '',
+      ].filter(Boolean).join(' | ') || 'N/A',
+      'Remark Status': item.remarks ? getDisplayRemarks(item.remarks) : 'No Remark',
+      'Remark Updated By': item.updatedBy || 'N/A',
+      'Conversion Status': item.conversionStatus || 'pending',
+      'Conversion Date': item.conversionDate ? moment(item.conversionDate).format('DD-MM-YYYY') : 'N/A',
+      'Conversion Updated By': item.conversionUpdatedBy || 'N/A',
+    }));
+    const ws  = XLSX.utils.json_to_sheet(data);
+    const wb  = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Login Report');
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(
+      new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `Login_Report_${moment().format('DD-MM-YYYY')}.xlsx`
     );
-  }
+  };
+
+  const handleExportPDF = () => {
+    if (!filteredUsers.length) { alert('No data to export.'); return; }
+    const headers = ['S.No','Phone','Login Date','OTP Status','Banned Reason','Delete Reason','Remark Status','Conversion Status'];
+    let html = `<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>
+      ${headers.map((h) => `<th style="border:1px solid #000;padding:8px;background:#f0f0f0">${h}</th>`).join('')}
+      </tr></thead><tbody>`;
+    filteredUsers.forEach((item, i) => {
+      html += `<tr>${[
+        i + 1, item.phone,
+        moment(item.loginDate).format('DD-MM-YYYY HH:mm'),
+        item.otpStatus,
+        item.bannedReason || 'N/A',
+        item.deleteReason || 'N/A',
+        item.remarks ? getDisplayRemarks(item.remarks) : 'No Remark',
+        item.conversionStatus || 'pending',
+      ].map((v) => `<td style="border:1px solid #000;padding:6px">${v}</td>`).join('')}</tr>`;
+    });
+    html += '</tbody></table>';
+    const w = window.open('', '', 'width=1400,height=900');
+    w.document.write(`<html><head><title>Login Report PDF</title>
+      <style>body{font-family:Arial;margin:10px}th{background:#f0f0f0}
+      tr:nth-child(even){background:#f9f9f9}</style></head>
+      <body><h1 style="text-align:center">RENT PONDY</h1>
+      <h2 style="text-align:center">Login Report - ${new Date().toLocaleString()}</h2>
+      <p><strong>Total Records:</strong> ${filteredUsers.length}</p>${html}</body></html>`);
+    w.document.close();
+    setTimeout(() => w.print(), 500);
+  };
+
+  // ── guard ────────────────────────────────────────────────
+
+  // if (!allowedRoles.includes(fileName)) {
+  //   return (
+  //     <div className="text-center text-danger font-weight-bold mt-5">
+  //       Only admin is allowed to view this file.
+  //     </div>
+  //   );
+  // }
+
+  // ── render ───────────────────────────────────────────────
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Login  - OTP - Ban - Report - Delete</h2>
-      <div className="d-flex flex-row gap-2 align-items-center flex-nowrap">
+      <h2 className="text-xl font-bold mb-4">Login - OTP - Ban - Report - Delete</h2>
+
+      {/* Filters */}
+      <div className="d-flex flex-row gap-2 align-items-center flex-wrap mb-3">
         <input
-          type="text"
-          placeholder="Search Phone"
-          value={phoneFilter}
-          onChange={e => setPhoneFilter(e.target.value)}
-          className="form-control"
-          style={{ maxWidth: '200px' }}
+          type="text" placeholder="Search Phone" value={phoneFilter}
+          onChange={(e) => setPhoneFilter(e.target.value)}
+          className="form-control" style={{ maxWidth: 200 }}
         />
+        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+          className="form-control" style={{ width: 160 }} />
+        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+          className="form-control" style={{ width: 160 }} />
 
-        <input 
-          style={{width:"200px"}}
-          type="date"
-          value={startDate}
-          onChange={e => setStartDate(e.target.value)}
-          className="form-control"
-        />
-
-        <input 
-          style={{width:"200px"}}
-          type="date"
-          value={endDate}
-          onChange={e => setEndDate(e.target.value)}
-          className="form-control"
-        />
-                <div className="mb-4">
-          <label className="mr-2 font-medium">Filter by OTP Status:</label>
-           <select className="border p-2 rounded"
-  value={otpStatusFilter}
-  onChange={(e) => setOtpStatusFilter(e.target.value)}
->
-  <option value="all">All</option>
-  <option value="pending">Pending</option>
-  <option value="verified">Verified</option>
-</select>
-</div>
-                <div className="mb-4">
-                  <label className="mr-2 font-medium">Filter by Login Mode:</label>
-                  <select value={loginModeFilter} onChange={e => setLoginModeFilter(e.target.value)} className="border p-2 rounded">
-                    <option value="all">All</option>
-                    <option value="web">Web</option>
-                    <option value="app">App</option>
-                  </select>
-                </div>
-        <div className="mb-4">
-          <label className="mr-2 font-medium">Filter by Status:</label>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="border p-2 rounded">
+        <div>
+          <label className="me-1 fw-medium">OTP Status:</label>
+          <select className="border p-2 rounded" value={otpStatusFilter} onChange={(e) => setOtpStatusFilter(e.target.value)}>
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="verified">Verified</option>
+          </select>
+        </div>
+        <div>
+          <label className="me-1 fw-medium">Login Mode:</label>
+          <select className="border p-2 rounded" value={loginModeFilter} onChange={(e) => setLoginModeFilter(e.target.value)}>
+            <option value="all">All</option>
+            <option value="web">Web</option>
+            <option value="app">App</option>
+          </select>
+        </div>
+        <div>
+          <label className="me-1 fw-medium">Status:</label>
+          <select className="border p-2 rounded" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">All</option>
             <option value="active">Active</option>
             <option value="reported">Reported</option>
@@ -738,210 +653,133 @@ const handleSetActiveStatus = async (user) => {
             <option value="unDeleted">UnDeleted</option>
           </select>
         </div>
-        <div className="mb-4">
-          <label className="mr-2 font-medium">Filter by Remarks:</label>
-          <select value={remarksFilter} onChange={e => setRemarksFilter(e.target.value)} className="border p-2 rounded">
+        <div>
+          <label className="me-1 fw-medium">Remarks:</label>
+          <select className="border p-2 rounded" value={remarksFilter} onChange={(e) => setRemarksFilter(e.target.value)}>
             <option value="all">All</option>
             <option value="seller">Owner</option>
             <option value="buyer">Tenant</option>
             <option value="visitor">Visitor</option>
           </select>
         </div>
-        {}
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Confirm Modal (unban / undelete) */}
       <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>{getActionTitle(confirmAction)}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          {selectedUser && getActionMessage(confirmAction, selectedUser.phone)}
-        </Modal.Body>
+        <Modal.Body>{selectedUser && getActionMessage(confirmAction, selectedUser.phone)}</Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowConfirmModal(false)}>
-            Cancel
-          </Button>
-          <Button 
-            variant={
-              confirmAction?.includes('un') ? 'success' : 
-              confirmAction === 'delete' ? 'danger' : 
-              confirmAction === 'setActive' ? 'primary' : 'primary'
-            }
+          <Button variant="secondary" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+          <Button
+            variant={confirmAction === 'unban' || confirmAction === 'undelete' ? 'success' : 'primary'}
             onClick={executeConfirmedAction}
-            disabled={loading}
           >
-            {loading ? 'Processing...' : 
-             confirmAction?.includes('un') ? 'Confirm Restore' : 
-             confirmAction === 'delete' ? 'Confirm Delete' : 
-             confirmAction === 'setActive' ? 'Set Active' : 'Confirm'}
+            Confirm
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Action Input Modal */}
-      {selectedUser && (actionType === 'report' || actionType === 'ban' || actionType === 'delete') && (
-        <Modal show={true} onHide={() => setSelectedUser(null)} centered>
+      {/* Reason Input Modal (ban / delete) */}
+      {selectedUser && (actionType === 'ban' || actionType === 'delete') && (
+        <Modal show onHide={() => { setSelectedUser(null); setInputValue(''); setActionType(''); }} centered>
           <Modal.Header closeButton>
             <Modal.Title>{getActionTitle(actionType)}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            {actionType === 'report' ? (
-              <select
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                className="form-select mb-3"
-              >
-                <option value="">-- Select Remark --</option>
-                <option value="seller">Owner</option>
-                <option value="buyer">Tenant</option>
-                <option value="visitor">Visitor</option>
-              </select>
-            ) : (
-              <input
-                type="text"
-                placeholder={`Enter ${actionType === 'ban' ? 'ban' : 'delete'} reason`}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                className="form-control mb-3"
-              />
-            )}
+            <input
+              type="text"
+              placeholder={`Enter ${actionType === 'ban' ? 'ban' : 'delete'} reason`}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="form-control"
+            />
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setSelectedUser(null)}>
+            <Button variant="secondary" onClick={() => { setSelectedUser(null); setInputValue(''); setActionType(''); }}>
               Cancel
             </Button>
             <Button
               variant={actionType === 'delete' ? 'danger' : 'primary'}
               onClick={handleAction}
-              disabled={!inputValue || loading}
+              disabled={!inputValue}
             >
-              {loading ? 'Processing...' : 
-               actionType === 'report' ? 'Report User' : 
-               actionType === 'ban' ? 'Ban User' : 'Delete User'}
+              {actionType === 'ban' ? 'Ban User' : 'Delete User'}
             </Button>
           </Modal.Footer>
         </Modal>
       )}
 
-<div ref={tableRef}>
-
-      {/* Display filtered results count */}
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <div className="d-flex align-items-center gap-2">
-          <div style={{ 
-            background: '#6c757d', 
-            color: 'white', 
-            padding: '8px 16px', 
-            borderRadius: '4px', 
-            fontWeight: 'bold',
-            fontSize: '14px'
-          }}>
+      {/* Toolbar */}
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div className="d-flex gap-2">
+          <span style={{ background: '#6c757d', color: '#fff', padding: '8px 16px', borderRadius: 4, fontWeight: 'bold', fontSize: 14 }}>
             Total: {users.length} Records
-          </div>
-          <div style={{ 
-            background: '#007bff', 
-            color: 'white', 
-            padding: '8px 16px', 
-            borderRadius: '4px', 
-            fontWeight: 'bold',
-            fontSize: '14px'
-          }}>
+          </span>
+          <span style={{ background: '#007bff', color: '#fff', padding: '8px 16px', borderRadius: 4, fontWeight: 'bold', fontSize: 14 }}>
             Showing: {filteredUsers.length} Records
-          </div>
+          </span>
         </div>
-
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button
-            onClick={handleResetFilters}
-            style={{ background: '#6c757d', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
-          >
-            Reset
-          </button>
-
-          <button
-            onClick={handlePrint}
-            style={{ background: '#ff6b61', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
-          >
-            Print
-          </button>
-
-          <button
-            onClick={handleExportExcel}
-            style={{ background: '#2e8b57', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
-          >
-            Excel
-          </button>
-
-          <button
-            onClick={handleExportPDF}
-            style={{ background: '#f0c419', color: '#000', border: 'none', padding: '8px 12px', borderRadius: 6 }}
-          >
-            PDF
-          </button>
+        <div className="d-flex gap-2">
+          {[
+            { label: 'Reset', bg: '#6c757d', tc: '#fff', fn: handleResetFilters },
+            { label: 'Print', bg: '#ff6b61', tc: '#fff', fn: handlePrint },
+            { label: 'Excel', bg: '#2e8b57', tc: '#fff', fn: handleExportExcel },
+            { label: 'PDF',   bg: '#f0c419', tc: '#000', fn: handleExportPDF },
+          ].map((b) => (
+            <button key={b.label} onClick={b.fn}
+              style={{ background: b.bg, color: b.tc, border: 'none', padding: '8px 12px', borderRadius: 6 }}>
+              {b.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead className="sticky-top">
-          <tr>
-            <th className="border px-4 py-2">S.No</th>
-            <th className="border px-4 py-2">Phone</th>
-            <th className="border px-4 py-2">OTP</th>
-            <th className="border px-4 py-2">Login Date</th>
-            <th className="border px-4 py-2">OTP Status</th>
-            <th className="border px-4 py-2">Country Code</th>
-            <th className="border px-4 py-2">Login Mode</th>
-            <th className="border px-4 py-2">Status</th>
-            <th className="border px-4 py-2">Active Status UpdatedBy</th>
-            <th className="border px-4 py-2">Remarks</th>
-                        <th className="border px-4 py-2">Banned Reason</th>
-                        <th className="border px-4 py-2">Deleted Reason</th>
-
-            <th className="border px-4 py-2">Reported By</th>
-            <th className="border px-4 py-2">Banned By</th>
-            <th className="border px-4 py-2">Deleted By</th>
-            <th className="border px-4 py-2">Un Reported By</th>
-            <th className="border px-4 py-2">Un Banned By</th>
-            <th className="border px-4 py-2">Un Deleted By</th>
-            <th className="border px-4 py-2">Permanently Logged Out</th>
-            <th className="border px-4 py-2">Conversion</th>
-            <th className="border px-4 py-2">Conversion Status</th>
-            <th className="border px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-            {loading ? (
-    <tr>
-      <td className="border px-4 py-2 text-center" colSpan="23">
-        Loading...
-      </td>
-    </tr>
-  ) : filteredUsers.length > 0 ? (
-          filteredUsers.map((item, index) => (
-            <TableRow
-              key={item._id}
-              item={item}
-              index={index}
-              loading={loading}
-              showConfirmation={showConfirmation}
-              getStatusBadge={getStatusBadge}
-              onMarkPaid={handleMarkConversionPaid}
-            />
-          ))
-        ) : (
+      {/* Table */}
+      <div ref={tableRef}>
+        <Table striped bordered hover responsive className="table-sm align-middle">
+          <thead className="sticky-top">
             <tr>
-              <td className="border px-4 py-2 text-center" colSpan="23">
-                No records found.
-              </td>
+              <th>S.No</th>
+              <th>Phone</th>
+              <th>OTP</th>
+              <th>Login Date</th>
+              <th>OTP Status</th>
+              <th>Banned Reason</th>
+              <th>Deleted Reason</th>
+              <th>Banned By / Un Banned By</th>
+              <th>Deleted By / Un Deleted By</th>
+              <th>Remark</th>
+              <th>Remark Status</th>
+              <th>Conversion</th>
+              <th>Conversion Status</th>
+              <th>Actions</th>
             </tr>
-          )}
-        </tbody>
-      </Table>
-    </div>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan="14" className="text-center py-4">Loading...</td></tr>
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map((item, index) => (
+                <TableRow
+                  key={item._id || item.phone}
+                  item={item}
+                  index={index}
+                  updatingPhones={updatingPhones}
+                  showConfirmation={showConfirmation}
+                  onMarkPaid={handleMarkConversionPaid}
+                  onMarkRemark={handleMarkRemark}
+                />
+              ))
+            ) : (
+              <tr><td colSpan="14" className="text-center py-4">No records found.</td></tr>
+            )}
+          </tbody>
+        </Table>
+      </div>
     </div>
   );
 };
 
 export default LoginReportTable;
-
