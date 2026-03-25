@@ -294,7 +294,7 @@ const handleReset = () => {
             <th>BHK</th>
             <th>Property Mode</th>
             <th>Property Type</th>
-            <th>Status</th>
+            {/* <th>Status</th> */}
             <th>Created At</th>
             <th>Deleted At</th>
             <th>Undo</th>
@@ -326,7 +326,7 @@ const handleReset = () => {
                 <td>{request.bedrooms}</td>
                 <td>{request.propertyMode}</td>
                 <td>{request.propertyType}</td>
-                <td>
+                {/* <td>
                   <span
                     style={{
                       padding: "5px 10px",
@@ -337,7 +337,7 @@ const handleReset = () => {
                   >
                     {request.ra_status}
                   </span>
-                </td>
+                </td> */}
                 <td>{new Date(request.createdAt).toLocaleDateString()}</td>
                 <td>
                   {request.deletedAt
