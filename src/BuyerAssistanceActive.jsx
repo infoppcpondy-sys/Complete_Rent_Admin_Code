@@ -342,8 +342,9 @@ onClick={handleReset}
               <th className="border px-4 py-2">Expiry Date</th>
               <th className="border px-4 py-2">Package Type</th>
               <th className="border px-4 py-2">Status</th>
-              <th className="border px-4 py-2">Actions</th>
+              <th className="border px-4 py-2">Edit Buyer</th>
               <th className="border px-4 py-2">Edit Bill</th>
+              <th className="border px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -384,16 +385,28 @@ onClick={handleReset}
 
 
 <td className="border px-4 py-2">
+  {!item.isDeleted && (
+    <button
+      onClick={() => handleEdit(item.Ra_Id)}
+      className="btn btn-sm btn-warning"
+    >
+      Edit
+    </button>
+  )}
+</td>
+
+<td className="border px-4 py-2">
+  <button
+    onClick={() => navigate(`/dashboard/edit-buyer-bill/${item.Ra_Id}`)}
+    className="d-flex align-items-center justify-content-center btn btn-outline-warning btn-sm mx-auto"
+    title="Edit bill for this record"
+  >
+    <FaEdit className="me-1" /> Edit Bill
+  </button>
+</td>
+
+<td className="border px-4 py-2">
   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-    {!item.isDeleted && (
-      <button
-        onClick={() => handleEdit(item.Ra_Id)}
-        className="d-flex align-items-center justify-content-center btn btn-outline-info btn-sm mx-auto"
-        title="Edit this record"
-      >
-        <FaEdit className="me-1" /> Edit
-      </button>
-    )}
     {item.isDeleted ? (
       <button
         onClick={() => handleUndoDelete(item._id)}
@@ -410,16 +423,6 @@ onClick={handleReset}
       </button>
     )}
   </div>
-</td>
-
-<td className="border px-4 py-2">
-  <button
-    onClick={() => navigate(`/dashboard/edit-buyer-bill/${item.Ra_Id}`)}
-    className="d-flex align-items-center justify-content-center btn btn-outline-warning btn-sm mx-auto"
-    title="Edit bill for this record"
-  >
-    <FaEdit className="me-1" /> Edit Bill
-  </button>
 </td>
 
               </tr>
