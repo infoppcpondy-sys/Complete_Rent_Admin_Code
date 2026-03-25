@@ -226,6 +226,32 @@ const handleReset = () => {
 const handleGetFollowUp = () => {
   window.open('/process/dashboard/followup-list-buyer', '_blank');
 };
+
+const handleEdit = (Ra_Id) => {
+  navigate('/dashboard/edit-buyer-assistance', { state: { Ra_Id } });
+};
+
+const handleSoftDelete = async (id) => {
+  if (!window.confirm("Are you sure you want to delete this request?")) return;
+  try {
+    await axios.delete(`${process.env.REACT_APP_API_URL}/delete-buyer-assistance-rent/${id}`);
+    setMessage("Tenant Assistance deleted successfully.");
+    fetchPendingAssistance();
+  } catch (error) {
+    setMessage("Error deleting Tenant Assistance.");
+  }
+};
+
+const handleUndoDelete = async (id) => {
+  if (!window.confirm("Are you sure you want to restore this request?")) return;
+  try {
+    await axios.put(`${process.env.REACT_APP_API_URL}/undo-delete-buyer-assistance-rent/${id}`);
+    setMessage("Tenant Assistance restored successfully.");
+    fetchPendingAssistance();
+  } catch (error) {
+    setMessage("Error restoring Tenant Assistance.");
+  }
+};
   
 
   return (
@@ -301,6 +327,7 @@ const handleGetFollowUp = () => {
               <th>Phone</th>
               <th>City</th>
               <th>Area</th>
+              <th>Pincode</th>
               <th>Price Range</th>
               <th>Bedrooms</th>
               <th>PropertyMode</th>
@@ -314,6 +341,8 @@ const handleGetFollowUp = () => {
     {/* <th>Actions</th> */}
         <th>Create FollowUp</th>
         <th>Create Bill</th>
+        <th>Edit Buyer</th>
+        <th>Actions</th>
 
             </tr>
           </thead>
@@ -327,6 +356,7 @@ const handleGetFollowUp = () => {
                   <td>{item.phoneNumber}</td>
                   <td>{item.city}</td>
                   <td>{item.area}</td>
+                  <td>{item.pincode || item.pinCode || 'N/A'}</td>
                   <td>
                     ₹{item.minPrice} - ₹{item.maxPrice}
                   </td>
@@ -385,6 +415,33 @@ const handleGetFollowUp = () => {
                 ) : (
                   <span className="text-muted">Follow-up Required</span>
                 )}
+              </td>
+              <td>
+                <button
+                  className="btn btn-sm btn-warning"
+                  onClick={() => handleEdit(item.Ra_Id)}
+                >
+                  Edit
+                </button>
+              </td>
+              <td>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {item.isDeleted ? (
+                    <button
+                      onClick={() => handleUndoDelete(item._id || item.Ra_Id)}
+                      className="btn btn-outline-primary btn-sm"
+                    >
+                      <FaUndo className="me-1" /> Undo
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSoftDelete(item._id || item.Ra_Id)}
+                      className="btn btn-outline-danger btn-sm"
+                    >
+                      <FaTrash className="me-1" /> Delete
+                    </button>
+                  )}
+                </div>
               </td>
                 </tr>
               ))
