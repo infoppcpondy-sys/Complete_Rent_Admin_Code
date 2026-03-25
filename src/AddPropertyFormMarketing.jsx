@@ -1902,7 +1902,7 @@ const handleSubmit = async (e) => {
     }
     
    setIsProcessing(false); // Hide loading state
-    navigate('/dashboard/preapproved-car');
+    setMessage({ text: "Property uploaded successfully", type: "success" });
   } catch (error) {
     setIsProcessing(false); // Hide loading state on error
     console.error("Submit Error:", error);
@@ -2314,7 +2314,88 @@ const handleEdit = () => {
 
 };
 
+const resetForm = () => {
+  // Reset form data
+  setFormData({
+    propertyMode: '',
+    propertyType: '',
+    propertyAge: '',
+    bankLoan: '',
+    negotiation: '',
+    length: '',
+    breadth: '',
+    totalArea: '',
+    ownership: '',
+    bedrooms: '',
+    kitchen: '',
+    kitchenType: '',
+    balconies: '',
+    floorNo: '',
+    areaUnit: '',
+    propertyApproved: '',
+    postedBy: '',
+    facing: '',
+    salesMode: '',
+    salesType: '',
+    description: '',
+    furnished: '',
+    lift: '',
+    attachedBathrooms: '',
+    western: '',
+    numberOfFloors: '',
+    carParking: '',
+    rentalPropertyAddress: '',
+    country: '',
+    state: '',
+    city: '',
+    district: '',
+    area: '',
+    streetName: '',
+    doorNumber: '',
+    nagar: '',
+    ownerName: '',
+    email: '',
+    countryCode: '+91',
+    phoneNumber: '',
+    phoneNumberCountryCode: '',
+    alternatePhone: '',
+    alternatePhoneCountryCode: '+91',
+    bestTimeToCall: '',
+    pinCode: '',
+    locationCoordinates: '',
+    rentalAmount: '',
+    securityDeposit: '',
+    availableDate: '',
+    familyMembers: '',
+    foodHabit: '',
+    jobType: '',
+    petAllowed: '',
+    rentType: '',
+    wheelChairAvailable: '',
+  });
+  
+  // Reset photos and videos
+  setPhotos([]);
+  setVideos([]);
+  setSelectedPhotoIndex(0);
+  
+  // Reset form step
+  setCurrentStep(1);
+  setIsPreview(false);
+  
+  // Clear area suggestions
+  setAreaSuggestions([]);
+  setShowAreaSuggestions(false);
+};
+
   return (
+    <div style={{ 
+      background: "#F0F2F5", 
+      minHeight: "100vh",
+      width: "100%",
+      padding: "0",
+      margin: "0"
+    }}>
         <motion.div
       initial={{ x: '100%', opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
@@ -2328,37 +2409,127 @@ const handleEdit = () => {
 {/* <h4 style={{ color: "rgb(10, 10, 10)", fontWeight: "bold", marginBottom: "10px" }}> Property Management</h4>  */}
 
 {message.text && (
- <div
- style={{
-   padding: "12px",
-   backgroundColor:
-     message.type === "success" ? "lightgreen" :
-     message.type === "error" ? "lightcoral" :
-     message.type === "warning" ? "khaki" :
-     message.type === "info" ? "lightblue" :
-     message.type === "update" ? "#d1ecf1" :
-     message.type === "deleted" ? "#f8d7da" :
-     "white",
-   color: "black",
-   margin: "10px 0",
-   borderRadius: "5px",
-   display: "flex",
-   flexDirection: "column",  // ⬅️ Stack vertically
-   alignItems: "center",      // ⬅️ Center horizontally
-   textAlign: "center",       // ⬅️ Center text
-   gap: "10px"
- }}
->
- {message.image && (
-   <img
-     src={message.image}
-     alt="icon"
-     style={{ width: "40px", height: "40px", objectFit: "contain" }}
-   />
- )}
- <span>{message.text}</span>
-</div>
-
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      animation: "fadeIn 0.3s ease-in-out"
+    }}
+  >
+    {/* Overlay */}
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        zIndex: 1
+      }}
+    />
+    
+    {/* Modal Box */}
+    <div
+      style={{
+        position: "relative",
+        zIndex: 2,
+        backgroundColor: "white",
+        borderRadius: "16px",
+        padding: "40px",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+        textAlign: "center",
+        maxWidth: "400px",
+        width: "90%",
+        animation: "popupOpen 0.4s ease-out"
+      }}
+    >
+      {/* Success Icon */}
+      <div
+        style={{
+          width: "80px",
+          height: "80px",
+          backgroundColor: "#4CAF50",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 20px",
+          animation: "scaleIn 0.5s ease-out"
+        }}
+      >
+        <GoCheckCircleFill size={50} color="white" />
+      </div>
+      
+      {/* Message Text */}
+      <h2
+        style={{
+          margin: "0 0 10px 0",
+          color: "#333",
+          fontSize: "22px",
+          fontWeight: 600
+        }}
+      >
+        {message.text}
+      </h2>
+      
+      {/* Close Button */}
+      <button
+        onClick={() => {
+          setMessage({ text: "", type: "" });
+          resetForm();
+          navigate('/dashboard/add-property-marketing');
+        }}
+        style={{
+          backgroundColor: "#4CAF50",
+          color: "white",
+          border: "none",
+          padding: "12px 30px",
+          borderRadius: "8px",
+          fontSize: "16px",
+          fontWeight: 600,
+          cursor: "pointer",
+          transition: "background-color 0.3s ease"
+        }}
+        onMouseEnter={(e) => (e.target.style.backgroundColor = "#45a049")}
+        onMouseLeave={(e) => (e.target.style.backgroundColor = "#4CAF50")}
+      >
+        Done
+      </button>
+    </div>
+    
+    <style>{`
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes popupOpen {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes scaleIn {
+        from {
+          transform: scale(0);
+        }
+        to {
+          transform: scale(1);
+        }
+      }
+    `}</style>
+  </div>
 )}
 
 {/* Animated File Type Error Toast */}
@@ -6190,6 +6361,7 @@ return (
     </div>
     </div>
 </motion.div>
+    </div>
   );
 }
 
