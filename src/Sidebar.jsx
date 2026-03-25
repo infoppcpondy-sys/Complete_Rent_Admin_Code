@@ -221,6 +221,23 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </>
         )}
 
+
+        {/* ── TENANT ACCOUNT ── */}
+        {sv(["Buyer Payment Success", "Buyer Payment Failed", "Buyer Payment PayNow", "Buyer Payment PayLater", "All Buyer Bills"]) && (
+          <>
+            <li className="p-3 mt-2 text-white" onClick={() => toggleMenu("buyerPayU")} style={{ borderRadius: "5px", background: "#8BC34A", cursor: "pointer" }}>
+              <FaCar style={{ marginRight: "10px" }} />Tenant Account
+            </li>
+            <ul className={show("buyerPayU")}>
+              {can("Buyer Payment Success") && <li className="p-0 mt-2"><NavLink to="/dashboard/payment-success-buyer" onClick={toggleSidebar} className={({ isActive }) => isActive ? "active-link rounded" : ""}><FaFileInvoice />Tenant Assistant Paid Success</NavLink></li>}
+              {can("Buyer Payment Failed") && <li className="p-0 mt-2"><NavLink to="/dashboard/payment-failed-buyer" onClick={toggleSidebar} className={({ isActive }) => isActive ? "active-link rounded" : ""}><FaFileInvoice />Tenant Assistant Paid Failed</NavLink></li>}
+              {can("Buyer Payment PayNow") && <li className="p-0 mt-2"><NavLink to="/dashboard/payment-paynow-buyer" onClick={toggleSidebar} className={({ isActive }) => isActive ? "active-link rounded" : ""}><FaFileInvoice />Tenant Assistant Pay Now</NavLink></li>}
+              {can("Buyer Payment PayLater") && <li className="p-0 mt-2"><NavLink to="/dashboard/payment-paylater-buyer" onClick={toggleSidebar} className={({ isActive }) => isActive ? "active-link rounded" : ""}><FaFileInvoice />Tenant Assistant Pay Later</NavLink></li>}
+              {can("All Buyer Bills") && <li className="p-0 mt-2"><NavLink to="/dashboard/all-buyer-bills" className={({ isActive }) => isActive ? "active-link rounded" : ""}><FaFileAlt />Manage All RA Bills</NavLink></li>}
+            </ul>
+          </>
+        )}
+
         {/* ── RENT PROPERTY ── */}
         {sv(["Search Property", "Search Pincode", "Add Property", "Manage Property", "Approved Property", "PreApproved Property", "Pending Property", "Removed Property", "Expire Property", "Delete Properties", "Feature Property", "Paid Property", "Free Property", "Set Property Message", "Fetch All Address", "Get All Property Datas"]) && (
           <>
@@ -252,7 +269,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         {sv(["Free Bills", "Paid Bills", "Payment Success", "Payment Failed", "Payment PayNow", "Payment PayLater", "All Bills"]) && (
           <>
             <li className="p-3 mt-2 text-white" onClick={() => toggleMenu("accounts")} style={{ borderRadius: "5px", background: "#8BC34A", cursor: "pointer" }}>
-              <FaCar style={{ marginRight: "10px" }} />RP property Accounts
+              <FaCar style={{ marginRight: "10px" }} />RP property Account
             </li>
             <ul className={show("accounts")}>
               {can("Free Bills") && <li className="p-0 mt-2"><NavLink to="/dashboard/free-bills" onClick={toggleSidebar} className={({ isActive }) => isActive ? "active-link rounded" : ""}><FaFileInvoice />Free Bills</NavLink></li>}
@@ -314,7 +331,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </>
         )}
 
-        {/* ── TENANT ACCOUNT ── */}
+        {/* ── TENANT ACCOUNT ──
         {sv(["Buyer Payment Success", "Buyer Payment Failed", "Buyer Payment PayNow", "Buyer Payment PayLater", "All Buyer Bills"]) && (
           <>
             <li className="p-3 mt-2 text-white" onClick={() => toggleMenu("buyerPayU")} style={{ borderRadius: "5px", background: "#8BC34A", cursor: "pointer" }}>
@@ -328,7 +345,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {can("All Buyer Bills") && <li className="p-0 mt-2"><NavLink to="/dashboard/all-buyer-bills" className={({ isActive }) => isActive ? "active-link rounded" : ""}><FaFileAlt />Manage All RA Bills</NavLink></li>}
             </ul>
           </>
-        )}
+        )} */}
 
         {/* ── BUSINESS SUPPORT ── */}
         {sv(["Search Data", "BuyerList Interest", "Interest Table", "Contact Table", "Called List", "ShortList Favorite Table", "ShortList FavoriteRemoved Table", "Viewed Property Table", "LastViewed Property", "Offers Raised Table", "PhotoRequest Table", "Address Request", "All Views Datas"]) && (
