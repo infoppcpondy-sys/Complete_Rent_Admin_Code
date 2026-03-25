@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
- import imge from "./Assets/ppbuyer.png";
+//  import imge from "./Assets/ppbuyer.png";
 import { RiCloseCircleFill, RiLayoutLine } from 'react-icons/ri';
 import { TbFileDescription , TbMapPinCode, TbWorldLongitude ,TbWheelchair , } from 'react-icons/tb';
 import {FaPhoneAlt, FaRulerCombined,  FaBath, FaChartArea, FaPhone ,FaEdit,FaRoad,FaCreditCard,FaLandmark, FaHome, FaUserAlt, FaEnvelope,  FaRupeeSign , FaFileVideo , FaToilet,FaCar,FaBed,  FaCity , FaTimes, FaArrowRight, FaStreetView, FaSearch, FaHandHoldingUsd, FaUsers, FaUtensils, FaBriefcase, FaDog} from 'react-icons/fa';
@@ -395,9 +395,18 @@ const handleFilterChange = (e) => {
 
 const renderDropdown = (field) => {
   const options = dataList[field] || [];
-  const filteredOptions = options.filter((option) =>
+  let filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(dropdownState.filterText.toLowerCase())
   );
+
+  // Filter maxPrice based on minPrice - do not show prices <= minPrice
+  if (field === 'maxPrice' && formData.minPrice) {
+    const minPriceValue = parseInt(formData.minPrice.replace(/[^0-9]/g, '')) || 0;
+    filteredOptions = filteredOptions.filter((option) => {
+      const optionValue = parseInt(option.replace(/[^0-9]/g, '')) || 0;
+      return optionValue > minPriceValue;
+    });
+  }
 
   return (
     <div data-field={field}>
@@ -947,7 +956,7 @@ const handleConfirmSubmit = async () => {
       msOverflowStyle: 'none', 
       fontFamily: 'Inter, sans-serif'
     }}>
-         <img src={imge} alt="" className="header-image"  style={{width:'100%'}}/>
+         {/* <img src={imge} alt="" className="header-image"  style={{width:'100%'}}/> */}
 
       <div className="w-100 d-flex justify-content-around align-items-center mt-3">
  
