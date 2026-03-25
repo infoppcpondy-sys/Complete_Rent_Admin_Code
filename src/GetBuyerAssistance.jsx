@@ -211,6 +211,7 @@ const BuyerAssistanceTable = () => {
                 <th>Phone Number</th>
                 <th>City</th>
                 <th>Area</th>
+                <th>Pincode</th>
                 <th>Min Price</th>
                 <th>Max Price</th>
                 <th>BHK</th>
@@ -219,8 +220,8 @@ const BuyerAssistanceTable = () => {
                 <th>Status</th>
                 <th>Created</th>
                 <th>Soft Delete</th>
+                <th>Edit Buyer</th>
                 <th>Actions</th>
-                <th>Edit</th>
               </tr>
             </thead>
             <tbody>
@@ -240,6 +241,7 @@ const BuyerAssistanceTable = () => {
                     <td>{request.phoneNumber}</td>
                     <td>{request.city}</td>
                     <td>{request.area}</td>
+                    <td>{request.pincode || request.pinCode || 'N/A'}</td>
                     <td>{request.minPrice}</td>
                     <td>{request.maxPrice}</td>
                     <td>{request.bedrooms}</td>
@@ -255,6 +257,11 @@ const BuyerAssistanceTable = () => {
                       )}
                     </td>
                     <td>
+                      <button onClick={() => handleEdit(request.Ra_Id)} className="btn btn-sm btn-warning">
+                        Edit
+                      </button>
+                    </td>
+                    <td>
                       {!request.isDeleted ? (
                         <button onClick={() => handleSoftDelete(id)} className="btn btn-outline-danger btn-sm">
                           <FaTrash />
@@ -264,11 +271,6 @@ const BuyerAssistanceTable = () => {
                           <FaUndo />
                         </button>
                       )}
-                    </td>
-                    <td>
-                      <button onClick={() => handleEdit(request.Ra_Id)} className="btn btn-outline-secondary btn-sm">
-                        <FaEdit />
-                      </button>
                     </td>
                   </tr>
                 );
