@@ -1084,6 +1084,13 @@ const filteredDetailsList = propertyDetailsList.filter((item) => {
         acc[item.field].push(item.value);
         return acc;
       }, {});
+      // Sort state list with Puducherry first
+      if (groupedData.state) {
+        const puducherry = groupedData.state.find(s => s === 'Puducherry');
+        if (puducherry) {
+          groupedData.state = [puducherry, ...groupedData.state.filter(s => s !== 'Puducherry')];
+        }
+      }
       setDataList(groupedData);
     } catch (error) {
     }
@@ -1819,16 +1826,8 @@ const handleSubmit = async (e) => {
     // Append Rent ID
     formDataToSend.append("rentId", newRentId);
 
-    // 🔹 Determine status based on property mode and type
-    // Commercial + Plot/Land/Agricultural Land → Pre-Approved (complete)
-    // Residential properties → Pending
-    // This allows them to show in PreApprovedCar page after proper verification
-    const commercialLandTypes = ["plot", "land", "agricultural land"];
-    const isCommercialLand = 
-      formData.propertyMode?.toLowerCase() === "commercial" && 
-      commercialLandTypes.includes(formData.propertyType?.toLowerCase());
-    
-    const propertyStatus = isCommercialLand ? "complete" : "pending";
+    // 🔹 Set status to "complete" so property appears in Pre-approved page
+    const propertyStatus = "complete";
     formDataToSend.append("status", propertyStatus);
  
 
@@ -1948,6 +1947,11 @@ Thank you for Rent Pondy! 🙏`
     }
     
    setIsProcessing(false); // Hide loading state
+    
+    // ✅ Clear rentId for next property addition
+    setRentId("");
+    localStorage.removeItem("rentId");
+    
     navigate('/dashboard/preapproved-car');
   } catch (error) {
     setIsProcessing(false); // Hide loading state on error
