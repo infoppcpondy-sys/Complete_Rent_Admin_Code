@@ -13,6 +13,8 @@ const SearchPincode = ({ properties = [] }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [approvedModeFilter, setApprovedModeFilter] = useState('');
+  const [approvedRentIdSearch, setApprovedRentIdSearch] = useState('');
+  const [approvedPlanTypeFilter, setApprovedPlanTypeFilter] = useState('');
   const [exclusiveModeFilter, setExclusiveModeFilter] = useState('');
   const [selectedPropertyForSend, setSelectedPropertyForSend] = useState(null);
   const [messageContent, setMessageContent] = useState('');
@@ -180,6 +182,43 @@ Thank you for choosing *RENT PONDY*! 🙏`;
           }
         }
 
+        // Fetch free and paid plans to create a mapping
+        let planTypeMap = {};
+        try {
+          const freeRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-free-plans`);
+          const paidRes = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-paid-plans`);
+
+          // Map free properties
+          if (freeRes.data.data && Array.isArray(freeRes.data.data)) {
+            freeRes.data.data.forEach(item => {
+              if (item.properties && Array.isArray(item.properties)) {
+                item.properties.forEach(prop => {
+                  planTypeMap[prop.rentId] = 'Free';
+                });
+              }
+            });
+          }
+
+          // Map paid properties
+          if (paidRes.data.data && Array.isArray(paidRes.data.data)) {
+            paidRes.data.data.forEach(item => {
+              if (item.properties && Array.isArray(item.properties)) {
+                item.properties.forEach(prop => {
+                  planTypeMap[prop.rentId] = 'Paid';
+                });
+              }
+            });
+          }
+        } catch (planError) {
+          console.error('Error fetching plan data:', planError);
+        }
+
+        // Add planName to properties
+        propertyList = propertyList.map(prop => ({
+          ...prop,
+          planName: planTypeMap[prop.rentId] || 'Free'
+        }));
+
         setAllProperties(propertyList);
 
         const pincodeCountMap = {};
@@ -202,7 +241,8 @@ Thank you for choosing *RENT PONDY*! 🙏`;
               rentId: property.rentId,
               pinCode: property.pinCode,
               pincode: property.pincode,
-              detectedPinCode: pinCode
+              detectedPinCode: pinCode,
+              planName: property.planName
             });
           }
 
@@ -400,12 +440,14 @@ Thank you for choosing *RENT PONDY*! 🙏`;
       return modeMatch;
     });
 
-  // Filter approved properties: exclude deleted and filter by mode
+  // Filter approved properties: exclude deleted and filter by mode, rent ID, and plan type
   const filteredApprovedProperties = selectedPincodeProperties
     .filter(property => {
       const isNotDeleted = !property.isDeleted;
       const modeMatch = !approvedModeFilter || (property.propertyMode && property.propertyMode.toLowerCase() === approvedModeFilter.toLowerCase());
-      return isNotDeleted && modeMatch;
+      const rentIdMatch = !approvedRentIdSearch || (property.rentId && String(property.rentId).toLowerCase().includes(approvedRentIdSearch.toLowerCase()));
+      const planTypeMatch = !approvedPlanTypeFilter || (property.planName && property.planName.toLowerCase() === approvedPlanTypeFilter.toLowerCase());
+      return isNotDeleted && modeMatch && rentIdMatch && planTypeMatch;
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -415,6 +457,8 @@ Thank you for choosing *RENT PONDY*! 🙏`;
     setSelectedPincode(null); 
     setSelectedExclusivePincode(null);
     setApprovedModeFilter('');
+    setApprovedRentIdSearch('');
+    setApprovedPlanTypeFilter('');
     setExclusiveModeFilter('');
   };
 
@@ -490,12 +534,32 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                   <h3 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{filteredApprovedProperties.length}</h3>
                   <p style={{ margin: '5px 0 0 0', fontSize: '1.1rem' }}>{filteredApprovedProperties.length === 1 ? 'Property' : 'Properties'} Found</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <label htmlFor="modeFilter" style={{ fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap' }}>Filter by Property Mode:</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search by Rent ID"
+                    style={{ width: '180px' }}
+                    value={approvedRentIdSearch}
+                    onChange={(e) => setApprovedRentIdSearch(e.target.value)}
+                  />
+                  <label htmlFor="approvedPlanTypeFilter" style={{ fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap' }}>Plan Type:</label>
+                  <select 
+                    id="approvedPlanTypeFilter"
+                    className="form-select" 
+                    style={{ width: '120px' }}
+                    value={approvedPlanTypeFilter}
+                    onChange={(e) => setApprovedPlanTypeFilter(e.target.value)}
+                  >
+                    <option value="">All Plans</option>
+                    <option value="Free">Free</option>
+                    <option value="Paid">Paid</option>
+                  </select>
+                  <label htmlFor="modeFilter" style={{ fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap' }}>Mode:</label>
                   <select 
                     id="modeFilter"
                     className="form-select" 
-                    style={{ width: '180px' }}
+                    style={{ width: '150px' }}
                     value={approvedModeFilter}
                     onChange={(e) => setApprovedModeFilter(e.target.value)}
                   >
@@ -516,7 +580,7 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                 <thead className="table-dark">
                   <tr>
                     <th>S.No</th><th>Rent ID</th><th>Phone</th><th>Property Type</th><th>Mode</th><th>BHK</th><th>Floor</th>
-                    <th>Area</th><th>City</th><th>Rental Amount</th><th>Plan</th><th>Status</th><th>Send WhatsApp</th><th>Created</th>
+                    <th>Area</th><th>City</th><th>Rental Amount</th><th>Plan Type</th><th>Status</th><th>Send WhatsApp</th><th>Created</th>
                   </tr>
                 </thead>
                 <tbody>

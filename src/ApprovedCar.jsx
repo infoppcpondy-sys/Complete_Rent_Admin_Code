@@ -45,6 +45,7 @@ const ApprovedCar = () => {
   const [propertyModeFilter, setPropertyModeFilter] = useState('');
   const [billTypeFilter, setBillTypeFilter] = useState('');
   const [otpStatusFilter, setOtpStatusFilter] = useState('');
+  const [planTypeFilter, setPlanTypeFilter] = useState('');
   const [billMap, setBillMap] = useState({});
   
 
@@ -430,6 +431,14 @@ if (priceFilter === 'house30') {
     result = result.filter((prop) => getBillType(prop.rentId) === billTypeFilter);
   }
 
+  // Plan type filter
+  if (planTypeFilter && planTypeFilter !== '') {
+    result = result.filter((prop) => {
+      const planType = (prop.planName || '').toLowerCase();
+      return planType === planTypeFilter.toLowerCase();
+    });
+  }
+
 const parseAmount = (val) => Number(String(val).replace(/,/g, '') || 0);
 
   // Sorting
@@ -469,7 +478,8 @@ useEffect(() => {
   propertyModeFilter,
   billTypeFilter,
   otpStatusFilter,
-  pincodeFilter
+  pincodeFilter,
+  planTypeFilter
 ]);
 
 // Reset all filters
@@ -489,6 +499,7 @@ const handleReset = () => {
   setPropertyModeFilter('');
   setBillTypeFilter('');
   setOtpStatusFilter('');
+  setPlanTypeFilter('');
   setSortOption('');
   setFiltered(properties);
 };
@@ -942,6 +953,14 @@ const handlePrint = (prop) => {
             <option value="">All</option>
             <option value="Office Bill">Office Bill</option>
             <option value="Online Bill">Online Bill</option>
+          </select>
+        </div>
+        <div className="col-md-3">
+          <label>Plan Type</label>
+          <select className="form-control" value={planTypeFilter} onChange={(e) => setPlanTypeFilter(e.target.value)}>
+            <option value="">All</option>
+            <option value="Free">Free</option>
+            <option value="Paid">Paid</option>
           </select>
         </div>
         <div className="col-md-3">
