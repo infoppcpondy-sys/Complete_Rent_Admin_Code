@@ -398,27 +398,82 @@ const downloadExcel = () => {
             )}
           </tbody>
         </Table>
-                         <div className="pagination-controls">
+                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
   <button
     disabled={currentPage === 1}
     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+    style={{
+      padding: '8px 16px',
+      border: 'none',
+      borderRadius: '6px',
+      backgroundColor: currentPage === 1 ? '#ccc' : '#6c63ff',
+      color: '#fff',
+      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+      fontWeight: 'bold',
+      fontSize: '14px'
+    }}
   >
     Previous
   </button>
 
-  {[...Array(totalPages)].map((_, idx) => (
-    <button
-      key={idx}
-      className={currentPage === idx + 1 ? "active" : ""}
-      onClick={() => setCurrentPage(idx + 1)}
-    >
-      {idx + 1}
-    </button>
-  ))}
+  {(() => {
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = startPage + maxVisible - 1;
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    const pages = [];
+    const pageBtn = (num) => (
+      <button
+        key={num}
+        onClick={() => setCurrentPage(num)}
+        style={{
+          padding: '8px 14px',
+          border: 'none',
+          borderRadius: '6px',
+          backgroundColor: currentPage === num ? '#6c63ff' : '#e8e6ff',
+          color: currentPage === num ? '#fff' : '#6c63ff',
+          cursor: 'pointer',
+          fontWeight: currentPage === num ? 'bold' : '500',
+          fontSize: '14px',
+          transition: 'all 0.2s'
+        }}
+      >
+        {num}
+      </button>
+    );
+    const dots = (key) => (
+      <span key={key} style={{ padding: '0 6px', color: '#6c63ff', fontWeight: 'bold' }}>...</span>
+    );
+    if (startPage > 1) {
+      pages.push(pageBtn(1));
+      if (startPage > 2) pages.push(dots('start-dots'));
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(pageBtn(i));
+    }
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) pages.push(dots('end-dots'));
+      pages.push(pageBtn(totalPages));
+    }
+    return pages;
+  })()}
 
   <button
     disabled={currentPage === totalPages}
     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+    style={{
+      padding: '8px 16px',
+      border: 'none',
+      borderRadius: '6px',
+      backgroundColor: currentPage === totalPages ? '#ccc' : '#6c63ff',
+      color: '#fff',
+      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+      fontWeight: 'bold',
+      fontSize: '14px'
+    }}
   >
     Next
   </button>
