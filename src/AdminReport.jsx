@@ -1,7 +1,7 @@
  
 
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 import { useSelector } from 'react-redux';
@@ -21,6 +21,17 @@ const AdminReport = () => {
       incomplete: 0,
       active: 0,
     }
+  });
+
+  const [yesterdayActions, setYesterdayActions] = useState({
+    contactViewed: 0,
+    favoriteList: 0,
+    photoRequest: 0,
+    addressRequests: 0,
+    offerRaised: 0,
+    viewedProperties: 0,
+    sendInterest: 0,
+    calledList: 0,
   });
 
   const fetchData = async () => {
@@ -60,9 +71,55 @@ const AdminReport = () => {
 
  
 
+  const fetchYesterdayActions = useCallback(async () => {
+    const yesterdayStart = moment().subtract(1, 'days').startOf('day');
+    const yesterdayEnd = moment().subtract(1, 'days').endOf('day');
+
+    const isYesterday = (dateStr) => {
+      const date = moment(dateStr);
+      return date.isBetween(yesterdayStart, yesterdayEnd, undefined, '[]');
+    };
+
+    try {
+      const [contactRes, favoriteRes, photoRes, addressRes, offersRes, viewedRes, interestRes, calledRes] = await Promise.all([
+        axios.get(`${process.env.REACT_APP_API_URL}/get-all-contact-requests`),
+        axios.get(`${process.env.REACT_APP_API_URL}/get-all-favorite-requests`),
+        axios.get(`${process.env.REACT_APP_API_URL}/all-photo-requests`),
+        axios.get(`${process.env.REACT_APP_API_URL}/get-address-requests-all`),
+        axios.get(`${process.env.REACT_APP_API_URL}/all-offers`),
+        axios.get(`${process.env.REACT_APP_API_URL}/user-get-all-last-views`),
+        axios.get(`${process.env.REACT_APP_API_URL}/get-all-sendinterest`),
+        axios.get(`${process.env.REACT_APP_API_URL}/get-all-contact-sent-properties`),
+      ]);
+
+      const contactData = contactRes.data.contactRequestsData || [];
+      const favoriteData = favoriteRes.data.favoriteRequestsData || [];
+      const photoData = Array.isArray(photoRes.data) ? photoRes.data : [];
+      const addressData = addressRes.data.requests || [];
+      const offersData = offersRes.data.offers || [];
+      const viewedData = Array.isArray(viewedRes.data) ? viewedRes.data : [];
+      const interestData = interestRes.data.interestRequestsData || [];
+      const calledData = calledRes.data.success ? (calledRes.data.properties || []) : [];
+
+      setYesterdayActions({
+        contactViewed: contactData.filter(item => isYesterday(item.createdAt)).length,
+        favoriteList: favoriteData.filter(item => isYesterday(item.createdAt)).length,
+        photoRequest: photoData.filter(item => isYesterday(item.createdAt)).length,
+        addressRequests: addressData.filter(item => isYesterday(item.createdAt)).length,
+        offerRaised: offersData.filter(item => isYesterday(item.createdAt)).length,
+        viewedProperties: viewedData.filter(item => isYesterday(item.createdAt || item.viewedAt)).length,
+        sendInterest: interestData.filter(item => isYesterday(item.createdAt)).length,
+        calledList: calledData.filter(item => isYesterday(item.contactedAt)).length,
+      });
+    } catch (error) {
+      console.error("Error fetching yesterday's action data:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
-  }, []);
+    fetchYesterdayActions();
+  }, [fetchYesterdayActions]);
 
   const reduxAdminName = useSelector((state) => state.admin.name);
   const reduxAdminRole = useSelector((state) => state.admin.role);
@@ -202,6 +259,60 @@ const AdminReport = () => {
             <td>4</td>
             <td>TOTAL PROPERTIES</td>
             <td>{reportData.propertyCounts.total}</td>
+          </tr>
+        </tbody>
+      </Table>
+
+      {/* Yesterday's Action Summary Table */}
+      <h4 className="mt-5">Yesterday's Action Summary ({moment().subtract(1, 'days').format('DD-MM-YYYY')})</h4>
+      <Table striped bordered hover responsive className="table-sm align-middle">
+        <thead>
+          <tr>
+            <th>SL NO</th>
+            <th>DESCRIPTION</th>
+            <th>TOTAL ACTION</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>CONTACT VIEWED</td>
+            <td>{yesterdayActions.contactViewed}</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>FAVORITE LIST</td>
+            <td>{yesterdayActions.favoriteList}</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>PHOTO REQUEST</td>
+            <td>{yesterdayActions.photoRequest}</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>ADDRESS REQUESTS</td>
+            <td>{yesterdayActions.addressRequests}</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>OFFER RAISED</td>
+            <td>{yesterdayActions.offerRaised}</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>VIEWED PROPERTIES</td>
+            <td>{yesterdayActions.viewedProperties}</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>SEND INTEREST</td>
+            <td>{yesterdayActions.sendInterest}</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>CALLED LIST</td>
+            <td>{yesterdayActions.calledList}</td>
           </tr>
         </tbody>
       </Table>
