@@ -6,6 +6,7 @@ import './UserList.css';
 import { FaEdit } from 'react-icons/fa';
 import { MdDeleteForever } from 'react-icons/md';
 import { Table } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
 
 const UserForm = ({ user, onSave, onDelete, existingUsers = [] }) => {
     const [formData, setFormData] = useState({
@@ -642,6 +643,10 @@ const UserList = () => {
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const tableRef = useRef();
+
+    const reduxAdminRole = useSelector((state) => state.admin.role);
+    const adminRole = reduxAdminRole || localStorage.getItem("adminRole");
+    const isSuperAdmin = adminRole === "SuperAdmin";
   
   const handlePrint = () => {
     const printContent = tableRef.current.innerHTML;
@@ -705,7 +710,7 @@ const UserList = () => {
                         <th>Sl</th>
                         <th>UserName</th>
                         {/* <th>Bycrpt Password</th> */}
-                        {/* <th>Admin Set Password</th> */}
+                        {isSuperAdmin && <th>Admin Set Password</th>}
                         {/* <th>Role</th> */}
                         {/* <th>UserType</th> */}
                         <th>Office</th>
@@ -719,14 +724,14 @@ const UserList = () => {
                             <td>{index + 1}</td>
                             <td>{user.name}</td>
                             {/* <td>{user.password}</td> */}
-                            {/* <td>{user.plainPassword}</td> */}
+                            {isSuperAdmin && <td>{user.plainPassword}</td>}
                             {/* <td>{user.role}</td> */}
                             {/* <td>{user.userType}</td> */}
                             <td>{user.office}</td>
                             <td>{user.mobile}</td>
                             <td>
                                 <button  className='text-primary' onClick={() => setSelectedUser(user)}><FaEdit /></button>
-                                <button  className='text-danger fs-5 ' onClick={async () => {
+                                <button  className='text-danger fs-5 ' disabled={user.name === 'superadminrent'} style={user.name === 'superadminrent' ? { opacity: 0.3, cursor: 'not-allowed' } : {}} onClick={async () => {
                                     if (window.confirm('Are you sure?')) {
                                         await axios.delete(`${process.env.REACT_APP_API_URL}/admin-delete/${user._id}`);
                                         toast.success('User deleted successfully!');
