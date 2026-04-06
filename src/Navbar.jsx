@@ -68,7 +68,7 @@ const AppNavbar = ({ toggleSidebar }) => {
     <Navbar expand="md" className="shadow-sm bg-light p-3 mb-3">
       <Container fluid>
         <Navbar.Brand href="#" className="d-flex align-items-center">
-          <span className="fw-bold text-primary"> Rent Pondy Properties | Admin  </span>
+          <span className="fw-bold text-primary"> Rent Pondy  | Admin Panel  </span>
         </Navbar.Brand>
 
         <div style={{ marginLeft: "auto", paddingRight: "1rem" }}>
