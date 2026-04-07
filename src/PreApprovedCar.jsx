@@ -605,6 +605,14 @@ const handleUndo = async (rentId) => {
                 🔄 Refresh Follow-ups & Bills
               </button> */}
       <h3 className="text-success mt-10 mb-10">Pre Approved Properties All Datas</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '15px 0', flexWrap: 'wrap' }}>
+        <div style={{ background: '#6c757d', color: 'white', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', fontSize: '14px' }}>
+          Total: {properties.length} Records
+        </div>
+        <div style={{ background: '#007bff', color: 'white', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', fontSize: '14px' }}>
+          Showing: {filtered.length} Records
+        </div>
+      </div>
 <div ref={tableRef}>
       <Table striped bordered hover responsive className="table-sm align-middle">
         <thead className="sticky-top">

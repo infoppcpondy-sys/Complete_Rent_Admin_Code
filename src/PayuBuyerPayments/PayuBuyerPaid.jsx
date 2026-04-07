@@ -93,7 +93,7 @@ const filteredPayments = payments.filter(payment => {
               <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
 </button>
-      <h2 className="mb-4 mt-4 text-center">Paid Payments with Plan Details</h2>
+      <h2 className="mb-4 mt-4 text-center">Tenant Paid Payments with Plan Details</h2>
       {loading ? (
         <p>Loading...</p>
       ) : filteredPayments.length === 0 ? (

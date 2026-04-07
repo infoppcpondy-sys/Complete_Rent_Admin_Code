@@ -151,7 +151,7 @@ const PaymentPaidPayLater = () => {
         Print
       </button>
 
-      <h2 className="mb-4 text-center">Pay Now Payments with Plan Details</h2>
+      <h2 className="mb-4 text-center">Pay Later Payments with Plan Details</h2>
 
       {/* Table */}
       {filteredPayments.length === 0 ? (

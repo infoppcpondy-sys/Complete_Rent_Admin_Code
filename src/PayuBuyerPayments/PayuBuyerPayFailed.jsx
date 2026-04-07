@@ -92,7 +92,7 @@ const filteredPayments = payments.filter(payment => {
   </button>
 </div>
 
-      <h2 className="mb-4 mt-4 text-center">Pay Failed Payments with Plan Details</h2>
+      <h2 className="mb-4 mt-4 text-center">Pay Failed Payments with Plan Details (Tenant)</h2>
      
                    <button className="btn btn-secondary mb-3 mt-2" style={{background:"tomato"}} onClick={handlePrint}>
   Print
