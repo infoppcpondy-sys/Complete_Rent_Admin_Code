@@ -155,6 +155,7 @@ const filteredBills = bills.filter((bill) => {
               <th>Owner Phone</th>
               <th>Payment Type</th>
               <th>Plan Name</th>
+              <th>Plan Type</th>
               <th>Bill Amount</th>
               <th>Validity (days)</th>
               <th>No. of Ads</th>
@@ -185,6 +186,13 @@ const filteredBills = bills.filter((bill) => {
                   <td>{bill.ownerPhone}</td>
                   <td>{bill.paymentType}</td>
                   <td>{bill.planName}</td>
+                  <td>
+                    {bill.paymentType?.toLowerCase() === 'free' ? (
+                      <span className="badge bg-success">Free</span>
+                    ) : (
+                      <span className="badge bg-primary">Paid</span>
+                    )}
+                  </td>
                   <td>{bill.billAmount}</td>
                   <td>{bill.validity}</td>
                   <td>{bill.noOfAds}</td>
