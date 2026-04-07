@@ -15,6 +15,9 @@ const BuyerAssistanceActive = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 const [baId, setBaId] = useState('');
+  const [freeRaIds, setFreeRaIds] = useState(new Set());
+  const [paidRaIds, setPaidRaIds] = useState(new Set());
+  const [createdAtMap, setCreatedAtMap] = useState({});
 
   useEffect(() => {
     fetchData();
@@ -22,7 +25,41 @@ const [baId, setBaId] = useState('');
 
   const fetchData = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/raActive-buyerAssistance-all-plans-rent`);
+      const [res, freeRes, paidRes, allBillsRes, buyerAssistRes] = await Promise.all([
+        axios.get(`${process.env.REACT_APP_API_URL}/raActive-buyerAssistance-all-plans-rent`),
+        axios.get(`${process.env.REACT_APP_API_URL}/buyer-bills/free-with-assistance-rent`),
+        axios.get(`${process.env.REACT_APP_API_URL}/buyer-bills/non-free-with-assistance-rent`),
+        axios.get(`${process.env.REACT_APP_API_URL}/buyer-bills-rent`),
+        axios.get(`${process.env.REACT_APP_API_URL}/fetch-buyer-assistance-rent`),
+      ]);
+
+      const freeIds = new Set((freeRes.data.data || []).map(item => item.buyerAssistance?.Ra_Id).filter(Boolean));
+      const paidIds = new Set((paidRes.data.data || []).map(item => item.buyerAssistance?.Ra_Id).filter(Boolean));
+
+      // Fill gaps from AllBuyerBills using paymentType
+      const allBills = allBillsRes.data?.data || [];
+      allBills.forEach(bill => {
+        const raId = bill.Ra_Id;
+        if (raId && !freeIds.has(raId) && !paidIds.has(raId)) {
+          if (bill.paymentType?.toLowerCase() === 'free') {
+            freeIds.add(raId);
+          } else {
+            paidIds.add(raId);
+          }
+        }
+      });
+
+      setFreeRaIds(freeIds);
+      setPaidRaIds(paidIds);
+
+      const dateMap = {};
+      (buyerAssistRes.data?.data || []).forEach(item => {
+        if (item.Ra_Id && item.createdAt) {
+          dateMap[item.Ra_Id] = item.createdAt;
+        }
+      });
+      setCreatedAtMap(dateMap);
+
       const sortedData = [...res.data.data].sort((a, b) => {
         const idA = parseInt(a.Ra_Id) || 0;
         const idB = parseInt(b.Ra_Id) || 0;
@@ -337,6 +374,7 @@ onClick={handleReset}
               <th className="border px-4 py-2">Min Price</th>
               <th className="border px-4 py-2">Max Price</th>
               <th className="border px-4 py-2">Plan Name</th>
+              <th className="border px-4 py-2">Plan Type</th>
               <th className="border px-4 py-2">Created At</th>
               <th className="border px-4 py-2">Duration (Days)</th>
               <th className="border px-4 py-2">Expiry Date</th>
@@ -363,7 +401,16 @@ onClick={handleReset}
                 <td className="border px-4 py-2">{item.maxPrice}</td>
 
                 <td className="border px-4 py-2">{item.planDetails.planName}</td>
-                <td className="border px-4 py-2">{item.planDetails.planCreatedAt}</td>
+                <td className="border px-4 py-2">
+                  {paidRaIds.has(item.Ra_Id) ? (
+                    <span className="badge bg-primary">Paid</span>
+                  ) : freeRaIds.has(item.Ra_Id) ? (
+                    <span className="badge bg-success">Free</span>
+                  ) : (
+                    <span className="badge bg-secondary">N/A</span>
+                  )}
+                </td>
+                <td className="border px-4 py-2">{createdAtMap[item.Ra_Id] ? new Date(createdAtMap[item.Ra_Id]).toLocaleDateString() : item.planDetails.planCreatedAt}</td>
                 <td className="border px-4 py-2">{item.planDetails.durationDays}</td>
                 <td className="border px-4 py-2">{item.planDetails.planExpiryDate}</td>
                 <td className="border px-4 py-2">{item.planDetails.packageType}</td>
