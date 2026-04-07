@@ -350,6 +350,7 @@ const handleUndoDelete = async (Ra_Id) => {
             <th>Updated At</th>
             <th>Plan Name</th>
             <th>Bill No</th>
+            <th>Plan Type</th>
             <th>Admin</th>
             <th>Office</th>
             <th>Plan Expiry</th>
@@ -357,7 +358,7 @@ const handleUndoDelete = async (Ra_Id) => {
           </tr>
         </thead>
 <tbody>
- 
+
 
   {data
   .filter((item) => {
@@ -402,6 +403,7 @@ const handleUndoDelete = async (Ra_Id) => {
         <td>{moment(prop.updatedAt).format("YYYY-MM-DD HH:mm")}</td>
         <td>{item.bill.planName}</td>
         <td>{item.bill.billNo}</td>
+        <td><span className="badge bg-success">Free</span></td>
         <td>{item.bill.adminName}</td>
         <td>{item.bill.adminOffice}</td>
         <td>{moment(item.bill.planExpiryDate).format("YYYY-MM-DD")}</td>
