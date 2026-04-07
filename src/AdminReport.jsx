@@ -641,6 +641,9 @@ const AdminReport = () => {
         </thead>
         <tbody>
           <tr>
+            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>PROPERTY</td>
+          </tr>
+          <tr>
             <td>1</td>
             <td>PRE-APPROVED</td>
             <td>{propertyStatusCounts.preApproved}</td>
