@@ -1,7 +1,55 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import axios from 'axios';
 import { FaPrint } from 'react-icons/fa';
 import { Table } from 'react-bootstrap';
+
+const RemarksInput = ({ name, value, onChange, disabled }) => (
+  <div style={{ marginBottom: '15px' }}>
+    <label style={{
+      fontWeight: 'bold', display: 'flex', justifyContent: 'space-between',
+      alignItems: 'center', marginBottom: '5px', color: '#555'
+    }}>
+      <span>Remarks:</span>
+      <span style={{
+        fontSize: '12px', fontWeight: 'normal',
+        color: value.length >= 50 ? '#dc3545' : value.length >= 40 ? '#fd7e14' : '#6c757d'
+      }}>
+        {value.length}/50
+      </span>
+    </label>
+    <input
+      type="text"
+      name={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder="Enter remarks (max 50 characters)"
+      maxLength={50}
+      style={{
+        padding: '10px', width: '100%', fontSize: '14px', borderRadius: '4px',
+        border: `2px solid ${value.length >= 50 ? '#dc3545' : '#ddd'}`,
+        boxSizing: 'border-box'
+      }}
+    />
+    {value.length >= 50 && (
+      <small style={{ color: '#dc3545', marginTop: '3px', display: 'block' }}>
+        Maximum 50 characters reached.
+      </small>
+    )}
+  </div>
+);
+
+const dedupeFollowups = (arr) => {
+  if (!Array.isArray(arr)) return [];
+  const seen = new Set();
+  return arr.filter(item => {
+    const dateKey = item.followupDate ? new Date(item.followupDate).toISOString() : '';
+    const key = `${item.Ra_Id}|${item.phoneNumber}|${dateKey}|${item.followupStatus}|${item.followupType}|${item.adminName}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 const BuyerFollowUps = () => {
   const [followups, setFollowups] = useState([]);
@@ -24,7 +72,8 @@ const BuyerFollowUps = () => {
     followupStatus: '',
     followupType: '',
     followupDate: '',
-    adminName: ''
+    adminName: '',
+    remarks: ''
   });
 
   const predefinedAdminNames = ['Bala', 'Madhan', 'Prabavathi', 'ThilagavatiMayavan', 'Arund', 'Gayathri', 'Nandhishwari'];
@@ -32,12 +81,26 @@ const BuyerFollowUps = () => {
   const [selectedAdminNames, setSelectedAdminNames] = useState([]);
   const [customAdminName, setCustomAdminName] = useState('');
 
+  // Edit follow-up state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingFollowUp, setEditingFollowUp] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    followupStatus: '',
+    followupType: '',
+    followupDate: '',
+    remarks: ''
+  });
+  const [showEditAdminDropdown, setShowEditAdminDropdown] = useState(false);
+  const [selectedEditAdminNames, setSelectedEditAdminNames] = useState([]);
+  const [customEditAdminName, setCustomEditAdminName] = useState('');
+
   const fetchAllFollowUps = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/followup-list-buyer`);
-      setFollowups(res.data.data);
-      setAllData(res.data.data);
+      const deduped = dedupeFollowups(res.data.data);
+      setFollowups(deduped);
+      setAllData(deduped);
     } catch (error) {
       console.error('Error fetching all follow-up data:', error);
     } finally {
@@ -49,7 +112,7 @@ const BuyerFollowUps = () => {
     try {
       setLoading(true);
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/followup-list-today-past-buyer?dateFilter=${filterType}`);
-      setFollowups(res.data.data);
+      setFollowups(dedupeFollowups(res.data.data));
     } catch (error) {
       console.error(`Error fetching ${filterType} follow-up data:`, error);
     } finally {
@@ -193,7 +256,77 @@ const BuyerFollowUps = () => {
 
   const handleCreateFormChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'remarks' && value.length > 50) return;
     setCreateFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // ── Edit handlers ──
+  const handleEdit = useCallback((followUp) => {
+    setEditingFollowUp(followUp);
+    setEditFormData({
+      followupStatus: followUp.followupStatus,
+      followupType: followUp.followupType,
+      followupDate: followUp.followupDate ? followUp.followupDate.split('T')[0] : '',
+      remarks: followUp.remarks || ''
+    });
+    if (followUp.adminName && followUp.adminName.trim()) {
+      setSelectedEditAdminNames(followUp.adminName.split(',').map(n => n.trim()));
+    } else {
+      setSelectedEditAdminNames([]);
+    }
+    setCustomEditAdminName('');
+    setShowEditModal(true);
+  }, []);
+
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'remarks' && value.length > 50) return;
+    setEditFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const getFinalEditAdminNames = () => selectedEditAdminNames.join(', ');
+
+  const handleEditAdminNameChange = (name) => {
+    setSelectedEditAdminNames(prev =>
+      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    );
+    setShowEditAdminDropdown(false);
+  };
+
+  const handleAddCustomEditAdminName = () => {
+    if (customEditAdminName.trim()) {
+      setSelectedEditAdminNames(prev => [...prev, customEditAdminName.trim()]);
+      setCustomEditAdminName('');
+      setShowEditAdminDropdown(false);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingFollowUp(null);
+    setEditFormData({ followupStatus: '', followupType: '', followupDate: '', remarks: '' });
+    setSelectedEditAdminNames([]);
+    setCustomEditAdminName('');
+    setShowEditAdminDropdown(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingFollowUp?._id) { alert('Error: Follow-up ID not found'); return; }
+    const finalAdminName = getFinalEditAdminNames();
+    const dataToSend = { ...editFormData, adminName: finalAdminName };
+    try {
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_URL}/followup-update-buyer/${editingFollowUp._id}`,
+        dataToSend
+      );
+      if (response.status === 200) {
+        alert('✅ Follow-up updated successfully!');
+        handleCloseEditModal();
+        fetchAllFollowUps();
+      }
+    } catch (error) {
+      alert('❌ Failed to update follow-up!\n' + (error.response?.data?.message || error.message));
+    }
   };
 
   const handleCreateFollowUp = async () => {
@@ -208,7 +341,7 @@ const BuyerFollowUps = () => {
       if (response.status === 201) {
         alert('✅ Follow-up created successfully!');
         setShowCreateModal(false);
-        setCreateFormData({ Ra_Id: 'N/A', phoneNumber: '', followupStatus: '', followupType: '', followupDate: '', adminName: '' });
+        setCreateFormData({ Ra_Id: 'N/A', phoneNumber: '', followupStatus: '', followupType: '', followupDate: '', adminName: '', remarks: '' });
         setSelectedAdminNames([]);
         setCustomAdminName('');
         fetchAllFollowUps();
@@ -220,7 +353,7 @@ const BuyerFollowUps = () => {
 
   const handleCloseCreateModal = () => {
     setShowCreateModal(false);
-    setCreateFormData({ Ra_Id: 'N/A', phoneNumber: '', followupStatus: '', followupType: '', followupDate: '', adminName: '' });
+    setCreateFormData({ Ra_Id: 'N/A', phoneNumber: '', followupStatus: '', followupType: '', followupDate: '', adminName: '', remarks: '' });
     setSelectedAdminNames([]);
     setCustomAdminName('');
     setShowCreateAdminDropdown(false);
@@ -238,7 +371,9 @@ const BuyerFollowUps = () => {
       <th>Follow-Up Date</th>
       <th>Follow-up Day</th>
       <th>Admin Name</th>
+      <th>Remarks</th>
       <th>Created At</th>
+      <th>Edit Followup</th>
     </tr>
   );
 
@@ -261,7 +396,20 @@ const BuyerFollowUps = () => {
         </span>
       </td>
       <td>{item.adminName}</td>
+      <td>
+        {item.remarks ? (
+          <span style={{
+            display: 'inline-block', maxWidth: '150px', overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle'
+          }} title={item.remarks}>
+            {item.remarks}
+          </span>
+        ) : '-'}
+      </td>
       <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+      <td>
+        <button className="btn btn-sm btn-warning" onClick={() => handleEdit(item)}>✏️ Edit</button>
+      </td>
     </tr>
   );
 
@@ -407,7 +555,7 @@ const BuyerFollowUps = () => {
               <tr style={{ backgroundColor: '#fff3cd', color: '#856404' }} className="text-center">
                 <th>S.No</th><th>RA ID</th><th>Tenant Status</th><th>Phone Number</th>
                 <th>Follow-Up Status</th><th>Follow-Up Type</th><th>Follow-Up Date</th>
-                <th>Follow-up Day</th><th>Admin Name</th><th>Created At</th>
+                <th>Follow-up Day</th><th>Admin Name</th><th>Remarks</th><th>Created At</th><th>Edit Followup</th>
               </tr>
             </thead>
             <tbody>
@@ -429,7 +577,7 @@ const BuyerFollowUps = () => {
               <tr style={{ backgroundColor: '#d4edda', color: '#155724' }} className="text-center">
                 <th>S.No</th><th>RA ID</th><th>Tenant Status</th><th>Phone Number</th>
                 <th>Follow-Up Status</th><th>Follow-Up Type</th><th>Follow-Up Date</th>
-                <th>Follow-up Day</th><th>Admin Name</th><th>Created At</th>
+                <th>Follow-up Day</th><th>Admin Name</th><th>Remarks</th><th>Created At</th><th>Edit Followup</th>
               </tr>
             </thead>
             <tbody>
@@ -451,7 +599,7 @@ const BuyerFollowUps = () => {
               <tr style={{ backgroundColor: '#f8d7da', color: '#721c24' }} className="text-center">
                 <th>S.No</th><th>RA ID</th><th>Tenant Status</th><th>Phone Number</th>
                 <th>Follow-Up Status</th><th>Follow-Up Type</th><th>Follow-Up Date</th>
-                <th>Follow-up Day</th><th>Admin Name</th><th>Created At</th>
+                <th>Follow-up Day</th><th>Admin Name</th><th>Remarks</th><th>Created At</th><th>Edit Followup</th>
               </tr>
             </thead>
             <tbody>
@@ -473,7 +621,7 @@ const BuyerFollowUps = () => {
               <tr style={{ backgroundColor: '#e2e3e5', color: '#383d41' }} className="text-center">
                 <th>S.No</th><th>RA ID</th><th>Tenant Status</th><th>Phone Number</th>
                 <th>Follow-Up Status</th><th>Follow-Up Type</th><th>Follow-Up Date</th>
-                <th>Follow-up Day</th><th>Admin Name</th><th>Created At</th>
+                <th>Follow-up Day</th><th>Admin Name</th><th>Remarks</th><th>Created At</th><th>Edit Followup</th>
               </tr>
             </thead>
             <tbody>
@@ -481,6 +629,148 @@ const BuyerFollowUps = () => {
                 .map((item, index) => renderTableRow(item, index))}
             </tbody>
           </Table>
+        </div>
+      )}
+
+      {/* ── Edit Follow-Up Modal ── */}
+      {showEditModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+          justifyContent: 'center', alignItems: 'center', zIndex: 9999,
+          overflow: 'auto', padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white', padding: '30px', borderRadius: '8px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.3)', width: '100%', maxWidth: '550px',
+            margin: 'auto', position: 'relative', zIndex: 10000, animation: 'slideDown 0.3s ease'
+          }}>
+            <button onClick={handleCloseEditModal} style={{
+              position: 'absolute', top: '15px', right: '15px', backgroundColor: 'transparent',
+              border: 'none', fontSize: '28px', cursor: 'pointer', color: '#666',
+              width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>×</button>
+
+            <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#333', fontSize: '1.5rem', borderBottom: '2px solid #007bff', paddingBottom: '10px' }}>
+              Edit Follow-Up
+            </h3>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#555' }}>RA ID:</label>
+              <input type="text" value={editingFollowUp?.Ra_Id || ''} disabled
+                style={{ padding: '10px', width: '100%', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: '#f9f9f9', color: '#666' }} />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#555' }}>Phone Number:</label>
+              <input type="text" value={editingFollowUp?.phoneNumber || ''} disabled
+                style={{ padding: '10px', width: '100%', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: '#f9f9f9', color: '#666' }} />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#555' }}>Follow-up Status:</label>
+              <select name="followupStatus" value={editFormData.followupStatus} onChange={handleEditFormChange}
+                style={{ padding: '10px', width: '100%', border: '2px solid #ddd', borderRadius: '4px', fontSize: '14px', cursor: 'pointer' }}>
+                <option value="">Select Status</option>
+                <option value="Ring">Ring</option>
+                <option value="Ready To Pay">Ready To Pay</option>
+                <option value="Not Decided">Not Decided</option>
+                <option value="Not Interested-Closed">Not Interested-Closed</option>
+                <option value="Paid Closed">Paid Closed</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#555' }}>Follow-up Type:</label>
+              <select name="followupType" value={editFormData.followupType} onChange={handleEditFormChange}
+                style={{ padding: '10px', width: '100%', border: '2px solid #ddd', borderRadius: '4px', fontSize: '14px', cursor: 'pointer' }}>
+                <option value="">Select Type</option>
+                <option value="Payment Followup">Payment Followup</option>
+                <option value="Data Followup">Data Followup</option>
+                <option value="Enquiry Followup">Enquiry Followup</option>
+                <option value="Payment Closed">Payment Closed</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#555' }}>Follow-up Date:</label>
+              <input type="date" name="followupDate" value={editFormData.followupDate}
+                onChange={handleEditFormChange} min={getTodayDateString()}
+                style={{ padding: '10px', width: '100%', border: '2px solid #ddd', borderRadius: '4px', fontSize: '14px', cursor: 'pointer' }} />
+            </div>
+
+            <RemarksInput
+              name="remarks"
+              value={editFormData.remarks}
+              onChange={handleEditFormChange}
+              disabled={false}
+            />
+
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#555' }}>Admin Name:</label>
+              <div style={{ position: 'relative' }}>
+                <button type="button" onClick={() => setShowEditAdminDropdown(!showEditAdminDropdown)}
+                  style={{
+                    padding: '10px', width: '100%', border: '2px solid #ddd', borderRadius: '4px',
+                    fontSize: '14px', backgroundColor: '#fff', cursor: 'pointer', textAlign: 'left',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  }}>
+                  <span>{selectedEditAdminNames.length > 0 ? `${selectedEditAdminNames.length} selected` : 'Select Admin Names'}</span>
+                  <span style={{ fontSize: '12px' }}>▼</span>
+                </button>
+                {showEditAdminDropdown && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0,
+                    backgroundColor: '#fff', border: '2px solid #007bff', borderRadius: '4px',
+                    marginTop: '5px', zIndex: 1000, boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                    maxHeight: '250px', overflowY: 'auto'
+                  }}>
+                    <button type="button" onClick={() => setShowEditAdminDropdown(false)}
+                      style={{
+                        position: 'absolute', top: '5px', right: '5px', backgroundColor: 'transparent',
+                        border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666',
+                        width: '24px', height: '24px', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', zIndex: 1001
+                      }}>×</button>
+                    <div style={{ padding: '10px', paddingTop: '30px' }}>
+                      {predefinedAdminNames.map(name => (
+                        <div key={name} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                          <input type="checkbox" id={`edit_admin_${name}`} checked={selectedEditAdminNames.includes(name)}
+                            onChange={() => handleEditAdminNameChange(name)}
+                            style={{ marginRight: '8px', cursor: 'pointer', width: '16px', height: '16px' }} />
+                          <label htmlFor={`edit_admin_${name}`} style={{ cursor: 'pointer', marginBottom: 0 }}>{name}</label>
+                        </div>
+                      ))}
+                      <div style={{ borderTop: '1px solid #ddd', marginTop: '10px', paddingTop: '10px' }}>
+                        <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', fontSize: '12px', color: '#666' }}>Add Custom Name:</label>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                          <input type="text" placeholder="Enter custom name" value={customEditAdminName}
+                            onChange={(e) => setCustomEditAdminName(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAddCustomEditAdminName()}
+                            style={{ padding: '8px', flex: 1, border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px' }} />
+                          <button onClick={handleAddCustomEditAdminName}
+                            style={{ padding: '8px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', minWidth: '40px' }}
+                            title="Add custom name">✓</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {selectedEditAdminNames.length > 0 && (
+                <div style={{ marginTop: '8px', padding: '8px', backgroundColor: '#e7f3ff', borderRadius: '4px', fontSize: '12px', color: '#0066cc' }}>
+                  <strong>Selected:</strong> {getFinalEditAdminNames()}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '20px', borderTop: '1px solid #eee' }}>
+              <button onClick={handleCloseEditModal}
+                style={{ padding: '10px 25px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>Cancel</button>
+              <button onClick={handleSaveEdit}
+                style={{ padding: '10px 25px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>Save Changes</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -556,6 +846,13 @@ const BuyerFollowUps = () => {
                 onChange={handleCreateFormChange} min={getTodayDateString()}
                 style={{ padding: '10px', width: '100%', border: '2px solid #ddd', borderRadius: '4px', fontSize: '14px', cursor: 'pointer' }} />
             </div>
+
+            <RemarksInput
+              name="remarks"
+              value={createFormData.remarks}
+              onChange={handleCreateFormChange}
+              disabled={false}
+            />
 
             <div style={{ marginBottom: '25px' }}>
               <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#555' }}>Admin Name:</label>

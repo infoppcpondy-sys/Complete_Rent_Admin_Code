@@ -115,6 +115,7 @@ const FollowUpGetTable = () => {
   const [showEditAdminDropdown, setShowEditAdminDropdown] = useState(false);
   const [selectedEditAdminNames, setSelectedEditAdminNames] = useState([]);
   const [customEditAdminName, setCustomEditAdminName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const fetchAllFollowUps = async () => {
     try {
@@ -324,15 +325,21 @@ const FollowUpGetTable = () => {
   };
 
   const handleCreateFollowUp = async () => {
+    if (isCreating) return; // prevent double-submit
     if (!createFormData.phoneNumber || !createFormData.followupStatus || !createFormData.followupType || !createFormData.followupDate) {
       alert('⚠️ Please fill all required fields (Phone Number, Status, Type, Date)'); return;
     }
     const finalAdminName = getFinalCreateAdminNames();
     const dataToSend = { ...createFormData, adminName: finalAdminName };
+    setIsCreating(true);
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/followup-create`, dataToSend);
-      if (response.status === 201) {
-        alert('✅ Follow-up created successfully!');
+      if (response.status === 201 || response.data?.success) {
+        if (response.data?.duplicate) {
+          alert('ℹ️ Duplicate submission ignored.');
+        } else {
+          alert('✅ Follow-up created successfully!');
+        }
         setShowCreateModal(false);
         setCreateFormData({ rentId: 'N/A', phoneNumber: '', followupStatus: '', followupType: '', followupDate: '', adminName: '', remarks: '' });
         setSelectedAdminNames([]);
@@ -341,6 +348,8 @@ const FollowUpGetTable = () => {
       }
     } catch (error) {
       alert('❌ Failed to create follow-up!\n' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -732,8 +741,12 @@ const FollowUpGetTable = () => {
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '20px', borderTop: '1px solid #eee' }}>
               <button onClick={handleCloseCreateModal} style={{ padding: '10px 25px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#5a6268'} onMouseLeave={(e) => e.target.style.backgroundColor = '#6c757d'}>Cancel</button>
-              <button onClick={handleCreateFollowUp} style={{ padding: '10px 25px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#0056b3'} onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'}>Create Follow-Up</button>
+              <button onClick={handleCreateFollowUp} disabled={isCreating}
+                style={{ padding: '10px 25px', backgroundColor: isCreating ? '#6c9fd8' : '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: isCreating ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '600' }}
+                onMouseEnter={(e) => { if (!isCreating) e.target.style.backgroundColor = '#0056b3'; }}
+                onMouseLeave={(e) => { if (!isCreating) e.target.style.backgroundColor = '#007bff'; }}>
+                {isCreating ? 'Creating...' : 'Create Follow-Up'}
+              </button>
             </div>
           </div>
         </div>

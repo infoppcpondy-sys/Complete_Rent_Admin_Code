@@ -7,6 +7,10 @@ import axios from "axios";
 import { useSelector } from "react-redux";
 import moment from "moment";
 import { Table } from "react-bootstrap";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const NotificationsTable = () => {
   const [notifications, setNotifications] = useState([]);
@@ -268,9 +272,72 @@ const fetchNotifications = async () => {
     printWindow.document.close();
     printWindow.print();
   };
+  const handleExcelExport = () => {
+    const dataToExport = filteredNotifications.map((notification, index) => ({
+      "SI.No": index + 1,
+      "Message": notification.message,
+      "Type": notification.type,
+      "Owner Phone Number": notification.recipientPhoneNumber,
+      "Owner Status": getOwnerStatus(notification.recipientPhoneNumber),
+      "Owner Bill Status": getOwnerBillStatus(notification.recipientPhoneNumber),
+      "Tenant Phone Number": notification.senderPhoneNumber,
+      "Tenant Status": getTenantStatus(notification.senderPhoneNumber),
+      "Tenant Bill Status": getTenantBillStatus(notification.senderPhoneNumber),
+      "Status": notification.isRead ? "Read" : "Unread",
+      "Created At": new Date(notification.createdAt).toLocaleString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Notifications");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(blob, `Notifications_${new Date().toLocaleDateString()}.xlsx`);
+  };
+
+  const handlePdfExport = () => {
+    const doc = new jsPDF("landscape", "mm", "a4");
+    doc.setFontSize(14);
+    doc.text("Auto Notification - Admin Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Exported on: ${new Date().toLocaleString()}`, 14, 22);
+
+    const tableColumns = [
+      "SI.No", "Message", "Type", "Owner Phone", "Owner Status",
+      "Owner Bill", "Tenant Phone", "Tenant Status", "Tenant Bill",
+      "Status", "Created At"
+    ];
+
+    const tableRows = filteredNotifications.map((notification, index) => [
+      index + 1,
+      notification.message,
+      notification.type,
+      notification.recipientPhoneNumber,
+      getOwnerStatus(notification.recipientPhoneNumber),
+      getOwnerBillStatus(notification.recipientPhoneNumber),
+      notification.senderPhoneNumber,
+      getTenantStatus(notification.senderPhoneNumber),
+      getTenantBillStatus(notification.senderPhoneNumber),
+      notification.isRead ? "Read" : "Unread",
+      new Date(notification.createdAt).toLocaleString(),
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 28,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+    });
+
+    doc.save(`Notifications_${new Date().toLocaleDateString()}.pdf`);
+  };
+
   const handleFilter = () => {
-  const start = startDate ? new Date(startDate) : null;
-  const end = endDate ? new Date(endDate) : null;
+  const start = startDate ? new Date(startDate + "T00:00:00") : null;
+  const end = endDate ? new Date(endDate + "T23:59:59") : null;
 
   const filtered = notifications.filter(notification => {
     const createdAt = new Date(notification.createdAt);
@@ -462,9 +529,25 @@ const handleReset = () => {
           <button className="btn btn-secondary" style={{background:"tomato"}} onClick={handlePrint}>
   Print
 </button>
+          <button className="btn btn-success" onClick={handleExcelExport}>
+  Excel Export
+</button>
+          <button className="btn btn-danger" onClick={handlePdfExport}>
+  PDF Export
+</button>
         </div>
         </div>
-      <h2>Auto Notification</h2>
+      <div className="d-flex justify-content-between align-items-center mt-3 mb-2">
+        <h2 className="mb-0">Auto Notification</h2>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <span className="badge bg-primary" style={{ fontSize: '14px', padding: '8px 14px' }}>
+            Total: {totalItems}
+          </span>
+          <span className="badge bg-secondary" style={{ fontSize: '14px', padding: '8px 14px' }}>
+            Showing {totalItems > 0 ? indexOfFirstItem + 1 : 0} - {Math.min(indexOfLastItem, totalItems)} of {totalItems}
+          </span>
+        </div>
+      </div>
 <div ref={tableRef}>
       {/* Notifications Table */}
       <Table striped bordered hover responsive className="table-sm align-middle">

@@ -64,6 +64,16 @@ const AdminReport = () => {
     tenantDeleted: 0,
   });
 
+  const [loginReportCounts, setLoginReportCounts] = useState({
+    totalUnreported: 0,
+    totalConversionPending: 0,
+  });
+
+  const [followupCounts, setFollowupCounts] = useState({
+    propertyFollowups: 0,
+    tenantFollowups: 0,
+  });
+
   const [paymentCounts, setPaymentCounts] = useState({
     propPayFailed: 0,
     propPayNow: 0,
@@ -179,6 +189,11 @@ const AdminReport = () => {
         }
       });
       const allUsers = Array.from(userMap.values());
+
+      // Total (all-time) counts for Login Report
+      const totalUnreported = allUsers.filter(u => !u.remarks || (u.remarks !== 'seller' && u.remarks !== 'buyer' && u.remarks !== 'visitor')).length;
+      const totalConversionPending = allUsers.filter(u => !u.conversionStatus || u.conversionStatus === 'pending').length;
+      setLoginReportCounts({ totalUnreported, totalConversionPending });
 
       // Filter users who logged in yesterday
       const yesterdayUsers = allUsers.filter(item => isYesterday(item.loginDate));
@@ -313,10 +328,28 @@ const AdminReport = () => {
     }
   }, []);
 
+  const fetchFollowupCounts = useCallback(async () => {
+    try {
+      const [propRes, tenantRes] = await Promise.all([
+        axios.get(`${process.env.REACT_APP_API_URL}/followup-list`),
+        axios.get(`${process.env.REACT_APP_API_URL}/followup-list-buyer`),
+      ]);
+      const propData = Array.isArray(propRes.data?.data) ? propRes.data.data : [];
+      const tenantData = Array.isArray(tenantRes.data?.data) ? tenantRes.data.data : [];
+      setFollowupCounts({
+        propertyFollowups: propData.length,
+        tenantFollowups: tenantData.length,
+      });
+    } catch (error) {
+      console.error("Error fetching follow-up counts:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
     fetchYesterdayActions();
-  }, [fetchYesterdayActions]);
+    fetchFollowupCounts();
+  }, [fetchYesterdayActions, fetchFollowupCounts]);
 
   const reduxAdminName = useSelector((state) => state.admin.name);
   const reduxAdminRole = useSelector((state) => state.admin.role);
@@ -676,6 +709,19 @@ const AdminReport = () => {
             <td>DELETED TENANT ASSISTANCE</td>
             <td>{propertyStatusCounts.tenantDeleted}</td>
           </tr>
+          <tr>
+            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>LOGIN REPORT</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>UNREPORTED</td>
+            <td>{loginReportCounts.totalUnreported}</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>CONVERSION PENDING</td>
+            <td>{loginReportCounts.totalConversionPending}</td>
+          </tr>
         </tbody>
       </Table>
 
@@ -725,6 +771,36 @@ const AdminReport = () => {
             <td>6</td>
             <td>PAY LATER</td>
             <td>{paymentCounts.tenantPayLater}</td>
+          </tr>
+        </tbody>
+      </Table>
+
+      {/* Follow-up Data */}
+      <h4 className="mt-5">Follow-up Data (Total Count)</h4>
+      <Table striped bordered hover responsive className="table-sm align-middle">
+        <thead>
+          <tr>
+            <th>SL NO</th>
+            <th>DESCRIPTION</th>
+            <th>TOTAL COUNT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>PROPERTY</td>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td>PROPERTY FOLLOW-UPS</td>
+            <td>{followupCounts.propertyFollowups}</td>
+          </tr>
+          <tr>
+            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>TENANT</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>TENANT FOLLOW-UPS</td>
+            <td>{followupCounts.tenantFollowups}</td>
           </tr>
         </tbody>
       </Table>
