@@ -21,6 +21,69 @@ const SearchPincode = ({ properties = [] }) => {
   const [toPhoneNumber, setToPhoneNumber] = useState('');
   const [sendValidationError, setSendValidationError] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [remarkInputs, setRemarkInputs] = useState({});
+  const [savingRemark, setSavingRemark] = useState({});
+
+  const adminName = localStorage.getItem('adminName') || 'Admin';
+
+  const handleRemarkInputChange = (key, value) => {
+    setRemarkInputs(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveApprovedRemark = async (rentId) => {
+    const text = (remarkInputs[`approved_${rentId}`] || '').trim();
+    if (!text) return;
+    setSavingRemark(prev => ({ ...prev, [`approved_${rentId}`]: true }));
+    try {
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/add-rent-remark`,
+        { rentId, text, adminName }
+      );
+      const updatedRemarks = res.data?.remarks || [];
+      setAllProperties(prev => prev.map(p =>
+        p.rentId === rentId ? { ...p, remarks: updatedRemarks } : p
+      ));
+      setRemarkInputs(prev => ({ ...prev, [`approved_${rentId}`]: '' }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error saving remark');
+    } finally {
+      setSavingRemark(prev => ({ ...prev, [`approved_${rentId}`]: false }));
+    }
+  };
+
+  const handleSaveExclusiveRemark = async (id) => {
+    const text = (remarkInputs[`exclusive_${id}`] || '').trim();
+    if (!text) return;
+    setSavingRemark(prev => ({ ...prev, [`exclusive_${id}`]: true }));
+    try {
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/add-whitetown-remark/${id}`,
+        { text, adminName }
+      );
+      const updatedRemarks = res.data?.remarks || [];
+      setAllExclusiveProperties(prev => prev.map(p =>
+        p._id === id ? { ...p, remarks: updatedRemarks } : p
+      ));
+      setRemarkInputs(prev => ({ ...prev, [`exclusive_${id}`]: '' }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error saving remark');
+    } finally {
+      setSavingRemark(prev => ({ ...prev, [`exclusive_${id}`]: false }));
+    }
+  };
+
+  const renderLatestRemark = (remarks) => {
+    if (!remarks || remarks.length === 0) return <span style={{ color: '#999' }}>-</span>;
+    const latest = remarks[remarks.length - 1];
+    return (
+      <div style={{ fontSize: '12px' }}>
+        <div>{latest.text}</div>
+        <div style={{ color: '#666', fontSize: '10px' }}>
+          {latest.adminName} • {latest.date ? new Date(latest.date).toLocaleString() : ''}
+        </div>
+      </div>
+    );
+  };
   const navigate = useNavigate();
 
   const allPincodes = [
@@ -581,6 +644,7 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                   <tr>
                     <th>S.No</th><th>Rent ID</th><th>Phone</th><th>Property Type</th><th>Mode</th><th>BHK</th><th>Floor</th>
                     <th>Area</th><th>City</th><th>Rental Amount</th><th>Plan Type</th><th>Status</th><th>Send WhatsApp</th><th>Created</th>
+                    <th>Remark</th><th>Remark Record</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -615,6 +679,26 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                         </button>
                       </td>
                       <td>{new Date(property.createdAt).toLocaleDateString()}</td>
+                      <td style={{ minWidth: '180px' }}>
+                        <textarea
+                          rows={2}
+                          placeholder="Enter remark"
+                          value={remarkInputs[`approved_${property.rentId}`] || ''}
+                          onChange={(e) => handleRemarkInputChange(`approved_${property.rentId}`, e.target.value)}
+                          style={{ fontSize: '12px', width: '100%', padding: '4px', border: '1px solid #ced4da', borderRadius: '4px' }}
+                        />
+                        <button
+                          className="btn btn-sm btn-primary mt-1"
+                          style={{ fontSize: '12px', padding: '4px 10px' }}
+                          disabled={!(remarkInputs[`approved_${property.rentId}`] || '').trim() || savingRemark[`approved_${property.rentId}`]}
+                          onClick={() => handleSaveApprovedRemark(property.rentId)}
+                        >
+                          {savingRemark[`approved_${property.rentId}`] ? 'Saving...' : 'Save'}
+                        </button>
+                      </td>
+                      <td style={{ minWidth: '200px', maxWidth: '280px' }}>
+                        {renderLatestRemark(property.remarks)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -663,6 +747,7 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                     <th>S.No</th><th>Property ID</th><th>Phone</th><th>BHK</th><th>Floor</th>
                     <th>Property Type</th><th>Property Mode</th><th>Rent Type</th><th>Amount</th><th>Advance</th>
                     <th>Street</th><th>Location</th><th>Created At</th><th>Map URL</th><th>Send WhatsApp</th><th>Created By</th>
+                    <th>Remark</th><th>Remark Record</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -703,6 +788,26 @@ Thank you for choosing *RENT PONDY*! 🙏`;
                         </button>
                       </td>
                       <td>{property.createdBy || 'N/A'}</td>
+                      <td style={{ minWidth: '180px' }}>
+                        <textarea
+                          rows={2}
+                          placeholder="Enter remark"
+                          value={remarkInputs[`exclusive_${property._id}`] || ''}
+                          onChange={(e) => handleRemarkInputChange(`exclusive_${property._id}`, e.target.value)}
+                          style={{ fontSize: '12px', width: '100%', padding: '4px', border: '1px solid #ced4da', borderRadius: '4px' }}
+                        />
+                        <button
+                          className="btn btn-sm btn-primary mt-1"
+                          style={{ fontSize: '12px', padding: '4px 10px' }}
+                          disabled={!(remarkInputs[`exclusive_${property._id}`] || '').trim() || savingRemark[`exclusive_${property._id}`]}
+                          onClick={() => handleSaveExclusiveRemark(property._id)}
+                        >
+                          {savingRemark[`exclusive_${property._id}`] ? 'Saving...' : 'Save'}
+                        </button>
+                      </td>
+                      <td style={{ minWidth: '200px', maxWidth: '280px' }}>
+                        {renderLatestRemark(property.remarks)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

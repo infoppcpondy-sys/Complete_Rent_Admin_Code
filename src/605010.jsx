@@ -73,7 +73,39 @@ const AdminDashboard = () => {
     const [phoneNumberCount, setPhoneNumberCount] = useState(0);
     const [tableImageIndices, setTableImageIndices] = useState({});
     const [isCompressing, setIsCompressing] = useState(false);
-    
+    const [remarkInputs, setRemarkInputs] = useState({});
+    const [savingRemark, setSavingRemark] = useState({});
+
+    const handleRemarkInputChange = (id, value) => {
+        setRemarkInputs(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSaveRemark = async (id) => {
+        const text = (remarkInputs[id] || '').trim();
+        if (!text) return;
+        setSavingRemark(prev => ({ ...prev, [id]: true }));
+        try {
+            const res = await axios.post(
+                `${process.env.REACT_APP_API_URL}/add-whitetown-remark/${id}`,
+                {
+                    text,
+                    adminName: adminName || 'Admin',
+                }
+            );
+            const updatedRemarks = res.data?.remarks || [];
+
+            setProperties(prev => prev.map(p =>
+                p._id === id ? { ...p, remarks: updatedRemarks } : p
+            ));
+
+            setRemarkInputs(prev => ({ ...prev, [id]: '' }));
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error saving remark');
+        } finally {
+            setSavingRemark(prev => ({ ...prev, [id]: false }));
+        }
+    };
+
     const fileName = "605010"; // current file
     
     // Sync Redux to localStorage
@@ -1275,6 +1307,8 @@ const AdminDashboard = () => {
                                         <th>Created By</th>
                                         <th>Actions</th>
                                         <th>Visibility</th>
+                                        <th>Remark</th>
+                                        <th>Remark Record</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1370,6 +1404,38 @@ const AdminDashboard = () => {
                                                 >
                                                     {property.isHidden ? '🔒 Hidden' : '👁️ Visible'}
                                                 </button>
+                                            </td>
+                                            <td style={{ minWidth: '200px' }}>
+                                                <textarea
+                                                    rows={2}
+                                                    placeholder="Enter remark"
+                                                    value={remarkInputs[property._id] || ''}
+                                                    onChange={(e) => handleRemarkInputChange(property._id, e.target.value)}
+                                                    style={{ fontSize: '12px', width: '100%', padding: '4px', border: '1px solid #ced4da', borderRadius: '4px' }}
+                                                />
+                                                <button
+                                                    className="btn"
+                                                    style={{ marginTop: '4px', fontSize: '12px', padding: '4px 10px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                                    disabled={!(remarkInputs[property._id] || '').trim() || savingRemark[property._id]}
+                                                    onClick={() => handleSaveRemark(property._id)}
+                                                >
+                                                    {savingRemark[property._id] ? 'Saving...' : 'Save'}
+                                                </button>
+                                            </td>
+                                            <td style={{ minWidth: '220px', maxWidth: '300px' }}>
+                                                {(property.remarks && property.remarks.length > 0) ? (() => {
+                                                    const latest = property.remarks[property.remarks.length - 1];
+                                                    return (
+                                                        <div style={{ fontSize: '12px' }}>
+                                                            <div>{latest.text}</div>
+                                                            <div style={{ color: '#666', fontSize: '10px' }}>
+                                                                {latest.adminName} • {latest.date ? new Date(latest.date).toLocaleString() : ''}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })() : (
+                                                    <span style={{ color: '#999' }}>-</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

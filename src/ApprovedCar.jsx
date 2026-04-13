@@ -47,7 +47,44 @@ const ApprovedCar = () => {
   const [otpStatusFilter, setOtpStatusFilter] = useState('');
   const [planTypeFilter, setPlanTypeFilter] = useState('');
   const [billMap, setBillMap] = useState({});
-  
+  const [remarkInputs, setRemarkInputs] = useState({});
+  const [savingRemark, setSavingRemark] = useState({});
+
+  const handleRemarkInputChange = (rentId, value) => {
+    setRemarkInputs(prev => ({ ...prev, [rentId]: value }));
+  };
+
+  const handleSaveRemark = async (rentId) => {
+    const text = (remarkInputs[rentId] || '').trim();
+    if (!text) return;
+    setSavingRemark(prev => ({ ...prev, [rentId]: true }));
+    try {
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/add-rent-remark`,
+        {
+          rentId,
+          text,
+          adminName: adminName || 'Admin',
+        }
+      );
+      const updatedRemarks = res.data?.remarks || [];
+
+      setProperties(prev => prev.map(p =>
+        p.rentId === rentId ? { ...p, remarks: updatedRemarks } : p
+      ));
+      setFiltered(prev => prev.map(p =>
+        p.rentId === rentId ? { ...p, remarks: updatedRemarks } : p
+      ));
+
+      setRemarkInputs(prev => ({ ...prev, [rentId]: '' }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error saving remark');
+    } finally {
+      setSavingRemark(prev => ({ ...prev, [rentId]: false }));
+    }
+  };
+
+
 
 const navigate = useNavigate();
   
@@ -1098,6 +1135,8 @@ const handlePrint = (prop) => {
               <th>Bill Date</th>
               <th>Validity (days)</th>
               <th>Bill Expiry Date</th>
+              <th>Remark</th>
+              <th>Remark Record</th>
                <th>Print  </th>
             </tr>
           </thead>
@@ -1237,6 +1276,42 @@ const handlePrint = (prop) => {
                   <td>{billMap[prop.rentId] ? new Date(billMap[prop.rentId].createdAt).toLocaleDateString() : '-'}</td>
                   <td>{billMap[prop.rentId]?.validity || prop.validity || '-'}</td>
                   <td>{billMap[prop.rentId] ? calculateBillExpiryDate(billMap[prop.rentId].createdAt, billMap[prop.rentId].validity) : '-'}</td>
+                  <td style={{ minWidth: '200px' }}>
+                    <Form.Control
+                      as="textarea"
+                      rows={2}
+                      placeholder="Enter remark"
+                      value={remarkInputs[prop.rentId] || ''}
+                      onChange={(e) => handleRemarkInputChange(prop.rentId, e.target.value)}
+                      style={{ fontSize: '12px' }}
+                    />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="mt-1"
+                      disabled={!(remarkInputs[prop.rentId] || '').trim() || savingRemark[prop.rentId]}
+                      onClick={() => handleSaveRemark(prop.rentId)}
+                    >
+                      {savingRemark[prop.rentId] ? 'Saving...' : 'Save'}
+                    </Button>
+                  </td>
+                  <td style={{ minWidth: '220px', maxWidth: '300px' }}>
+                    {(prop.remarks && prop.remarks.length > 0) ? (
+                      (() => {
+                        const latest = prop.remarks[prop.remarks.length - 1];
+                        return (
+                          <div style={{ fontSize: '12px' }}>
+                            <div>{latest.text}</div>
+                            <div style={{ color: '#666', fontSize: '10px' }}>
+                              {latest.adminName} • {latest.date ? new Date(latest.date).toLocaleString() : ''}
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <span style={{ color: '#999' }}>-</span>
+                    )}
+                  </td>
                   <td>         <Button
                     variant="secondary"
                     size="sm"

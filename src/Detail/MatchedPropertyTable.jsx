@@ -34,6 +34,7 @@ const TABLE_COLUMNS = [
   { key: 'whatsapp', header: 'Send WhatsApp', exportable: false },
   { key: 'actions', header: 'Action', exportable: false },
   { key: 'viewDetails', header: 'View Details', exportable: false },
+  { key: 'matchedAt', header: 'Matched At', exportable: true },
 ];
 
 const EXPORT_COLUMNS = TABLE_COLUMNS.filter(col => col.exportable);
@@ -122,6 +123,7 @@ const MatchedDataTable = () => {
       case 'raCity': return item.buyerAssistanceCard?.city || 'N/A';
       case 'status': return property.isDeleted ? 'Deleted' : 'Active';
       case 'whatsappStatus': return property.Whatsappstatus || '-';
+      case 'matchedAt': return property.matchedAt ? formatDate(property.matchedAt) : '-';
       default: return '';
     }
   };
@@ -206,8 +208,6 @@ const MatchedDataTable = () => {
 
     if (!updateResponse.data.success) throw new Error('Backend status update failed');
 
-    saveWhatsAppStatusToLocalStorage(item.buyerAssistanceCard._id, property.rentId, 'Send');
-
     const updater = (prevData) => prevData.map(dataItem =>
       dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id
         ? { ...dataItem, matchedProperties: dataItem.matchedProperties.map(prop => prop.rentId === property.rentId ? { ...prop, Whatsappstatus: 'Send' } : prop) }
@@ -238,7 +238,6 @@ const MatchedDataTable = () => {
       );
       if (!updateResponse.data.success) { setMessage(`Error: Undo request failed`); return; }
 
-      saveWhatsAppStatusToLocalStorage(item.buyerAssistanceCard._id, property.rentId, 'Not Send');
       const updater = (prevData) => prevData.map(dataItem =>
         dataItem.buyerAssistanceCard._id === item.buyerAssistanceCard._id
           ? { ...dataItem, matchedProperties: dataItem.matchedProperties.map(prop => prop.rentId === property.rentId ? { ...prop, Whatsappstatus: 'Not Send' } : prop) }
@@ -385,25 +384,6 @@ const MatchedDataTable = () => {
     setMessage(`⛔ Automation stopped. Sent: ${automationSentCount}, Failed: ${automationFailedCount}, Remaining: ${automationTotal - automationCurrentIndex}`);
   };
 
-  // ===== LOCALSTORAGE HELPERS =====
-  const saveWhatsAppStatusToLocalStorage = (baId, rentId, status) => {
-    localStorage.setItem(`whatsapp_status_${baId}_${rentId}`, status);
-  };
-
-  const getWhatsAppStatusFromLocalStorage = (baId, rentId) => {
-    return localStorage.getItem(`whatsapp_status_${baId}_${rentId}`);
-  };
-
-  const applyLocalStorageStatusesToData = (data) => {
-    return data.map(item => ({
-      ...item,
-      matchedProperties: item.matchedProperties.map(property => {
-        const savedStatus = getWhatsAppStatusFromLocalStorage(item.buyerAssistanceCard._id, property.rentId);
-        return savedStatus ? { ...property, Whatsappstatus: savedStatus } : property;
-      })
-    }));
-  };
-
   useEffect(() => {
     fetchMatchedData();
     fetchOwnerPlanData();
@@ -415,9 +395,8 @@ const MatchedDataTable = () => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/fetch-all-matched-datas-rent`);
       if (res.data.success) {
-        const dataWithStatuses = applyLocalStorageStatusesToData(res.data.data);
-        setMatchedData(dataWithStatuses);
-        setFilteredData(dataWithStatuses);
+        setMatchedData(res.data.data);
+        setFilteredData(res.data.data);
       }
     } catch {} finally { setLoading(false); }
   };
@@ -856,6 +835,7 @@ const MatchedDataTable = () => {
               <th>Undo WhatsApp</th>
               <th>Action</th>
               <th>Views Details</th>
+              <th><FaCalendarAlt className="me-1" /> Matched At</th>
             </tr>
           </thead>
           <tbody>
@@ -961,6 +941,10 @@ const MatchedDataTable = () => {
                       >
                         View Details
                       </Button>
+                    </td>
+                    <td className="text-nowrap">
+                      <FaCalendarAlt className="text-muted me-1" />
+                      {property.matchedAt ? formatDate(property.matchedAt) : '-'}
                     </td>
                   </tr>
                 );
