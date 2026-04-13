@@ -1,13 +1,49 @@
- 
-
-
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 import { useSelector } from 'react-redux';
 import { Table } from 'react-bootstrap';
 
+const TABS = [
+  { key: 'actions', label: "Yesterday's Actions" },
+  { key: 'login', label: "Yesterday's Login" },
+  { key: 'property', label: "Yesterday's Property" },
+  { key: 'status', label: 'Property Status' },
+  { key: 'payments', label: 'Payments' },
+  { key: 'followups', label: 'Follow-ups' },
+];
+
+const tabStyle = (active) => ({
+  padding: '10px 18px',
+  cursor: 'pointer',
+  border: 'none',
+  borderBottom: active ? '2.5px solid #0d6efd' : '2.5px solid transparent',
+  background: 'transparent',
+  color: active ? '#0d6efd' : '#495057',
+  fontWeight: active ? 600 : 400,
+  fontSize: '14px',
+  whiteSpace: 'nowrap',
+  transition: 'color 0.15s',
+});
+
+const tabNavStyle = {
+  display: 'flex',
+  overflowX: 'auto',
+  borderBottom: '1px solid #dee2e6',
+  marginBottom: '20px',
+  gap: '4px',
+  scrollbarWidth: 'none',
+};
+
+const SectionHeader = ({ title }) => (
+  <tr>
+    <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>{title}</td>
+  </tr>
+);
+
 const AdminReport = () => {
+  const [activeTab, setActiveTab] = useState('actions');
+
   const [reportData, setReportData] = useState({
     webLogin: 0,
     appLogin: 0,
@@ -97,8 +133,6 @@ const AdminReport = () => {
       const statusRes = await axios.get(`${process.env.REACT_APP_API_URL}/properties/status-counts-rent`);
       const { totalCount, counts } = statusRes.data;
 
-      
-
       setReportData({
         webLogin: webLoginCount,
         appLogin: appLoginCount,
@@ -117,8 +151,6 @@ const AdminReport = () => {
       console.error("Error fetching admin report data:", error);
     }
   };
-
- 
 
   const fetchYesterdayActions = useCallback(async () => {
     const yesterdayStart = moment().subtract(1, 'days').startOf('day');
@@ -173,7 +205,6 @@ const AdminReport = () => {
       const calledData = calledRes.data.success ? (calledRes.data.properties || []) : [];
       const allUsersRaw = (loginUsersRes.data?.data && Array.isArray(loginUsersRes.data.data)) ? loginUsersRes.data.data : [];
 
-      // De-duplicate by phone (same logic as LoginReport.jsx)
       const userMap = new Map();
       allUsersRaw.forEach((u) => {
         const phone = u.phone || '';
@@ -190,12 +221,10 @@ const AdminReport = () => {
       });
       const allUsers = Array.from(userMap.values());
 
-      // Total (all-time) counts for Login Report
       const totalUnreported = allUsers.filter(u => !u.remarks || (u.remarks !== 'seller' && u.remarks !== 'buyer' && u.remarks !== 'visitor')).length;
       const totalConversionPending = allUsers.filter(u => !u.conversionStatus || u.conversionStatus === 'pending').length;
       setLoginReportCounts({ totalUnreported, totalConversionPending });
 
-      // Filter users who logged in yesterday
       const yesterdayUsers = allUsers.filter(item => isYesterday(item.loginDate));
       const reported = yesterdayUsers.filter(u => u.remarks === 'seller' || u.remarks === 'buyer' || u.remarks === 'visitor');
       const unreported = yesterdayUsers.filter(u => !u.remarks || (u.remarks !== 'seller' && u.remarks !== 'buyer' && u.remarks !== 'visitor'));
@@ -212,27 +241,33 @@ const AdminReport = () => {
         conversionPending: yesterdayUsers.filter(u => !u.conversionStatus || u.conversionStatus === 'pending').length,
       });
 
-      // Property (Approved) breakdown
-      const approvedData = Array.isArray(approvedRes.data) ? approvedRes.data : [];
-      const freePlans = Array.isArray(freePlansRes.data) ? freePlansRes.data : [];
-      const paidPlans = Array.isArray(paidPlansRes.data) ? paidPlansRes.data : [];
+      const approvedData = Array.isArray(approvedRes.data?.users) ? approvedRes.data.users : [];
+      const freePlansData = Array.isArray(freePlansRes.data?.data) ? freePlansRes.data.data : [];
+      const paidPlansData = Array.isArray(paidPlansRes.data?.data) ? paidPlansRes.data.data : [];
 
-      const freeRentIds = new Set(freePlans.map(p => p.rentId));
-      const paidRentIds = new Set(paidPlans.map(p => p.rentId));
+      const freeRentIds = new Set();
+      freePlansData.forEach(item => {
+        if (Array.isArray(item.properties)) {
+          item.properties.forEach(p => { if (p.rentId) freeRentIds.add(p.rentId); });
+        }
+      });
+      const paidRentIds = new Set();
+      paidPlansData.forEach(item => {
+        if (Array.isArray(item.properties)) {
+          item.properties.forEach(p => { if (p.rentId) paidRentIds.add(p.rentId); });
+        }
+      });
 
       const yesterdayApproved = approvedData.filter(item => isYesterday(item.createdAt));
       const yesterdayFreeProps = yesterdayApproved.filter(item => freeRentIds.has(item.rentId) && !paidRentIds.has(item.rentId));
       const yesterdayPaidProps = yesterdayApproved.filter(item => paidRentIds.has(item.rentId));
 
-      // Tenant Assistance breakdown
       const baActiveData = baActiveRes.data?.data || [];
       const allBuyerBills = allBuyerBillsRes.data?.data || [];
 
-      // Build Ra_Id -> plan type map from bills + PayU payments
       const baFreeIds = new Set((baFreeRes.data.data || []).map(item => item.buyerAssistance?.Ra_Id).filter(Boolean));
       const baPaidIds = new Set((baPaidRes.data.data || []).map(item => item.buyerAssistance?.Ra_Id).filter(Boolean));
 
-      // Add PayU paid Ra_Ids as paid
       const payuBuyerData = payuBuyerRes.data.data || [];
       payuBuyerData.forEach(p => {
         if (p.Ra_Id) baPaidIds.add(p.Ra_Id);
@@ -262,8 +297,6 @@ const AdminReport = () => {
         tenantPaid: yesterdayBAPaid.length,
       });
 
-      // Property status counts (total count from each page)
-      // PreApproved: merge pre-approved + expired from all properties (same as PreApprovedCar.jsx)
       const preApprovedUsers = preApprovedRes.data.users || [];
       const allPropsData = allPropsRes.data.users || [];
       const expiredFromAll = allPropsData.filter(p => p.status === 'expired');
@@ -271,17 +304,11 @@ const AdminReport = () => {
       preApprovedUsers.forEach(p => mergedPreApproved.set(p.rentId, p));
       expiredFromAll.forEach(p => { if (!mergedPreApproved.has(p.rentId)) mergedPreApproved.set(p.rentId, p); });
 
-      // Pending
       const pendingUsers = pendingRes.data.users || [];
-
-      // Deleted: filter for status === "delete"
       const deletedData = deletedRes.data.data || [];
       const deletedUsers = deletedData.filter(p => p.status === 'delete');
-
-      // Expired
       const expiredPlans = expiredRes.data.expiredPlans || [];
 
-      // Tenant: Pending (exclude deleted) and Deleted
       const pendingBAData = pendingBARes.data?.data || [];
       const pendingBAActive = pendingBAData.filter(item => !item.isDeleted);
       const allBAData = allBARes.data?.data || [];
@@ -296,7 +323,6 @@ const AdminReport = () => {
         tenantDeleted: deletedBA.length,
       });
 
-      // Payment counts
       const propPayFailedData = propPayFailedRes.data.payments || propPayFailedRes.data.data || [];
       const propPayNowData = propPayNowRes.data.payments || propPayNowRes.data.data || [];
       const propPayLaterData = propPayLaterRes.data.payments || propPayLaterRes.data.data || [];
@@ -314,8 +340,8 @@ const AdminReport = () => {
       });
 
       setYesterdayActions({
-        contactViewed: contactData.filter(item => isYesterday(item.createdAt)).length,
-        favoriteList: favoriteData.filter(item => isYesterday(item.createdAt)).length,
+        contactViewed: contactData.reduce((sum, item) => sum + (item.contactRequestedUserPhoneNumbers || []).filter(r => isYesterday(r.date)).length, 0),
+        favoriteList: favoriteData.filter(item => isYesterday(item.updatedAt || item.createdAt)).length,
         photoRequest: photoData.filter(item => isYesterday(item.createdAt)).length,
         addressRequests: addressData.filter(item => isYesterday(item.createdAt)).length,
         offerRaised: offersData.filter(item => isYesterday(item.createdAt)).length,
@@ -407,403 +433,208 @@ const AdminReport = () => {
     );
   }
 
-
- 
-
+  const yesterday = moment().subtract(1, 'days').format('DD-MM-YYYY');
 
   return (
     <div className="container mt-4">
-      <h2>Rent Pondy Overall Report - Admin</h2>
-      <p>Welcome to your Dashboard, <strong>{adminName || "Admin"}</strong>!</p>
+      {/* Header */}
+      <div className="mb-3">
+        <h2 className="mb-1">Rent Pondy Overall Report - Admin</h2>
+        <p className="text-muted mb-0">
+          Welcome, <strong>{adminName || "Admin"}</strong>
+          <span className="ms-3 badge bg-light text-secondary border" style={{ fontSize: '12px' }}>
+            Data for: {yesterday}
+          </span>
+        </p>
+      </div>
 
-      {/* Login, Report, Help, Contact Table - Commented Out */}
-      {/* <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead className="sticky-top">
-          <tr>
-            <th>SL NO</th>
-            <th>DESCRIPTION</th>
-            <th>APP</th>
-            <th>WEB</th>
-            <th>TOTAL</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>NO. OF LOGIN</td>
-            <td>{reportData.appLogin}</td>
-            <td>{reportData.webLogin}</td>
-            <td>{reportData.totalLogin}</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>NO. OF REPORTED</td>
-            <td>N/A</td>
-            <td>{reportData.totalReported}</td>
-            <td>{reportData.totalReported}</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>NO. OF HELP REQUIRED</td>
-            <td>N/A</td>
-            <td>{reportData.totalHelp}</td>
-            <td>{reportData.totalHelp}</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>NO. OF CONTACT FORM</td>
-            <td>N/A</td>
-            <td>{reportData.totalContact}</td>
-            <td>{reportData.totalContact}</td>
-          </tr>
-        </tbody>
-      </Table> */}
+      {/* Tab Navigation */}
+      <div style={tabNavStyle}>
+        {TABS.map(tab => (
+          <button
+            key={tab.key}
+            style={tabStyle(activeTab === tab.key)}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Property Status Table - Commented Out */}
-      {/* <h4 className="mt-5">Property Status Count Summary</h4>
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead>
-          <tr>
-            <th>SL NO</th>
-            <th>STATUS</th>
-            <th>COUNT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>COMPLETE</td>
-            <td>{reportData.propertyCounts.complete}</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>INCOMPLETE</td>
-            <td>{reportData.propertyCounts.incomplete}</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>ACTIVE</td>
-            <td>{reportData.propertyCounts.active}</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>TOTAL PROPERTIES</td>
-            <td>{reportData.propertyCounts.total}</td>
-          </tr>
-        </tbody>
-      </Table> */}
+      {/* Tab Content */}
+      <div>
 
-      {/* Yesterday's Action Summary Table */}
-      <h4 className="mt-5">Yesterday's Action Summary ({moment().subtract(1, 'days').format('DD-MM-YYYY')})</h4>
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead>
-          <tr>
-            <th>SL NO</th>
-            <th>DESCRIPTION</th>
-            <th>TOTAL ACTION</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>CONTACT VIEWED</td>
-            <td>{yesterdayActions.contactViewed}</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>FAVORITE LIST</td>
-            <td>{yesterdayActions.favoriteList}</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>PHOTO REQUEST</td>
-            <td>{yesterdayActions.photoRequest}</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>ADDRESS REQUESTS</td>
-            <td>{yesterdayActions.addressRequests}</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>OFFER RAISED</td>
-            <td>{yesterdayActions.offerRaised}</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>VIEWED PROPERTIES</td>
-            <td>{yesterdayActions.viewedProperties}</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td>SEND INTEREST</td>
-            <td>{yesterdayActions.sendInterest}</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td>CALLED LIST</td>
-            <td>{yesterdayActions.calledList}</td>
-          </tr>
-        </tbody>
-      </Table>
+        {/* Tab 1: Yesterday's Actions */}
+        {activeTab === 'actions' && (
+          <div>
+            <h5 className="mb-3 text-muted" style={{ fontSize: '14px' }}>
+              Action Summary — {yesterday}
+            </h5>
+            <Table striped bordered hover responsive className="table-sm align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th style={{ width: '60px' }}>SL NO</th>
+                  <th>DESCRIPTION</th>
+                  <th style={{ width: '140px' }}>TOTAL ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>CONTACT VIEWED</td><td>{yesterdayActions.contactViewed}</td></tr>
+                <tr><td>2</td><td>FAVORITE LIST</td><td>{yesterdayActions.favoriteList}</td></tr>
+                <tr><td>3</td><td>PHOTO REQUEST</td><td>{yesterdayActions.photoRequest}</td></tr>
+                <tr><td>4</td><td>ADDRESS REQUESTS</td><td>{yesterdayActions.addressRequests}</td></tr>
+                <tr><td>5</td><td>OFFER RAISED</td><td>{yesterdayActions.offerRaised}</td></tr>
+                <tr><td>6</td><td>VIEWED PROPERTIES</td><td>{yesterdayActions.viewedProperties}</td></tr>
+                <tr><td>7</td><td>SEND INTEREST</td><td>{yesterdayActions.sendInterest}</td></tr>
+                <tr><td>8</td><td>CALLED LIST</td><td>{yesterdayActions.calledList}</td></tr>
+              </tbody>
+            </Table>
+          </div>
+        )}
 
-      {/* Yesterday's Login & Remark Summary */}
-      <h4 className="mt-5">Yesterday's Login Summary ({moment().subtract(1, 'days').format('DD-MM-YYYY')})</h4>
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead>
-          <tr>
-            <th>SL NO</th>
-            <th>DESCRIPTION</th>
-            <th>COUNT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>TOTAL LOGIN</td>
-            <td>{yesterdayLogin.totalLogin}</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>REPORTED</td>
-            <td>{yesterdayLogin.reported}</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>UNREPORTED</td>
-            <td>{yesterdayLogin.unreported}</td>
-          </tr>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>REPORTED BREAKDOWN</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>OWNER</td>
-            <td>{yesterdayLogin.owner}</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>TENANT</td>
-            <td>{yesterdayLogin.tenant}</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>VISITOR</td>
-            <td>{yesterdayLogin.visitor}</td>
-          </tr>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>CONVERSION BREAKDOWN</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td>PAID</td>
-            <td>{yesterdayLogin.conversionPaid}</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td>FREE</td>
-            <td>{yesterdayLogin.conversionFree}</td>
-          </tr>
-          <tr>
-            <td>9</td>
-            <td>PENDING</td>
-            <td>{yesterdayLogin.conversionPending}</td>
-          </tr>
-        </tbody>
-      </Table>
+        {/* Tab 2: Yesterday's Login */}
+        {activeTab === 'login' && (
+          <div>
+            <h5 className="mb-3 text-muted" style={{ fontSize: '14px' }}>
+              Login Summary — {yesterday}
+            </h5>
+            <Table striped bordered hover responsive className="table-sm align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th style={{ width: '60px' }}>SL NO</th>
+                  <th>DESCRIPTION</th>
+                  <th style={{ width: '140px' }}>COUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>TOTAL LOGIN</td><td>{yesterdayLogin.totalLogin}</td></tr>
+                <tr><td>2</td><td>REPORTED</td><td>{yesterdayLogin.reported}</td></tr>
+                <tr><td>3</td><td>UNREPORTED</td><td>{yesterdayLogin.unreported}</td></tr>
+                <SectionHeader title="REPORTED BREAKDOWN" />
+                <tr><td>4</td><td>OWNER</td><td>{yesterdayLogin.owner}</td></tr>
+                <tr><td>5</td><td>TENANT</td><td>{yesterdayLogin.tenant}</td></tr>
+                <tr><td>6</td><td>VISITOR</td><td>{yesterdayLogin.visitor}</td></tr>
+                <SectionHeader title="CONVERSION BREAKDOWN" />
+                <tr><td>7</td><td>PAID</td><td>{yesterdayLogin.conversionPaid}</td></tr>
+                <tr><td>8</td><td>FREE</td><td>{yesterdayLogin.conversionFree}</td></tr>
+                <tr><td>9</td><td>PENDING</td><td>{yesterdayLogin.conversionPending}</td></tr>
+              </tbody>
+            </Table>
+          </div>
+        )}
 
-      {/* Yesterday's Property & Tenant Management */}
-      <h4 className="mt-5">Yesterday's Property & Tenant Management - Approved ({moment().subtract(1, 'days').format('DD-MM-YYYY')})</h4>
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead>
-          <tr>
-            <th>SL NO</th>
-            <th>DESCRIPTION</th>
-            <th>COUNT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>PROPERTY</td>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td>NO. OF PROPERTY CREATED</td>
-            <td>{yesterdayProperty.totalCreated}</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>FREE PROPERTY</td>
-            <td>{yesterdayProperty.freeProperty}</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>PAID PROPERTY</td>
-            <td>{yesterdayProperty.paidProperty}</td>
-          </tr>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>TENANT</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>NO. OF TENANT ASSISTANCE CREATED</td>
-            <td>{yesterdayProperty.tenantTotal}</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>FREE TENANT ASSISTANCE</td>
-            <td>{yesterdayProperty.tenantFree}</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>PAID TENANT ASSISTANCE</td>
-            <td>{yesterdayProperty.tenantPaid}</td>
-          </tr>
-        </tbody>
-      </Table>
+        {/* Tab 3: Yesterday's Property */}
+        {activeTab === 'property' && (
+          <div>
+            <h5 className="mb-3 text-muted" style={{ fontSize: '14px' }}>
+              Property & Tenant Management (Approved) — {yesterday}
+            </h5>
+            <Table striped bordered hover responsive className="table-sm align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th style={{ width: '60px' }}>SL NO</th>
+                  <th>DESCRIPTION</th>
+                  <th style={{ width: '140px' }}>COUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <SectionHeader title="PROPERTY" />
+                <tr><td>1</td><td>NO. OF PROPERTY CREATED</td><td>{yesterdayProperty.totalCreated}</td></tr>
+                <tr><td>2</td><td>FREE PROPERTY</td><td>{yesterdayProperty.freeProperty}</td></tr>
+                <tr><td>3</td><td>PAID PROPERTY</td><td>{yesterdayProperty.paidProperty}</td></tr>
+                <SectionHeader title="TENANT" />
+                <tr><td>4</td><td>NO. OF TENANT ASSISTANCE CREATED</td><td>{yesterdayProperty.tenantTotal}</td></tr>
+                <tr><td>5</td><td>FREE TENANT ASSISTANCE</td><td>{yesterdayProperty.tenantFree}</td></tr>
+                <tr><td>6</td><td>PAID TENANT ASSISTANCE</td><td>{yesterdayProperty.tenantPaid}</td></tr>
+              </tbody>
+            </Table>
+          </div>
+        )}
 
-      {/* Property Status Summary */}
-      <h4 className="mt-5">Property Status Summary (Total Count)</h4>
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead>
-          <tr>
-            <th>SL NO</th>
-            <th>DESCRIPTION</th>
-            <th>TOTAL COUNT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>PROPERTY</td>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td>PRE-APPROVED</td>
-            <td>{propertyStatusCounts.preApproved}</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>PENDING</td>
-            <td>{propertyStatusCounts.pending}</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>DELETED</td>
-            <td>{propertyStatusCounts.deleted}</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>EXPIRED</td>
-            <td>{propertyStatusCounts.expired}</td>
-          </tr>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>TENANT</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>PENDING TENANT ASSISTANCE</td>
-            <td>{propertyStatusCounts.tenantPending}</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>DELETED TENANT ASSISTANCE</td>
-            <td>{propertyStatusCounts.tenantDeleted}</td>
-          </tr>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>LOGIN REPORT</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td>UNREPORTED</td>
-            <td>{loginReportCounts.totalUnreported}</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td>CONVERSION PENDING</td>
-            <td>{loginReportCounts.totalConversionPending}</td>
-          </tr>
-        </tbody>
-      </Table>
+        {/* Tab 4: Property Status */}
+        {activeTab === 'status' && (
+          <div>
+            <h5 className="mb-3 text-muted" style={{ fontSize: '14px' }}>
+              Property Status Summary (Total Count)
+            </h5>
+            <Table striped bordered hover responsive className="table-sm align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th style={{ width: '60px' }}>SL NO</th>
+                  <th>DESCRIPTION</th>
+                  <th style={{ width: '140px' }}>TOTAL COUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <SectionHeader title="PROPERTY" />
+                <tr><td>1</td><td>PRE-APPROVED</td><td>{propertyStatusCounts.preApproved}</td></tr>
+                <tr><td>2</td><td>PENDING</td><td>{propertyStatusCounts.pending}</td></tr>
+                <tr><td>3</td><td>DELETED</td><td>{propertyStatusCounts.deleted}</td></tr>
+                <tr><td>4</td><td>EXPIRED</td><td>{propertyStatusCounts.expired}</td></tr>
+                <SectionHeader title="TENANT" />
+                <tr><td>5</td><td>PENDING TENANT ASSISTANCE</td><td>{propertyStatusCounts.tenantPending}</td></tr>
+                <tr><td>6</td><td>DELETED TENANT ASSISTANCE</td><td>{propertyStatusCounts.tenantDeleted}</td></tr>
+                <SectionHeader title="LOGIN REPORT" />
+                <tr><td>7</td><td>UNREPORTED</td><td>{loginReportCounts.totalUnreported}</td></tr>
+                <tr><td>8</td><td>CONVERSION PENDING</td><td>{loginReportCounts.totalConversionPending}</td></tr>
+              </tbody>
+            </Table>
+          </div>
+        )}
 
-      {/* Payment Management */}
-      <h4 className="mt-5">Payment Management (Total Count)</h4>
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead>
-          <tr>
-            <th>SL NO</th>
-            <th>DESCRIPTION</th>
-            <th>TOTAL COUNT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>PROPERTY PAYMENT MANAGEMENT</td>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td>PAY FAILED</td>
-            <td>{paymentCounts.propPayFailed}</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>PAY NOW</td>
-            <td>{paymentCounts.propPayNow}</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>PAY LATER</td>
-            <td>{paymentCounts.propPayLater}</td>
-          </tr>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>TENANT PAYMENT MANAGEMENT</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>PAY FAILED</td>
-            <td>{paymentCounts.tenantPayFailed}</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>PAY NOW</td>
-            <td>{paymentCounts.tenantPayNow}</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>PAY LATER</td>
-            <td>{paymentCounts.tenantPayLater}</td>
-          </tr>
-        </tbody>
-      </Table>
+        {/* Tab 5: Payments */}
+        {activeTab === 'payments' && (
+          <div>
+            <h5 className="mb-3 text-muted" style={{ fontSize: '14px' }}>
+              Payment Management (Total Count)
+            </h5>
+            <Table striped bordered hover responsive className="table-sm align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th style={{ width: '60px' }}>SL NO</th>
+                  <th>DESCRIPTION</th>
+                  <th style={{ width: '140px' }}>TOTAL COUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <SectionHeader title="PROPERTY PAYMENT MANAGEMENT" />
+                <tr><td>1</td><td>PAY FAILED</td><td>{paymentCounts.propPayFailed}</td></tr>
+                <tr><td>2</td><td>PAY NOW</td><td>{paymentCounts.propPayNow}</td></tr>
+                <tr><td>3</td><td>PAY LATER</td><td>{paymentCounts.propPayLater}</td></tr>
+                <SectionHeader title="TENANT PAYMENT MANAGEMENT" />
+                <tr><td>4</td><td>PAY FAILED</td><td>{paymentCounts.tenantPayFailed}</td></tr>
+                <tr><td>5</td><td>PAY NOW</td><td>{paymentCounts.tenantPayNow}</td></tr>
+                <tr><td>6</td><td>PAY LATER</td><td>{paymentCounts.tenantPayLater}</td></tr>
+              </tbody>
+            </Table>
+          </div>
+        )}
 
-      {/* Follow-up Data */}
-      <h4 className="mt-5">Follow-up Data (Total Count)</h4>
-      <Table striped bordered hover responsive className="table-sm align-middle">
-        <thead>
-          <tr>
-            <th>SL NO</th>
-            <th>DESCRIPTION</th>
-            <th>TOTAL COUNT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>PROPERTY</td>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td>PROPERTY FOLLOW-UPS</td>
-            <td>{followupCounts.propertyFollowups}</td>
-          </tr>
-          <tr>
-            <td colSpan="3" className="fw-bold text-center" style={{ backgroundColor: '#e9ecef' }}>TENANT</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>TENANT FOLLOW-UPS</td>
-            <td>{followupCounts.tenantFollowups}</td>
-          </tr>
-        </tbody>
-      </Table>
+        {/* Tab 6: Follow-ups */}
+        {activeTab === 'followups' && (
+          <div>
+            <h5 className="mb-3 text-muted" style={{ fontSize: '14px' }}>
+              Follow-up Data (Total Count)
+            </h5>
+            <Table striped bordered hover responsive className="table-sm align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th style={{ width: '60px' }}>SL NO</th>
+                  <th>DESCRIPTION</th>
+                  <th style={{ width: '140px' }}>TOTAL COUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <SectionHeader title="PROPERTY" />
+                <tr><td>1</td><td>PROPERTY FOLLOW-UPS</td><td>{followupCounts.propertyFollowups}</td></tr>
+                <SectionHeader title="TENANT" />
+                <tr><td>2</td><td>TENANT FOLLOW-UPS</td><td>{followupCounts.tenantFollowups}</td></tr>
+              </tbody>
+            </Table>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };
